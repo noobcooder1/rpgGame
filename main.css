@@ -1,0 +1,3400 @@
+/* ============================================
+   RPG Adventure - 메인 스타일시트
+   ============================================ */
+
+/* ===== 기본 설정 ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* 색상 팔레트 */
+    --primary: #e94560;
+    --primary-dark: #c73659;
+    --secondary: #4da8da;
+    --gold: #ffd700;
+    --gold-dark: #daa520;
+
+    --bg-dark: #0a0a15;
+    --bg-darker: #050508;
+    --bg-card: rgba(20, 20, 40, 0.9);
+
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.4);
+
+    /* 폰트 */
+    --font-title: 'Cinzel', serif;
+    --font-body: 'Noto Sans KR', sans-serif;
+}
+
+body {
+    font-family: var(--font-body);
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* ===== 화면 기본 ===== */
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ===== 게임 배경 레이어 ===== */
+.game-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.5s ease-in-out;
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.game-container {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================================
+   로딩 화면
+   ============================================ */
+.loading-screen {
+    background: var(--bg-darker);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.loading-logo {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: logoFloat 2s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+}
+
+.loading-title {
+    font-family: var(--font-title);
+    font-size: 36px;
+    color: var(--gold);
+    letter-spacing: 10px;
+    margin-bottom: 40px;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.loading-bar-container {
+    width: 300px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 auto 20px;
+}
+
+.loading-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.loading-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+/* ============================================
+   메인 메뉴 화면
+   ============================================ */
+.main-menu-screen {
+    background: linear-gradient(135deg, #0a0a20 0%, #1a0a20 50%, #0a0a20 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* 배경 파티클 */
+.bg-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: particleFloat 10s infinite linear;
+}
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.6;
+    }
+
+    90% {
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: translateY(-100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 안개 효과 */
+.bg-fog {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(ellipse at 20% 80%, rgba(233, 69, 96, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(77, 168, 218, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    animation: fogMove 20s infinite alternate;
+}
+
+@keyframes fogMove {
+    0% {
+        transform: scale(1) translateX(0);
+    }
+
+    100% {
+        transform: scale(1.1) translateX(-5%);
+    }
+}
+
+/* 비네트 */
+.bg-vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+    pointer-events: none;
+}
+
+/* 메인 메뉴 컨텐츠 */
+.main-menu-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 40px;
+}
+
+/* 로고 섹션 */
+.logo-section {
+    margin-bottom: 60px;
+}
+
+.logo-emblem {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.emblem-icon {
+    font-size: 80px;
+    display: block;
+    animation: emblemPulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.6));
+}
+
+@keyframes emblemPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.6));
+    }
+
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.9));
+    }
+}
+
+.emblem-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0.8;
+    }
+}
+
+.game-title {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.title-sub {
+    font-family: var(--font-title);
+    font-size: 14px;
+    letter-spacing: 8px;
+    color: var(--text-secondary);
+}
+
+.title-main {
+    font-family: var(--font-title);
+    font-size: 52px;
+    font-weight: 900;
+    background: linear-gradient(180deg, #ffd700 0%, #ffec8b 30%, #ffd700 50%, #daa520 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 8px;
+    text-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+    animation: titleGlow 4s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.2);
+    }
+}
+
+.title-korean {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 15px;
+    margin-top: 10px;
+}
+
+/* 메뉴 버튼들 */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 320px;
+    margin: 0 auto 40px;
+}
+
+.menu-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 18px 25px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    font-family: var(--font-body);
+}
+
+.menu-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.menu-btn:hover::before {
+    left: 100%;
+}
+
+.menu-btn:hover {
+    border-color: var(--gold);
+    transform: translateX(10px);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.menu-btn .btn-icon {
+    font-size: 24px;
+}
+
+.menu-btn .btn-text {
+    flex: 1;
+    text-align: left;
+}
+
+.menu-btn .btn-arrow {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    color: var(--gold);
+}
+
+.menu-btn:hover .btn-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.menu-btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+}
+
+.menu-btn-primary:hover {
+    background: linear-gradient(135deg, #ff5a7d, var(--primary));
+    border-color: transparent;
+    transform: translateX(10px) scale(1.02);
+    box-shadow: 0 6px 30px rgba(233, 69, 96, 0.6);
+}
+
+/* 메뉴 푸터 */
+.menu-footer {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.menu-footer .version {
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+}
+
+/* 사이드 데코레이션 */
+.side-decoration {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    color: rgba(255, 215, 0, 0.3);
+}
+
+.side-decoration.left {
+    left: 40px;
+}
+
+.side-decoration.right {
+    right: 40px;
+}
+
+.deco-line {
+    width: 2px;
+    height: 100px;
+    background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+}
+
+.deco-symbol {
+    font-size: 12px;
+    animation: symbolPulse 2s ease-in-out infinite;
+}
+
+@keyframes symbolPulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* 배경 캐릭터 실루엣 */
+.bg-character {
+    position: fixed;
+    right: -50px;
+    bottom: -50px;
+    width: 400px;
+    height: 500px;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), transparent);
+    border-radius: 50% 50% 0 0;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* ============================================
+   캐릭터 생성 화면
+   ============================================ */
+.character-create-screen {
+    background: linear-gradient(135deg, #0a1628 0%, #1a0a28 100%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.character-create-container {
+    background: var(--bg-card);
+    border: 2px solid rgba(77, 168, 218, 0.3);
+    border-radius: 25px;
+    padding: 30px 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(77, 168, 218, 0.1);
+    margin: auto;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+.create-title {
+    font-family: var(--font-title);
+    font-size: 24px;
+    color: var(--gold);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.create-icon {
+    font-size: 32px;
+}
+
+.character-preview {
+    margin-bottom: 30px;
+}
+
+.character-avatar {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: avatarBounce 2s ease-in-out infinite;
+}
+
+@keyframes avatarBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.character-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    text-align: left;
+}
+
+.stat-preview {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-preview .stat-name {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.stat-preview .stat-value {
+    color: var(--secondary);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.name-input-section {
+    margin-bottom: 30px;
+}
+
+.name-input {
+    width: 100%;
+    padding: 18px 25px;
+    font-size: 20px;
+    font-family: var(--font-body);
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: var(--text-primary);
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.name-input:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 20px rgba(77, 168, 218, 0.3);
+}
+
+.name-input::placeholder {
+    color: var(--text-muted);
+}
+
+.name-hint {
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.create-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.create-btn {
+    flex: 1;
+    padding: 15px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.create-btn-reroll {
+    background: rgba(77, 168, 218, 0.2);
+    color: var(--secondary);
+    border: 2px solid var(--secondary);
+}
+
+.create-btn-reroll:hover {
+    background: var(--secondary);
+    color: var(--bg-dark);
+}
+
+.create-btn-confirm {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+}
+
+.create-btn-confirm:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(233, 69, 96, 0.6);
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.back-btn:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   게임 플레이 화면
+   ============================================ */
+.game-screen {
+    background: linear-gradient(180deg, #0a0a20, #151530);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: 10px;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 900px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.player-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.player-level {
+    background: var(--primary);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.player-bars {
+    display: flex;
+    gap: 20px;
+}
+
+.bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bar-label {
+    font-size: 12px;
+    font-weight: 700;
+    width: 25px;
+}
+
+.bar {
+    width: 150px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.hp-bar .bar-fill {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+.mp-bar .bar-fill {
+    background: linear-gradient(90deg, #3498db, #2980b9);
+}
+
+.bar-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.game-menu-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.game-menu-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.game-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.game-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+
+.game-message-box {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 15px;
+    padding: 30px 50px;
+    text-align: center;
+    max-width: 600px;
+}
+
+.game-message-box p {
+    font-size: 18px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+}
+
+.game-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.action-btn {
+    padding: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.action-btn:hover {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: var(--primary);
+    transform: translateY(-3px);
+}
+
+.game-footer {
+    padding: 15px;
+    text-align: center;
+}
+
+.game-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ============================================
+   모달 스타일
+   ============================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.modal {
+    background: var(--bg-card);
+    border: 2px solid rgba(77, 168, 218, 0.3);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--secondary), #2980b9);
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+}
+
+.modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.modal-content {
+    padding: 25px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.setting-item label {
+    width: 100px;
+    font-size: 14px;
+}
+
+.setting-item input[type="range"] {
+    flex: 1;
+    height: 8px;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    outline: none;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--secondary);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.setting-item span {
+    width: 50px;
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.modal-footer {
+    padding: 15px 25px 25px;
+    text-align: center;
+}
+
+.modal-btn {
+    padding: 12px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    background: var(--secondary);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.modal-btn:hover {
+    background: #2980b9;
+    transform: scale(1.05);
+}
+
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 768px) {
+    .title-main {
+        font-size: 32px;
+        letter-spacing: 4px;
+    }
+
+    .menu-buttons {
+        width: 280px;
+    }
+
+    .side-decoration {
+        display: none;
+    }
+
+    .game-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .player-bars {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .game-actions,
+    .explore-actions,
+    .battle-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   새 게임 화면 스타일
+   ============================================ */
+
+/* 맵 배경 */
+.game-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-color: #1a2a1a;
+    transition: filter 1s ease, background-image 0.5s ease;
+    z-index: 0;
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.7) 0%,
+            rgba(0, 0, 0, 0.3) 30%,
+            rgba(0, 0, 0, 0.3) 70%,
+            rgba(0, 0, 0, 0.7) 100%);
+    z-index: 1;
+}
+
+.game-screen .game-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    width: 100%;
+    height: 100%;
+}
+
+/* 헤더 레이아웃 */
+.game-screen .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 12px 20px;
+    gap: 20px;
+}
+
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.header-left {
+    align-items: flex-start;
+}
+
+.header-center {
+    align-items: center;
+    justify-content: center;
+}
+
+.header-right {
+    align-items: flex-end;
+}
+
+.location-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.current-map {
+    font-family: var(--font-title);
+    font-size: 18px;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.game-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+
+.player-gold {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+/* 게임 메인 영역 */
+.game-screen .game-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 0;
+    overflow: visible;
+}
+
+/* 탐험 UI */
+.explore-ui {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+
+.explore-info {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 15px;
+    padding: 25px 40px;
+    text-align: center;
+    max-width: 600px;
+}
+
+.explore-info p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.explore-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* 전투 UI */
+.battle-ui {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.battle-ui.hidden {
+    display: none;
+}
+
+.battle-arena {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.monster-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    border: 2px solid rgba(231, 76, 60, 0.3);
+}
+
+.monster-sprite {
+    font-size: 80px;
+    animation: monsterIdle 2s ease-in-out infinite;
+}
+
+@keyframes monsterIdle {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-10px) scale(1.05);
+    }
+}
+
+.monster-info {
+    text-align: center;
+    width: 200px;
+}
+
+.monster-name {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #e74c3c;
+    margin-bottom: 10px;
+}
+
+.monster-hp-bar {
+    width: 100%;
+    height: 15px;
+}
+
+.monster-hp-bar .bar-fill {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+/* 전투 로그 */
+.battle-log {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.battle-log p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.battle-log p:last-child {
+    color: var(--text-primary);
+    border-bottom: none;
+}
+
+/* 전투 행동 버튼 */
+.battle-actions {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px;
+}
+
+.battle-action-btn {
+    padding: 15px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.battle-action-btn.attack {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.battle-action-btn.skill {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.battle-action-btn.defend {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.battle-action-btn.heal {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+}
+
+.battle-action-btn.escape {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+.battle-action-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.battle-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 게임 로그 */
+.game-log-container {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 15px;
+    max-height: 150px;
+    min-height: 100px;
+    overflow-y: auto;
+    margin-top: 10px;
+    flex-shrink: 0;
+}
+
+.game-log p {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 3px 0;
+}
+
+.game-log p:last-child {
+    color: var(--text-primary);
+}
+
+/* 맵 선택 팝업 */
+.map-selection-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid var(--secondary);
+    border-radius: 16px;
+    min-width: 320px;
+    max-width: 400px;
+    max-height: 80vh;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.map-selection-popup.hidden {
+    display: none;
+}
+
+/* 팝업 헤더 */
+.map-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: linear-gradient(90deg, rgba(77, 168, 218, 0.2), rgba(155, 89, 182, 0.2));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.map-popup-header h3 {
+    color: var(--gold);
+    font-size: 18px;
+    margin: 0;
+}
+
+.map-popup-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-popup-close:hover {
+    background: rgba(233, 69, 96, 0.5);
+    border-color: var(--primary);
+}
+
+/* 팝업 컨텐츠 */
+.map-popup-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+/* 맵 섹션 */
+.map-section {
+    margin-bottom: 15px;
+}
+
+.map-section:last-child {
+    margin-bottom: 0;
+}
+
+.map-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.map-section-title.local {
+    color: #4da8da;
+    background: rgba(77, 168, 218, 0.1);
+}
+
+.map-section-title.world {
+    color: var(--gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.map-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.map-btn:hover:not(:disabled) {
+    border-color: var(--secondary);
+    background: rgba(77, 168, 218, 0.2);
+    transform: translateX(5px);
+}
+
+.map-btn.current {
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.map-btn.cleared .map-icon {
+    color: #27ae60;
+}
+
+.map-btn.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.map-btn .map-icon {
+    font-size: 20px;
+}
+
+.map-btn .map-name {
+    flex: 1;
+    text-align: left;
+}
+
+.map-btn .map-level {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.close-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   추가 레이아웃 스타일
+   ============================================ */
+
+/* 경험치 & 플레이 시간 (상단 왼쪽) */
+.player-exp-time {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
+
+.player-exp-time span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* 게임 컨텐츠 영역 */
+.game-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+/* 행동 버튼 영역 (하단) */
+.action-buttons-area {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.explore-actions.hidden,
+.battle-actions.hidden {
+    display: none !important;
+}
+
+/* 탐험 행동 버튼 - 3열 그리드 */
+.action-buttons-area .explore-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+}
+
+/* 전투 행동 버튼 - 5열 그리드 */
+.action-buttons-area .battle-actions {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+}
+
+.action-buttons-area .battle-actions .battle-action-btn {
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: white !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: visible;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 게임 메인 레이아웃 수정 */
+.game-screen .game-main {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px 0;
+    justify-content: flex-start;
+}
+
+/* 탐험 UI 중앙 정렬 */
+.explore-ui.hidden {
+    display: none;
+}
+
+/* 게임 로그 높이 조정 */
+.game-log-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 반응형 수정 */
+@media (max-width: 768px) {
+    .action-buttons-area .explore-actions {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .action-buttons-area .battle-actions {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .player-exp-time {
+        flex-direction: column;
+        gap: 3px;
+    }
+}
+
+/* ============================================
+   인벤토리 스타일
+   ============================================ */
+
+/* 인벤토리 모달 */
+.inventory-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    width: 95%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.1);
+}
+
+/* 인벤토리 헤더 */
+.inv-header {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(233, 69, 96, 0.2));
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.inv-header h2 {
+    font-size: 22px;
+    color: var(--gold);
+    margin: 0;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.inv-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inv-close-btn:hover {
+    background: rgba(233, 69, 96, 0.5);
+    border-color: var(--primary);
+}
+
+/* 인벤토리 컨텐츠 */
+.inv-content {
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+}
+
+/* 왼쪽: 캐릭터 정보 */
+.inv-left {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* 캐릭터 카드 */
+.character-card {
+    background: linear-gradient(135deg, rgba(77, 168, 218, 0.1), rgba(155, 89, 182, 0.1));
+    border: 2px solid rgba(77, 168, 218, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+}
+
+.char-avatar {
+    font-size: 60px;
+    margin-bottom: 10px;
+    animation: avatarFloat 3s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.char-name-level {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.char-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.char-level {
+    background: var(--primary);
+    padding: 4px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+/* 스탯 패널 */
+.stats-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.stats-panel h3 {
+    font-size: 14px;
+    color: var(--gold);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.stat-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.stat-value .bonus {
+    color: #4caf50;
+    font-size: 12px;
+}
+
+.stat-value.gold {
+    color: var(--gold);
+}
+
+/* 장비 패널 */
+.equipment-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.equipment-panel h3 {
+    font-size: 14px;
+    color: var(--gold);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.equip-slot {
+    aspect-ratio: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.equip-slot:hover {
+    border-color: rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.equip-slot.equipped {
+    border-color: var(--secondary);
+}
+
+.equip-empty,
+.equip-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+.equip-icon {
+    font-size: 20px;
+    opacity: 0.5;
+}
+
+.equip-slot.equipped .equip-icon {
+    opacity: 1;
+}
+
+.equip-name {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.equip-slot.equipped .equip-name {
+    color: var(--text-primary);
+}
+
+/* 오른쪽: 아이템 목록 */
+.inv-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* 탭 버튼 */
+.inv-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.inv-tab-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inv-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.inv-tab-btn.active {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+/* 아이템 그리드 */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    flex: 1;
+}
+
+.inventory-slot {
+    aspect-ratio: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.inventory-slot:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.inventory-slot.has-item {
+    cursor: pointer;
+}
+
+.inventory-slot.has-item:hover {
+    transform: scale(1.05);
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.item-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.item-icon {
+    font-size: 28px;
+}
+
+.item-quantity {
+    position: absolute;
+    bottom: 3px;
+    right: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.slot-empty {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+}
+
+/* 인벤토리 하단 */
+.inv-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* 아이템 툴팁 */
+.item-tooltip {
+    position: fixed;
+    background: linear-gradient(135deg, #1a1a2e, #0f0f23);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 200px;
+    max-width: 280px;
+    z-index: 10000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.item-tooltip.hidden {
+    display: none;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 10px;
+    border-left: 3px solid var(--gold);
+    margin-bottom: 10px;
+}
+
+.tooltip-icon {
+    font-size: 24px;
+}
+
+.tooltip-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.tooltip-type {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.tooltip-stat {
+    font-size: 13px;
+    color: #4caf50;
+    padding: 3px 0;
+}
+
+.tooltip-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 8px;
+}
+
+.tooltip-price {
+    font-size: 12px;
+    color: var(--gold);
+    margin-top: 8px;
+}
+
+.tooltip-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 인벤토리 반응형 */
+@media (max-width: 768px) {
+    .inv-content {
+        flex-direction: column;
+    }
+
+    .inv-left {
+        width: 100%;
+    }
+
+    .inventory-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .equipment-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* ============================================
+   직업 선택 UI
+   ============================================ */
+
+.job-selection-section {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.job-selection-section h3 {
+    color: var(--gold);
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.job-selection {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.job-select-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 20px;
+    background: rgba(30, 30, 50, 0.8);
+    border: 2px solid rgba(100, 100, 150, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+}
+
+.job-select-btn:hover {
+    background: rgba(50, 50, 80, 0.9);
+    border-color: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.job-select-btn.selected {
+    background: rgba(70, 50, 120, 0.9);
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.job-select-btn .job-icon {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.job-select-btn .job-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.job-select-btn.selected .job-name {
+    color: var(--gold);
+}
+
+.job-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
+
+/* ============================================
+   스탯 미리보기 개선
+   ============================================ */
+
+.stat-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    margin: 10px 0;
+}
+
+.stat-divider.full-width {
+    grid-column: 1 / -1;
+}
+
+.stat-preview.sub {
+    opacity: 0.85;
+}
+
+.stat-preview.sub .stat-name {
+    font-size: 13px;
+}
+
+.stat-preview.sub .stat-value {
+    font-size: 14px;
+}
+
+/* 인벤토리 세부 스탯 */
+.stat-row.sub-stat {
+    opacity: 0.9;
+    font-size: 13px;
+}
+
+.stat-row.job-row {
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+}
+
+/* 굴리기 버튼 비활성화 */
+.create-btn-reroll.disabled,
+.create-btn-reroll:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #444 !important;
+}
+
+/* ============================================
+   직업 정보 패널 스타일
+   ============================================ */
+
+.job-info-panel {
+    background: rgba(20, 20, 40, 0.8);
+    border: 1px solid rgba(100, 100, 150, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    min-height: 150px;
+}
+
+.job-info-placeholder {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.job-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.job-info-icon {
+    font-size: 32px;
+}
+
+.job-info-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--gold);
+}
+
+.job-info-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.job-info-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.stat-range {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.stat-range.sub {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.job-info-main {
+    font-size: 13px;
+    color: var(--secondary);
+    margin-bottom: 15px;
+}
+
+.confirm-job-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.confirm-job-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+}
+
+/* 직업 버튼 상태 */
+.job-select-btn.highlighted {
+    border-color: var(--secondary);
+    background: rgba(77, 168, 218, 0.2);
+}
+
+.job-select-btn.locked {
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.15);
+}
+
+.job-select-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* 직업 선택 확정 표시 */
+.job-confirmed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+}
+
+.job-confirmed-icon {
+    font-size: 40px;
+}
+
+.job-confirmed-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--gold);
+}
+
+.job-confirmed-badge {
+    background: var(--gold);
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 스탯 플레이스홀더 */
+.stats-placeholder {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 30px;
+}
+
+/* ============================================
+   스킬 선택 UI
+   ============================================ */
+
+.skill-selection-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+.skill-selection-panel {
+    background: var(--bg-card);
+    border: 2px solid var(--primary);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.skill-selection-panel h3 {
+    color: var(--gold);
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.skill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.skill-select-btn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(30, 30, 50, 0.9);
+    border: 2px solid rgba(100, 100, 150, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.skill-select-btn:hover:not(.disabled) {
+    border-color: var(--primary);
+    background: rgba(233, 69, 96, 0.2);
+    transform: translateX(5px);
+}
+
+.skill-select-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.skill-select-btn .skill-icon {
+    font-size: 32px;
+    min-width: 40px;
+}
+
+.skill-select-btn .skill-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.skill-select-btn .skill-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.skill-select-btn .skill-cost {
+    font-size: 12px;
+    color: var(--secondary);
+}
+
+.skill-select-btn .skill-desc {
+    width: 100%;
+    margin: 8px 0 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.skill-cancel-btn {
+    width: 100%;
+    padding: 12px;
+    background: rgba(100, 100, 100, 0.3);
+    border: 1px solid rgba(150, 150, 150, 0.3);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.skill-cancel-btn:hover {
+    background: rgba(150, 150, 150, 0.3);
+}
+
+/* ============================================
+   스탯포인트 배분 UI
+   ============================================ */
+
+.stat-allocation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+.stat-allocation-panel {
+    background: var(--bg-card);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.stat-allocation-panel h3 {
+    color: var(--gold);
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 22px;
+}
+
+.stat-points-available {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.stat-points-available .bonus {
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.stat-allocation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-allocation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: rgba(30, 30, 50, 0.8);
+    border-radius: 12px;
+    border: 1px solid rgba(100, 100, 150, 0.3);
+}
+
+.stat-allocation-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-allocation-icon {
+    font-size: 28px;
+}
+
+.stat-allocation-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-allocation-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.stat-allocation-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.stat-plus-btn {
+    width: 50px;
+    height: 40px;
+    background: linear-gradient(180deg, var(--secondary), #1fab89);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-plus-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(31, 171, 137, 0.5);
+}
+
+.stat-close-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(180deg, var(--primary), #c0392b);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(192, 57, 43, 0.4);
+}
+
+/* 스탯 배분하기 버튼 (인벤토리 내) */
+.stat-allocate-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: linear-gradient(180deg, #f39c12, #e67e22);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-allocate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+}
+
+/* 스탯 인라인 + 버튼 */
+.stat-add-btn {
+    margin-left: 8px;
+    width: 24px;
+    height: 24px;
+    background: var(--secondary);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-add-btn:hover {
+    transform: scale(1.2);
+    background: var(--gold);
+}
+
+.stat-points-row {
+    background: rgba(243, 156, 18, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px !important;
+}
+
+/* 난이도 선택 UI 오버레이 */
+.difficulty-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.difficulty-panel {
+    background: linear-gradient(135deg, #2c3e50, #000000);
+    padding: 30px;
+    border-radius: 20px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    color: white;
+}
+
+.difficulty-panel h2 {
+    font-family: var(--font-title);
+    font-size: 28px;
+    color: var(--gold);
+    margin-bottom: 30px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.difficulty-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.difficulty-btn {
+    padding: 20px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.difficulty-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.difficulty-btn .diff-title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.difficulty-btn .diff-desc {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* 난이도별 색상 */
+.difficulty-btn.easy {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    border: 2px solid #2ecc71;
+}
+
+.difficulty-btn.normal {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: 2px solid #3498db;
+}
+
+.difficulty-btn.hard {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: 2px solid #e74c3c;
+}
+
+.difficulty-btn.hell {
+    background: linear-gradient(135deg, #2c0402, #800000);
+    color: #ff3333;
+    border: 2px solid #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.difficulty-btn:hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 장비 슬롯 능력치 표시 */
+.equip-stats {
+    display: block;
+    font-size: 10px;
+    color: var(--secondary);
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+/* ============================================
+   NPC 대화 시스템
+   ============================================ */
+.npc-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.npc-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid rgba(77, 168, 218, 0.5);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(77, 168, 218, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.npc-modal-header {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.npc-modal-header h3 {
+    color: var(--gold);
+    font-size: 18px;
+    margin: 0;
+}
+
+.npc-modal-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.npc-modal-close:hover {
+    background: var(--primary);
+    transform: rotate(90deg);
+}
+
+.npc-modal-content {
+    padding: 20px;
+}
+
+.npc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.npc-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.npc-select-btn:hover {
+    background: rgba(77, 168, 218, 0.2);
+    border-color: var(--secondary);
+    transform: translateX(5px);
+}
+
+.npc-emoji {
+    font-size: 32px;
+}
+
+.npc-name {
+    font-weight: 600;
+}
+
+/* NPC 대화 모달 */
+.npc-dialog-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 450px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.npc-dialog-header {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.npc-dialog-emoji {
+    font-size: 48px;
+}
+
+.npc-dialog-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.npc-dialog-content {
+    padding: 25px;
+}
+
+.npc-dialog-bubble {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-left: 4px solid var(--gold);
+}
+
+.npc-dialog-bubble p {
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.dialog-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dialog-option-btn {
+    padding: 15px 20px;
+    background: rgba(77, 168, 218, 0.15);
+    border: 2px solid rgba(77, 168, 218, 0.3);
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    font-family: var(--font-body);
+}
+
+.dialog-option-btn:hover {
+    background: rgba(77, 168, 218, 0.3);
+    border-color: var(--secondary);
+    transform: translateX(5px);
+}
+
+.dialog-option-btn.dialog-exit {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+}
+
+.dialog-option-btn.dialog-exit:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   상점 시스템
+   ============================================ */
+.shop-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.shop-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    width: 95%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-header {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.shop-header h2 {
+    font-size: 24px;
+    color: var(--gold);
+    margin: 0;
+}
+
+.shop-gold {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
+.shop-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.shop-close-btn:hover {
+    background: var(--primary);
+    transform: rotate(90deg);
+}
+
+.shop-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    gap: 10px;
+}
+
+.shop-tab {
+    flex: 1;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.shop-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.shop-tab.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+}
+
+.shop-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-categories {
+    display: flex;
+    gap: 8px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    overflow-x: auto;
+}
+
+.shop-category-btn {
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-family: var(--font-body);
+}
+
+.shop-category-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.shop-category-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.shop-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.shop-items::-webkit-scrollbar {
+    width: 8px;
+}
+
+.shop-items::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.shop-items::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.shop-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.shop-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
+}
+
+.shop-item.other-job {
+    opacity: 0.5;
+}
+
+.shop-item.common {
+    border-left: 4px solid #9e9e9e;
+}
+
+.shop-item.uncommon {
+    border-left: 4px solid #4caf50;
+}
+
+.shop-item.rare {
+    border-left: 4px solid #2196f3;
+}
+
+.shop-item.epic {
+    border-left: 4px solid #9c27b0;
+}
+
+.shop-item-icon {
+    font-size: 36px;
+    width: 50px;
+    text-align: center;
+}
+
+.shop-item-info {
+    flex: 1;
+}
+
+.shop-item-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.shop-item-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.shop-item-stats {
+    font-size: 11px;
+    color: var(--secondary);
+}
+
+.shop-item-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold);
+    min-width: 80px;
+    text-align: right;
+}
+
+.shop-item-price.not-afford {
+    color: #e74c3c;
+}
+
+.shop-item-price.sell-price {
+    color: #2ecc71;
+}
+
+.shop-buy-btn,
+.shop-sell-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--secondary), #2980b9);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-body);
+}
+
+.shop-buy-btn:hover:not(:disabled),
+.shop-sell-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(77, 168, 218, 0.5);
+}
+
+.shop-buy-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.shop-sell-btn {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+}
+
+.shop-sell-btn:hover {
+    box-shadow: 0 0 15px rgba(39, 174, 96, 0.5);
+}
+
+.shop-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px;
+    font-size: 15px;
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+    .shop-modal {
+        max-height: 90vh;
+        border-radius: 15px;
+    }
+
+    .shop-header {
+        padding: 15px;
+    }
+
+    .shop-header h2 {
+        font-size: 18px;
+    }
+
+    .shop-item {
+        padding: 12px;
+        flex-wrap: wrap;
+    }
+
+    .shop-item-icon {
+        font-size: 28px;
+        width: 40px;
+    }
+
+    .shop-item-price {
+        min-width: auto;
+    }
+
+    .shop-buy-btn,
+    .shop-sell-btn {
+        padding: 8px 15px;
+        font-size: 13px;
+    }
+}
+
+/* ============================================
+   쓰러짐 화면 오버레이
+============================================ */
+.death-screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0);
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out, background 0.8s ease-in-out;
+    pointer-events: all;
+}
+
+.death-screen-overlay.visible {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.death-screen-container {
+    text-align: center;
+    padding: 40px;
+}
+
+.death-message {
+    font-size: 32px;
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    animation: deathMessagePulse 2s ease-in-out infinite;
+    line-height: 1.8;
+}
+
+@keyframes deathMessagePulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .death-message {
+        font-size: 24px;
+        padding: 20px;
+    }
+}
+
+/* ============================================
+   채굴 시스템 스타일
+   ============================================ */
+
+/* 채굴 버튼 */
+.mining-btn {
+    background: linear-gradient(135deg, #8b4513 0%, #a0522d 50%, #cd853f 100%) !important;
+    border: 2px solid #daa520 !important;
+    color: #fff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.mining-btn:hover {
+    background: linear-gradient(135deg, #a0522d 0%, #cd853f 50%, #daa520 100%) !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(218, 165, 32, 0.5);
+}
+
+.mining-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: miningShine 2s infinite;
+}
+
+@keyframes miningShine {
+    0% {
+        left: -100%;
+    }
+
+    50% {
+        left: 100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* 미스터리 패스 버튼 (랜덤 통로) */
+.mystery-path {
+    background: linear-gradient(135deg, #2d2d4a 0%, #3d3d5c 100%) !important;
+    border: 2px dashed rgba(255, 255, 255, 0.3) !important;
+}
+
+.mystery-path:hover {
+    background: linear-gradient(135deg, #3d3d5c 0%, #4d4d6c 100%) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.map-hint {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-left: 8px;
+    color: #aaa;
+}
+
+/* 도구칸 스타일 */
+.tool-slot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(139, 69, 19, 0.2);
+    border: 1px solid rgba(139, 69, 19, 0.5);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.tool-slot-label {
+    font-size: 0.9em;
+    color: #cd853f;
+    font-weight: bold;
+}
+
+.tool-slot-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.tool-slot-empty {
+    color: #888;
+    font-style: italic;
+}

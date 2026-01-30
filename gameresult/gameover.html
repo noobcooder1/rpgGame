@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Over</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0d0d0d 0%, #1a0a0a 50%, #0d0d0d 100%);
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow: hidden;
+        }
+
+        /* 배경 파티클 효과 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 50, 50, 0.6);
+            border-radius: 50%;
+            animation: float 8s infinite ease-in-out;
+            box-shadow: 0 0 10px rgba(255, 50, 50, 0.8);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* 비네트 효과 */
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
+            pointer-events: none;
+        }
+
+        /* 메인 컨테이너 */
+        .game-over-container {
+            position: relative;
+            text-align: center;
+            z-index: 10;
+            animation: fadeIn 2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 해골 아이콘 */
+        .skull-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 20px rgba(255, 50, 50, 0.8));
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px rgba(255, 50, 50, 0.8));
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 40px rgba(255, 50, 50, 1));
+            }
+        }
+
+        /* GAME OVER 텍스트 */
+        .game-over-text {
+            font-family: 'Cinzel', serif;
+            font-size: 72px;
+            font-weight: 900;
+            color: transparent;
+            background: linear-gradient(180deg, #ff4444 0%, #8b0000 50%, #4a0000 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow:
+                0 0 10px rgba(255, 50, 50, 0.5),
+                0 0 20px rgba(255, 50, 50, 0.3),
+                0 0 40px rgba(255, 50, 50, 0.2);
+            letter-spacing: 15px;
+            margin-bottom: 20px;
+            animation: textGlow 3s infinite;
+        }
+
+        @keyframes textGlow {
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.2);
+            }
+        }
+
+        /* 부제목 */
+        .subtitle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 40px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            animation: flickerIn 3s ease-out;
+        }
+
+        @keyframes flickerIn {
+
+            0%,
+            10%,
+            20%,
+            40%,
+            60%,
+            100% {
+                opacity: 1;
+            }
+
+            5%,
+            15%,
+            25%,
+            35%,
+            55% {
+                opacity: 0.3;
+            }
+        }
+
+        /* 통계 박스 */
+        .stats-box {
+            background: rgba(20, 10, 10, 0.8);
+            border: 2px solid rgba(255, 50, 50, 0.3);
+            border-radius: 10px;
+            padding: 25px 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 30px rgba(255, 50, 50, 0.1),
+                inset 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats-title {
+            color: #ff6666;
+            font-size: 14px;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px 40px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 50, 50, 0.1);
+        }
+
+        .stat-label {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #ff8888;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* 버튼 그룹 */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            position: relative;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-retry {
+            background: linear-gradient(135deg, #cc3333 0%, #8b0000 100%);
+            color: #fff;
+            box-shadow:
+                0 4px 15px rgba(255, 50, 50, 0.4),
+                0 0 30px rgba(255, 50, 50, 0.2);
+        }
+
+        .btn-retry:hover {
+            transform: translateY(-3px);
+            box-shadow:
+                0 6px 25px rgba(255, 50, 50, 0.6),
+                0 0 50px rgba(255, 50, 50, 0.3);
+        }
+
+        .btn-menu {
+            background: transparent;
+            color: #888;
+            border: 2px solid rgba(136, 136, 136, 0.5);
+        }
+
+        .btn-menu:hover {
+            background: rgba(136, 136, 136, 0.1);
+            color: #fff;
+            border-color: #fff;
+            transform: translateY(-3px);
+        }
+
+        /* 깨진 하트/체력바 효과 */
+        .broken-hearts {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .heart {
+            font-size: 24px;
+            color: #333;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            animation: heartBreak 0.5s ease-out forwards;
+        }
+
+        @keyframes heartBreak {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+        }
+
+        /* 피 흘러내리는 효과 */
+        .blood-drip {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .drip {
+            position: absolute;
+            top: -100px;
+            width: 3px;
+            background: linear-gradient(180deg, rgba(139, 0, 0, 0.8) 0%, rgba(139, 0, 0, 0) 100%);
+            border-radius: 0 0 50% 50%;
+            animation: dripping 4s infinite;
+        }
+
+        @keyframes dripping {
+            0% {
+                height: 0;
+                top: 0;
+                opacity: 1;
+            }
+
+            50% {
+                height: 200px;
+                opacity: 1;
+            }
+
+            100% {
+                height: 200px;
+                top: 100vh;
+                opacity: 0;
+            }
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .game-over-text {
+                font-size: 48px;
+                letter-spacing: 8px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 파티클 효과 -->
+    <div class="particles" id="particles"></div>
+
+    <!-- 피 흘러내리는 효과 -->
+    <div class="blood-drip" id="bloodDrip"></div>
+
+    <!-- 비네트 효과 -->
+    <div class="vignette"></div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="game-over-container">
+        <!-- 해골 아이콘 -->
+        <div class="skull-icon">💀</div>
+
+        <!-- GAME OVER 텍스트 -->
+        <h1 class="game-over-text">GAME OVER</h1>
+
+        <!-- 부제목 -->
+        <p class="subtitle">당신의 여정이 끝났습니다</p>
+
+        <!-- 깨진 하트 -->
+        <div class="broken-hearts">
+            <span class="heart" style="animation-delay: 0s;">🖤</span>
+            <span class="heart" style="animation-delay: 0.1s;">🖤</span>
+            <span class="heart" style="animation-delay: 0.2s;">🖤</span>
+            <span class="heart" style="animation-delay: 0.3s;">🖤</span>
+            <span class="heart" style="animation-delay: 0.4s;">🖤</span>
+        </div>
+
+        <!-- 게임 통계 -->
+        <div class="stats-box">
+            <div class="stats-title">📊 최종 기록</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">생존 시간</span>
+                    <span class="stat-value" id="survivalTime">05:32</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">처치한 적</span>
+                    <span class="stat-value" id="enemiesKilled">24</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">획득 점수</span>
+                    <span class="stat-value" id="score">12,450</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">도달 스테이지</span>
+                    <span class="stat-value" id="stage">Stage 3</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="button-group">
+            <button class="btn btn-retry" onclick="retryGame()">
+                🔄 다시 도전
+            </button>
+            <button class="btn btn-menu" onclick="goToMenu()">
+                🏠 메인 메뉴
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 파티클 생성
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // 피 흘러내리는 효과 생성
+        function createBloodDrips() {
+            const container = document.getElementById('bloodDrip');
+            for (let i = 0; i < 15; i++) {
+                const drip = document.createElement('div');
+                drip.className = 'drip';
+                drip.style.left = Math.random() * 100 + '%';
+                drip.style.animationDelay = Math.random() * 4 + 's';
+                drip.style.width = (2 + Math.random() * 3) + 'px';
+                container.appendChild(drip);
+            }
+        }
+
+        // 다시 도전 버튼
+        function retryGame() {
+            // 실제 게임으로 돌아가기
+            // window.location.href = '../rpg.html';
+            alert('게임을 다시 시작합니다!');
+        }
+
+        // 메인 메뉴로 이동
+        function goToMenu() {
+            // 메인 메뉴로 이동
+            // window.location.href = '../index.html';
+            alert('메인 메뉴로 이동합니다!');
+        }
+
+        // 초기화
+        window.onload = function () {
+            createParticles();
+            createBloodDrips();
+        };
+    </script>
+</body>
+
+</html>

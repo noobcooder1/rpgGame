@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Adventure - 용사의 전설</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+    <!-- ===== 로딩 화면 ===== -->
+    <div id="loadingScreen" class="screen loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">⚔️</div>
+            <h1 class="loading-title">RPG ADVENTURE</h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <p class="loading-text" id="loadingText">게임을 불러오는 중...</p>
+        </div>
+    </div>
+
+    <!-- ===== 메인 메뉴 화면 ===== -->
+    <div id="mainMenuScreen" class="screen main-menu-screen hidden">
+        <!-- 배경 효과들 -->
+        <div class="bg-particles" id="bgParticles"></div>
+        <div class="bg-fog"></div>
+        <div class="bg-vignette"></div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-menu-content">
+            <!-- 로고 영역 -->
+            <div class="logo-section">
+                <div class="logo-emblem">
+                    <span class="emblem-icon">⚔️</span>
+                    <div class="emblem-glow"></div>
+                </div>
+                <h1 class="game-title">
+                    <span class="title-sub">THE LEGEND OF</span>
+                    <span class="title-main">RPG ADVENTURE</span>
+                    <span class="title-korean">용사의 전설</span>
+                </h1>
+            </div>
+
+            <!-- 메뉴 버튼들 -->
+            <div class="menu-buttons">
+                <button class="menu-btn menu-btn-primary" onclick="startNewGame()">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">새 게임</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+
+                <button class="menu-btn" onclick="showSaveLoadMenu('load')">
+                    <span class="btn-icon">📂</span>
+                    <span class="btn-text">이어하기</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+
+                <button class="menu-btn" onclick="showGameRule()">
+                    <span class="btn-icon">📖</span>
+                    <span class="btn-text">게임 설명</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+
+                <button class="menu-btn" onclick="showSettings()">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">설정</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </div>
+
+            <!-- 하단 정보 -->
+            <div class="menu-footer">
+                <p class="version">Version 0.5.0</p>
+                <p class="copyright">© 2026 RPG Adventure. All Rights Reserved.</p>
+            </div>
+        </div>
+
+        <!-- 사이드 데코레이션 -->
+        <div class="side-decoration left">
+            <div class="deco-line"></div>
+            <div class="deco-symbol">◆</div>
+            <div class="deco-line"></div>
+        </div>
+        <div class="side-decoration right">
+            <div class="deco-line"></div>
+            <div class="deco-symbol">◆</div>
+            <div class="deco-line"></div>
+        </div>
+
+        <!-- 배경 캐릭터 실루엣 -->
+        <div class="bg-character"></div>
+    </div>
+
+    <!-- ===== 캐릭터 생성 화면 ===== -->
+    <div id="characterCreateScreen" class="screen character-create-screen hidden">
+        <div class="character-create-container">
+            <h2 class="create-title">
+                <span class="create-icon">⚔️</span>
+                용사의 이름을 정하세요
+            </h2>
+
+            <!-- 직업 선택 -->
+            <div class="job-selection-section">
+                <h3>직업 선택</h3>
+                <div id="jobSelection" class="job-selection">
+                    <!-- 동적 생성 -->
+                </div>
+                <!-- 직업 정보 패널 -->
+                <div id="jobInfoPanel" class="job-info-panel">
+                    <div class="job-info-placeholder">
+                        <p>💡 직업을 클릭하면 정보를 볼 수 있습니다</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-preview">
+                <div class="character-avatar" id="characterAvatar">⚔️</div>
+                <div class="character-stats" id="previewStats">
+                    <div class="stats-placeholder">
+                        <p>직업을 선택하면 스탯이 표시됩니다</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="name-input-section">
+                <input type="text" id="characterNameInput" class="name-input" placeholder="용사의 이름..." maxlength="10">
+                <p class="name-hint">2~10자의 이름을 입력하세요</p>
+            </div>
+
+            <div class="create-buttons">
+                <button id="rerollBtn" class="create-btn create-btn-reroll" onclick="rerollStats()">
+                    🎲 스탯 다시 굴리기 (3회 남음)
+                </button>
+                <button class="create-btn create-btn-confirm" onclick="confirmCharacter()">
+                    ✅ 모험 시작!
+                </button>
+            </div>
+
+            <button class="back-btn" onclick="backToMainMenu()">
+                ← 메인 메뉴로
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 게임 플레이 화면 ===== -->
+    <div id="gameScreen" class="screen game-screen hidden">
+        <!-- 맵 배경 -->
+        <div id="gameBackground" class="game-background"></div>
+        <div class="game-overlay"></div>
+
+        <div class="game-container">
+            <!-- 상단 UI -->
+            <div class="game-header">
+                <div class="header-left">
+                    <div class="player-info">
+                        <span class="player-name" id="playerNameDisplay">용사</span>
+                        <span class="player-level" id="playerLevelDisplay">Lv.1</span>
+                    </div>
+                    <div class="player-bars">
+                        <div class="bar-container hp-bar-container">
+                            <span class="bar-label">HP</span>
+                            <div class="bar hp-bar">
+                                <div class="bar-fill" id="hpBar" style="width: 100%;"></div>
+                                <span class="bar-text" id="hpText">100/100</span>
+                            </div>
+                        </div>
+                        <div class="bar-container mp-bar-container">
+                            <span class="bar-label">MP</span>
+                            <div class="bar mp-bar">
+                                <div class="bar-fill" id="mpBar" style="width: 100%;"></div>
+                                <span class="bar-text" id="mpText">50/50</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 경험치 & 플레이 시간 (상단 왼쪽으로 이동) -->
+                    <div class="player-exp-time">
+                        <span>📊 EXP: <span id="expDisplay">0</span>/<span id="expRequiredDisplay">100</span></span>
+                        <span>⏱️ <span id="playTimeDisplay">00:00:00</span></span>
+                    </div>
+                </div>
+                <div class="header-center">
+                    <div class="location-info">
+                        <span class="current-map" id="currentMapName">훈련장</span>
+                        <span class="game-time" id="gameTimeDisplay">☀️ Day 1 - 08:00</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="game-menu-buttons">
+                        <button class="game-menu-btn" onclick="showInventory()" title="인벤토리">🎒</button>
+                        <button class="game-menu-btn" onclick="showSaveLoadMenu('save')" title="저장">💾</button>
+                        <button class="game-menu-btn" onclick="showGameRule()" title="도움말">📖</button>
+                        <button class="game-menu-btn" onclick="showSettings()" title="설정">⚙️</button>
+                    </div>
+                    <div class="player-gold">
+                        💰 <span id="goldDisplay">0</span>G
+                    </div>
+                </div>
+            </div>
+
+            <!-- 게임 메인 영역 -->
+            <div class="game-main">
+                <!-- 전투/탐험 컨텐츠 영역 -->
+                <div class="game-content-area">
+                    <!-- 탐험 UI (기본) - 전투 중이 아닐 때 표시 -->
+                    <div id="exploreUI" class="explore-ui">
+                        <div class="explore-info">
+                            <p id="currentMapDesc">초보 모험가들이 훈련하는 곳입니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 전투 UI (전투 시 표시) -->
+                    <div id="battleUI" class="battle-ui hidden">
+                        <div class="battle-arena">
+                            <!-- 몬스터 -->
+                            <div class="monster-section">
+                                <div class="monster-sprite" id="monsterSprite">👹</div>
+                                <div class="monster-info">
+                                    <span class="monster-name" id="monsterName">몬스터</span>
+                                    <div class="bar monster-hp-bar">
+                                        <div class="bar-fill" id="monsterHpBar" style="width: 100%;"></div>
+                                        <span class="bar-text" id="monsterHpText">100/100</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 게임 로그 (중간) -->
+                <div class="game-log-container">
+                    <div class="game-log" id="gameLogBox">
+                        <p>모험을 시작합니다!</p>
+                    </div>
+                </div>
+
+                <!-- 행동 버튼 (하단 - 게임 로그 아래) -->
+                <div class="action-buttons-area">
+                    <!-- 탐험 행동 버튼 -->
+                    <div id="exploreActions" class="explore-actions">
+                        <button class="action-btn" onclick="executeAction('battle')">⚔️ 전투</button>
+                        <button class="action-btn" onclick="executeAction('move')">🚶 이동</button>
+                        <button class="action-btn" onclick="executeAction('rest')">💤 휴식</button>
+                    </div>
+
+                    <!-- 전투 행동 버튼 (전투 시 표시) -->
+                    <div id="battleActions" class="battle-actions hidden">
+                        <button class="battle-action-btn attack" onclick="doBattleAttack()">⚔️ 공격</button>
+                        <button class="battle-action-btn skill" onclick="doBattleSkill()">⚡ 스킬</button>
+                        <button class="battle-action-btn defend" onclick="doBattleDefend()">🛡️ 방어</button>
+                        <button class="battle-action-btn heal" onclick="doBattleHeal()">💚 회복</button>
+                        <button class="battle-action-btn escape" onclick="doBattleEscape()">🏃 도주</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 맵 선택 팝업 -->
+        <div id="mapSelectionContainer" class="map-selection-popup hidden">
+            <!-- 동적으로 생성됨 -->
+        </div>
+    </div>
+
+    <!-- ===== 설정 모달 ===== -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal settings-modal">
+            <div class="modal-header">
+                <h2>⚙️ 설정</h2>
+                <button class="modal-close" onclick="hideSettings()">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="setting-item">
+                    <label>🔊 배경음악</label>
+                    <input type="range" id="bgmVolume" min="0" max="100" value="80">
+                    <span id="bgmVolumeValue">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label>🔉 효과음</label>
+                    <input type="range" id="sfxVolume" min="0" max="100" value="100">
+                    <span id="sfxVolumeValue">100%</span>
+                </div>
+                <div class="setting-item">
+                    <label>💡 화면 밝기</label>
+                    <input type="range" id="brightness" min="50" max="150" value="100">
+                    <span id="brightnessValue">100%</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="hideSettings()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 인벤토리 모달 ===== -->
+    <div id="inventoryModal" class="modal-overlay hidden">
+        <div class="inventory-modal">
+            <!-- 인벤토리 헤더 -->
+            <div class="inv-header">
+                <h2>🎒 인벤토리</h2>
+                <button class="inv-close-btn" onclick="hideInventory()">✕</button>
+            </div>
+
+            <div class="inv-content">
+                <!-- 왼쪽: 캐릭터 정보 -->
+                <div class="inv-left">
+                    <!-- 캐릭터 카드 -->
+                    <div class="character-card">
+                        <div class="char-avatar">🧙‍♂️</div>
+                        <div class="char-name-level">
+                            <span class="char-name" id="invPlayerName">용사</span>
+                            <span class="char-level" id="invPlayerLevel">Lv.1</span>
+                        </div>
+                    </div>
+
+                    <!-- 스탯 정보 -->
+                    <div class="stats-panel">
+                        <h3>📊 스탯</h3>
+                        <div id="characterStats" class="stats-list">
+                            <!-- 동적 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- 장비 슬롯 -->
+                    <div class="equipment-panel">
+                        <h3>⚔️ 장비</h3>
+                        <div class="equipment-grid">
+                            <div class="equip-slot" id="equip-helmet">
+                                <div class="equip-empty"><span class="equip-icon">⛑️</span><span
+                                        class="equip-name">투구</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-armor">
+                                <div class="equip-empty"><span class="equip-icon">🥋</span><span
+                                        class="equip-name">갑옷</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-gloves">
+                                <div class="equip-empty"><span class="equip-icon">🧤</span><span
+                                        class="equip-name">장갑</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-boots">
+                                <div class="equip-empty"><span class="equip-icon">👟</span><span
+                                        class="equip-name">신발</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-weapon">
+                                <div class="equip-empty"><span class="equip-icon">⚔️</span><span
+                                        class="equip-name">무기</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-tool">
+                                <div class="equip-empty"><span class="equip-icon">🔧</span><span
+                                        class="equip-name">도구</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-necklace">
+                                <div class="equip-empty"><span class="equip-icon">📿</span><span
+                                        class="equip-name">목걸이</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-ring1">
+                                <div class="equip-empty"><span class="equip-icon">💍</span><span
+                                        class="equip-name">반지1</span></div>
+                            </div>
+                            <div class="equip-slot" id="equip-ring2">
+                                <div class="equip-empty"><span class="equip-icon">💎</span><span
+                                        class="equip-name">반지2</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 아이템 목록 -->
+                <div class="inv-right">
+                    <!-- 탭 버튼 -->
+                    <div class="inv-tabs">
+                        <button class="inv-tab-btn active" data-tab="all"
+                            onclick="changeInventoryTab('all')">전체</button>
+                        <button class="inv-tab-btn" data-tab="weapon" onclick="changeInventoryTab('weapon')">무기</button>
+                        <button class="inv-tab-btn" data-tab="armor" onclick="changeInventoryTab('armor')">방어구</button>
+                        <button class="inv-tab-btn" data-tab="consumable"
+                            onclick="changeInventoryTab('consumable')">소모품</button>
+                        <button class="inv-tab-btn" data-tab="material"
+                            onclick="changeInventoryTab('material')">재료</button>
+                    </div>
+
+                    <!-- 아이템 그리드 -->
+                    <div id="inventoryGrid" class="inventory-grid">
+                        <!-- 동적 생성 -->
+                    </div>
+
+                    <!-- 인벤토리 하단 -->
+                    <div class="inv-footer">
+                        <span class="inv-count">아이템: <span id="invItemCount">0</span>/20</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 아이템 툴팁 -->
+        <div id="itemTooltip" class="item-tooltip hidden"></div>
+    </div>
+
+    <!-- 난이도 선택 UI -->
+    <div id="difficultyOverlay" class="difficulty-overlay" style="display: none;">
+        <div class="difficulty-panel">
+            <h2>🎮 난이도 선택</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn easy" onclick="selectDifficulty('easy')">
+                    <span class="diff-title">🌱 쉬움 (Easy)</span>
+                    <span class="diff-desc">몬스터가 약해집니다. (체력 80%)</span>
+                </button>
+                <button class="difficulty-btn normal" onclick="selectDifficulty('normal')">
+                    <span class="diff-title">⚔️ 보통 (Normal)</span>
+                    <span class="diff-desc">표준 난이도입니다. (체력 100%)</span>
+                </button>
+                <button class="difficulty-btn hard" onclick="selectDifficulty('hard')">
+                    <span class="diff-title">🔥 어려움 (Hard)</span>
+                    <span class="diff-desc">몬스터가 강해집니다. (체력 150%)</span>
+                </button>
+                <button class="difficulty-btn hell" onclick="selectDifficulty('hell')">
+                    <span class="diff-title">☠️ 지옥 (Hell)</span>
+                    <span class="diff-desc">극한의 도전입니다. (체력 230%)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 로드 (순서 중요!) -->
+    <!-- 1. 게임 데이터 -->
+    <script src="js/gameData.js"></script>
+    <!-- 2. 시스템 -->
+    <script src="js/timeSystem.js"></script>
+    <script src="js/mapSystem.js"></script>
+    <script src="js/battleSystem.js"></script>
+    <script src="js/inventorySystem.js"></script>
+    <script src="js/shopSystem.js"></script>
+    <script src="js/hungerSystem.js"></script>
+    <!-- 3. 기존 파일들 -->
+    <script src="saveload.js"></script>
+    <script src="gamerule.js"></script>
+    <script src="character.js"></script>
+    <script src="monster.js"></script>
+    <!-- 4. 메인 -->
+    <script src="main.js"></script>
+</body>
+
+</html>

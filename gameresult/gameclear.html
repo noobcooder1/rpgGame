@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Clear - Victory!</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0a20 0%, #1a1a40 50%, #0a0a20 100%);
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ===== 인트로 장면 ===== */
+        .intro-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeOutIntro 1s ease-out 3s forwards;
+        }
+
+        .intro-text {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            color: #ffd700;
+            text-align: center;
+            animation: typeWriter 2s steps(20) forwards;
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid #ffd700;
+        }
+
+        @keyframes typeWriter {
+            0% {
+                width: 0;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        @keyframes fadeOutIntro {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+
+        /* ===== 배경 별 효과 ===== */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+            box-shadow: 0 0 10px #fff, 0 0 20px #ffd700;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.5);
+            }
+        }
+
+        /* ===== 콘페티 효과 ===== */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confettiFall 5s linear infinite;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* ===== 빛 방사 효과 ===== */
+        .light-rays {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            transform: translate(-50%, -50%);
+            background: conic-gradient(from 0deg,
+                    transparent 0deg,
+                    rgba(255, 215, 0, 0.1) 10deg,
+                    transparent 20deg,
+                    transparent 30deg,
+                    rgba(255, 215, 0, 0.1) 40deg,
+                    transparent 50deg);
+            animation: rotateRays 20s linear infinite;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        @keyframes rotateRays {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        /* ===== 메인 컨텐트 컨테이너 ===== */
+        .main-content {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 2s ease-out 3s backwards;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== 승리 트로피 ===== */
+        .trophy-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .trophy {
+            font-size: 100px;
+            animation: trophyBounce 2s ease-in-out infinite, trophyGlow 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+        }
+
+        @keyframes trophyBounce {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(-5deg);
+            }
+
+            25% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+
+            50% {
+                transform: translateY(0) rotate(-5deg);
+            }
+
+            75% {
+                transform: translateY(-10px) rotate(3deg);
+            }
+        }
+
+        @keyframes trophyGlow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 60px rgba(255, 215, 0, 1));
+            }
+        }
+
+        /* 빛나는 반짝임 효과 */
+        .sparkle {
+            position: absolute;
+            font-size: 24px;
+            animation: sparkleAnim 1.5s ease-in-out infinite;
+        }
+
+        .sparkle:nth-child(1) {
+            top: -20px;
+            left: 50%;
+            animation-delay: 0s;
+        }
+
+        .sparkle:nth-child(2) {
+            top: 30%;
+            right: -30px;
+            animation-delay: 0.3s;
+        }
+
+        .sparkle:nth-child(3) {
+            bottom: 0;
+            left: -20px;
+            animation-delay: 0.6s;
+        }
+
+        .sparkle:nth-child(4) {
+            top: 20%;
+            left: -30px;
+            animation-delay: 0.9s;
+        }
+
+        .sparkle:nth-child(5) {
+            bottom: -10px;
+            right: -20px;
+            animation-delay: 1.2s;
+        }
+
+        @keyframes sparkleAnim {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* ===== VICTORY 텍스트 ===== */
+        .victory-text {
+            font-family: 'Cinzel', serif;
+            font-size: 80px;
+            font-weight: 900;
+            background: linear-gradient(180deg, #ffd700 0%, #ffec8b 30%, #ffd700 50%, #daa520 70%, #b8860b 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.5),
+                0 0 20px rgba(255, 215, 0, 0.3),
+                0 0 40px rgba(255, 215, 0, 0.2);
+            letter-spacing: 20px;
+            margin-bottom: 10px;
+            animation: victoryPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes victoryPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+                filter: brightness(1.3);
+            }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #87ceeb;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            animation: subtitleGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes subtitleGlow {
+
+            0%,
+            100% {
+                text-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
+            }
+
+            50% {
+                text-shadow: 0 0 30px rgba(135, 206, 235, 1);
+            }
+        }
+
+        /* ===== 통계 박스 ===== */
+        .stats-box {
+            background: rgba(10, 10, 50, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 15px;
+            padding: 30px 50px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 40px rgba(255, 215, 0, 0.2),
+                inset 0 0 40px rgba(255, 215, 0, 0.05);
+            animation: statsAppear 1s ease-out 4s backwards;
+        }
+
+        @keyframes statsAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stats-title {
+            color: #ffd700;
+            font-size: 18px;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px 50px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 215, 0, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #87ceeb;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* ===== 등급/랭크 ===== */
+        .rank-container {
+            margin-bottom: 30px;
+            animation: rankAppear 1s ease-out 4.5s backwards;
+        }
+
+        @keyframes rankAppear {
+            0% {
+                opacity: 0;
+                transform: rotateY(90deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: rotateY(0deg);
+            }
+        }
+
+        .rank {
+            font-size: 64px;
+            font-weight: 900;
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, #ffd700, #ff6347, #ffd700);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            animation: rankPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes rankPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .rank-label {
+            font-size: 14px;
+            color: #87ceeb;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        /* ===== 버튼 그룹 ===== */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+            animation: buttonsAppear 1s ease-out 5s backwards;
+        }
+
+        @keyframes buttonsAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn {
+            position: relative;
+            padding: 18px 45px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-continue {
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+            color: #1a1a40;
+            box-shadow:
+                0 4px 20px rgba(255, 215, 0, 0.5),
+                0 0 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-continue:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow:
+                0 8px 30px rgba(255, 215, 0, 0.7),
+                0 0 60px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn-menu {
+            background: transparent;
+            color: #87ceeb;
+            border: 2px solid rgba(135, 206, 235, 0.5);
+        }
+
+        .btn-menu:hover {
+            background: rgba(135, 206, 235, 0.1);
+            border-color: #87ceeb;
+            color: #fff;
+            transform: translateY(-5px);
+        }
+
+        /* ===== 엔딩 크레딧 버튼 ===== */
+        .credits-trigger {
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.3s;
+            animation: creditsAppear 1s ease-out 5.5s backwards;
+        }
+
+        .credits-trigger:hover {
+            color: #ffd700;
+        }
+
+        @keyframes creditsAppear {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* ===== 엔딩 크레딧 화면 ===== */
+        .credits-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #000 0%, #0a0a20 50%, #000 100%);
+            z-index: 2000;
+            display: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .credits-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .credits-container {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            animation: creditsScroll 30s linear forwards;
+            padding: 100vh 0;
+        }
+
+        @keyframes creditsScroll {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-100%);
+            }
+        }
+
+        .credits-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 50px;
+        }
+
+        .credits-title {
+            font-family: 'Cinzel', serif;
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 60px;
+            letter-spacing: 10px;
+        }
+
+        .credits-section {
+            margin-bottom: 80px;
+        }
+
+        .credits-section h2 {
+            font-size: 18px;
+            color: #87ceeb;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .credits-section p {
+            font-size: 24px;
+            color: #ffffff;
+            line-height: 2;
+        }
+
+        .credits-thanks {
+            font-size: 36px;
+            color: #ffd700;
+            margin-top: 100px;
+            animation: thanksPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes thanksPulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .credits-close {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2001;
+            transition: color 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .credits-close:hover {
+            color: #ffd700;
+        }
+
+        /* ===== 반응형 ===== */
+        @media (max-width: 768px) {
+            .victory-text {
+                font-size: 48px;
+                letter-spacing: 10px;
+            }
+
+            .trophy {
+                font-size: 70px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 220px;
+            }
+
+            .intro-text {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 인트로 장면 -->
+    <div class="intro-scene">
+        <div class="intro-text">어둠을 물리치고 평화가 찾아왔습니다...</div>
+    </div>
+
+    <!-- 배경 별 -->
+    <div class="stars" id="stars"></div>
+
+    <!-- 빛 방사 효과 -->
+    <div class="light-rays"></div>
+
+    <!-- 콘페티 -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <!-- 메인 컨텐트 -->
+    <div class="main-content">
+        <!-- 트로피 -->
+        <div class="trophy-container">
+            <span class="sparkle">✨</span>
+            <span class="sparkle">✨</span>
+            <span class="sparkle">✨</span>
+            <span class="sparkle">✨</span>
+            <span class="sparkle">✨</span>
+            <div class="trophy">🏆</div>
+        </div>
+
+        <!-- VICTORY 텍스트 -->
+        <h1 class="victory-text">VICTORY</h1>
+        <p class="subtitle">축하합니다! 모험을 완료했습니다!</p>
+
+        <!-- 통계 -->
+        <div class="stats-box">
+            <div class="stats-title">🎖️ 최종 전적</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalTime">12:34</span>
+                    <span class="stat-label">총 플레이 시간</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="enemiesDefeated">127</span>
+                    <span class="stat-label">처치한 적</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalScore">98,500</span>
+                    <span class="stat-label">획득 점수</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="goldCollected">5,420</span>
+                    <span class="stat-label">획득 골드</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 등급 -->
+        <div class="rank-container">
+            <span class="rank-label">최종 등급</span>
+            <div class="rank">S</div>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="button-group">
+            <button class="btn btn-continue" onclick="continueGame()">
+                🎮 다음 챕터
+            </button>
+            <button class="btn btn-menu" onclick="goToMenu()">
+                🏠 메인 메뉴
+            </button>
+        </div>
+
+        <!-- 크레딧 트리거 -->
+        <div class="credits-trigger" onclick="showCredits()">
+            ▶ 엔딩 크레딧 보기
+        </div>
+    </div>
+
+    <!-- 엔딩 크레딧 오버레이 -->
+    <div class="credits-overlay" id="creditsOverlay">
+        <div class="credits-close" onclick="hideCredits()">✕ 닫기 (ESC)</div>
+        <div class="credits-container" id="creditsContainer">
+            <div class="credits-content">
+                <h1 class="credits-title">THE END</h1>
+
+                <div class="credits-section">
+                    <h2>🎮 Game Design</h2>
+                    <p>게임 기획팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>💻 Programming</h2>
+                    <p>개발팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>🎨 Art & Design</h2>
+                    <p>아트팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>🎵 Music & Sound</h2>
+                    <p>사운드팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>📝 Story</h2>
+                    <p>시나리오팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>🧪 Quality Assurance</h2>
+                    <p>QA팀</p>
+                </div>
+
+                <div class="credits-section">
+                    <h2>🌟 Special Thanks</h2>
+                    <p>당신, 플레이어</p>
+                    <p>그리고 모든 서포터 여러분</p>
+                </div>
+
+                <div class="credits-thanks">
+                    플레이 해주셔서 감사합니다! 🙏
+                </div>
+
+                <div class="credits-section" style="margin-top: 100px;">
+                    <p style="font-size: 16px; color: #666;">
+                        © 2026 RPG Adventure
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 별 생성
+        function createStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.width = (2 + Math.random() * 3) + 'px';
+                star.style.height = star.style.width;
+                container.appendChild(star);
+            }
+        }
+
+        // 콘페티 생성
+        function createConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#ffd700', '#ff6347', '#87ceeb', '#98fb98', '#dda0dd', '#f0e68c'];
+
+            for (let i = 0; i < 80; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = -20 + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 5 + 's';
+                confetti.style.animationDuration = (4 + Math.random() * 3) + 's';
+
+                // 랜덤 모양
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                } else {
+                    confetti.style.transform = 'rotate(45deg)';
+                }
+
+                container.appendChild(confetti);
+            }
+        }
+
+        // 크레딧 표시
+        function showCredits() {
+            const overlay = document.getElementById('creditsOverlay');
+            const container = document.getElementById('creditsContainer');
+            overlay.classList.add('active');
+            container.style.animation = 'none';
+            container.offsetHeight; // reflow
+            container.style.animation = 'creditsScroll 30s linear forwards';
+        }
+
+        // 크레딧 숨기기
+        function hideCredits() {
+            const overlay = document.getElementById('creditsOverlay');
+            overlay.classList.remove('active');
+        }
+
+        // ESC 키로 크레딧 닫기
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideCredits();
+            }
+        });
+
+        // 다음 챕터
+        function continueGame() {
+            alert('다음 챕터가 시작됩니다!');
+            // window.location.href = '../rpg.html';
+        }
+
+        // 메인 메뉴
+        function goToMenu() {
+            alert('메인 메뉴로 이동합니다!');
+            // window.location.href = '../index.html';
+        }
+
+        // 초기화
+        window.onload = function () {
+            createStars();
+            createConfetti();
+        };
+    </script>
+</body>
+
+</html>
