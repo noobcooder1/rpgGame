@@ -3480,6 +3480,15 @@ body {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+.monster-card .monster-sprite .monster-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
 .monster-card .monster-info {
     width: 100%;
     text-align: center;

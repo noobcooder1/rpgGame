@@ -948,41 +948,32 @@ function doMonsterTurn() {
         
         const monster = aliveMonsters[attackIndex];
         
-        // 혼란 상태 체크 - 공격 전에 확인, 지속시간 감소는 공격 후
-        const isConfused = checkMonsterConfusion(monster);
-        
-        if (isConfused) {
-            // 혼란 상태면 공격 대신 자해 또는 혼란 행동
-            const selfDamage = Math.floor(monster.maxHp * 0.05);
-            monster.hp = Math.max(1, monster.hp - selfDamage);
-            addGameLog(`😵 ${monster.name}은(는) 혼란스러워 자신을 공격했다! (${selfDamage} 데미지)`);
+        // 회피 체크
+        const evasionRoll = Math.random() * 100;
+        if (evasionRoll < (player.evasion || 0)) {
+            addGameLog(`💫 ${player.name}이(가) ${monster.name}의 공격을 회피했다!`);
         } else {
-            // 회피 체크
-            const evasionRoll = Math.random() * 100;
-            if (evasionRoll < (player.evasion || 0)) {
-                addGameLog(`💫 ${player.name}이(가) ${monster.name}의 공격을 회피했다!`);
-            } else {
-                // 몬스터 공격 (피해 타입 적용)
-                const damageType = monster.damageType || 'physical';
-                let damage = calculateMonsterDamage(monster, player, damageType);
+            // 몬스터 공격 (피해 타입 적용)
+            // 혼란 상태면 calculateMonsterDamage에서 데미지 배수가 감소됨
+            const damageType = monster.damageType || 'physical';
+            let damage = calculateMonsterDamage(monster, player, damageType);
 
-                // 방어 중이면 데미지 감소
-                if (battleState.isDefending) {
-                    const defenseMultiplier = 2.5 + Math.random();
-                    const baseDef = damageType === 'magical' ?
-                        (player.mDef || 0) + (player.bonusMDef || 0) :
-                        (player.pDef || 0) + (player.bonusPDef || 0);
-                    const additionalDef = Math.floor(baseDef * defenseMultiplier);
-                    damage = Math.max(1, damage - additionalDef);
-                    
-                    if (attackIndex === 0) {
-                        addGameLog(`🛡️ 방어로 피해 감소!`);
-                    }
+            // 방어 중이면 데미지 감소
+            if (battleState.isDefending) {
+                const defenseMultiplier = 2.5 + Math.random();
+                const baseDef = damageType === 'magical' ?
+                    (player.mDef || 0) + (player.bonusMDef || 0) :
+                    (player.pDef || 0) + (player.bonusPDef || 0);
+                const additionalDef = Math.floor(baseDef * defenseMultiplier);
+                damage = Math.max(1, damage - additionalDef);
+                
+                if (attackIndex === 0) {
+                    addGameLog(`🛡️ 방어로 피해 감소!`);
                 }
-
-                player.hp -= damage;
-                addGameLog(`👹 ${monster.name}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
             }
+
+            player.hp -= damage;
+            addGameLog(`👹 ${monster.name}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
         }
         
         // 공격 후 상태이상 피해 및 지속시간 처리 (출혈, 화상 등)
@@ -1132,8 +1123,19 @@ function calculateMonsterDamage(monster, target, damageType = 'physical') {
         (target.mDef || 0) + (target.bonusMDef || 0) :
         (target.pDef || 0) + (target.bonusPDef || 0);
 
-    // 배수 0.6~2.0
-    let multiplier = 0.6 + Math.random() * 1.4;
+    // 혼란 상태 체크 - 피해 배수 감소
+    const isConfused = checkMonsterConfusion(monster);
+    
+    let multiplier;
+    if (isConfused) {
+        // 혼란 상태: 0.5~1.5배 (기본 0.6~2.0에서 최솟값 -0.1, 최댓값 -0.5)
+        multiplier = 0.5 + Math.random() * 1.0;
+        addGameLog(`😵 ${monster.name}은(는) 혼란으로 공격력이 감소!`);
+    } else {
+        // 정상 상태: 0.6~2.0배
+        multiplier = 0.6 + Math.random() * 1.4;
+    }
+    
     let damage = Math.round(monsterAtk * multiplier);
 
     // 방어력 적용
@@ -1375,7 +1377,7 @@ function updateBattleUI() {
         const hpPercent = Math.max(0, (monster.hp / monster.maxHp) * 100);
         
         monsterCard.innerHTML = `
-            <div class="monster-sprite">${monster.emoji || '👹'}</div>
+            <div class="monster-sprite">${monster.image ? `<img src="${monster.image}" alt="${monster.name}" class="monster-image">` : (monster.emoji || '👹')}</div>
             <div class="monster-info">
                 <span class="monster-name">${monster.name}${isDead ? ' ☠️' : ''}</span>
                 <div class="bar monster-hp-bar">

@@ -1416,10 +1416,10 @@ const JOBS = {
         mainStat: 'str',
         damageType: 'physical',
         baseStats: {
-            hp: 50, mp: 20,
-            pAtk: 8, mAtk: 2,
-            pDef: 5, mDef: 2,
-            str: 12, vit: 10, int: 3, agi: 4
+            hp: 65, mp: 35,
+            pAtk: 9, mAtk: 2,
+            pDef: 6, mDef: 3,
+            str: 13, vit: 10, int: 3, agi: 4
         },
         startingEquipment: ['old_longsword', 'old_heavy_leather_armor'],
         startingSkill: 'smash',
@@ -1432,10 +1432,10 @@ const JOBS = {
         mainStat: 'agi',
         damageType: 'physical',
         baseStats: {
-            hp: 35, mp: 35,
+            hp: 45, mp: 45,
             pAtk: 10, mAtk: 3,
-            pDef: 3, mDef: 3,
-            str: 7, vit: 5, int: 4, agi: 14
+            pDef: 4, mDef: 3,
+            str: 8, vit: 5, int: 4, agi: 15
         },
         startingEquipment: ['crude_bow', 'old_hunting_clothes'],
         startingSkill: 'multishot',
@@ -1448,10 +1448,10 @@ const JOBS = {
         mainStat: 'int',
         damageType: 'magical',
         baseStats: {
-            hp: 30, mp: 50,
-            pAtk: 3, mAtk: 10,
-            pDef: 2, mDef: 4,
-            str: 3, vit: 4, int: 14, agi: 6
+            hp: 40, mp: 55,
+            pAtk: 3, mAtk: 11,
+            pDef: 3, mDef: 4,
+            str: 3, vit: 4, int: 15, agi: 6
         },
         startingEquipment: ['crude_staff', 'old_robe'],
         startingSkill: 'fireball',
@@ -1459,16 +1459,16 @@ const JOBS = {
     },
     skirmisher: {
         id: 'skirmisher',
-        name: '스커미셔',
+        name: '도적',
         description: '근력과 민첩을 균형있게 사용하는 올라운더입니다. 연속 공격이 특기입니다.',
         mainStat: 'str',
         subStat: 'agi',
         damageType: 'physical',
         baseStats: {
-            hp: 40, mp: 30,
+            hp: 52, mp: 37,
             pAtk: 9, mAtk: 2,
-            pDef: 4, mDef: 3,
-            str: 10, vit: 6, int: 3, agi: 11
+            pDef: 5, mDef: 4,
+            str: 10, vit: 6, int: 3, agi: 13
         },
         startingEquipment: ['old_sword', 'old_leather_armor'],
         startingSkill: 'slash_combo',
@@ -1493,8 +1493,8 @@ const STATS_CONFIG = {
         pDefPerVit: 0.5,       // 체력 2당 물리방어력 +1
         mDefPerInt: 1 / 6,       // 지능 6당 마법방어력 +1
         mDefPerVit: 0.5,       // 체력 2당 마법방어력 +1
-        efficiencyPerAgi: 1 / 8, // 민첩 8당 효율 +1%
-        evasionPerAgi: 1 / 7,    // 민첩 7당 회피율 +1%
+        efficiencyPerAgi: 1 / 7, // 민첩 7당 효율 +1%
+        evasionPerAgi: 1 / 6,    // 민첩 6당 회피율 +1%
         healEffPerVit: 1 / 3     // 체력 3당 회복효율 +1%
     },
     // 자연 회복 (턴당)
@@ -1577,7 +1577,7 @@ const SKILLS = {
         },
         icon: '🔥'
     },
-    // === 스커미셔 스킬 ===
+    // === 도적 스킬 ===
     slash_combo: {
         id: 'slash_combo',
         name: '연속베기',
@@ -1663,7 +1663,8 @@ const MONSTERS = {
         hp: 25, atk: 4, def: 1,
         exp: 8, gold: 3,
         drops: [{ item: 'old_straw', chance: 0.5 }],
-        emoji: '🥸'
+        emoji: '🥸',
+        image: 'assets/monsters/old_scarecrow.jpg'
     },
     scarecrow: {
         id: 'scarecrow',
@@ -1673,7 +1674,8 @@ const MONSTERS = {
         hp: 50, atk: 8, def: 3,
         exp: 15, gold: 8,
         drops: [{ item: 'straw', chance: 0.4 }, { item: 'cloth', chance: 0.2 }],
-        emoji: '🧿'
+        emoji: '🧿',
+        image: 'assets/monsters/scarecrow.jpg'
     },
     strong_scarecrow: {
         id: 'strong_scarecrow',
@@ -1683,7 +1685,8 @@ const MONSTERS = {
         hp: 80, atk: 12, def: 5,
         exp: 25, gold: 12,
         drops: [{ item: 'straw', chance: 0.5 }, { item: 'wood', chance: 0.3 }],
-        emoji: '🎃'
+        emoji: '🎃',
+        image: 'assets/monsters/strong_scarecrow.jpg'
     },
     giant_scarecrow: {
         id: 'giant_scarecrow',
@@ -1693,7 +1696,8 @@ const MONSTERS = {
         hp: 120, atk: 18, def: 8,
         exp: 40, gold: 20,
         drops: [{ item: 'straw', chance: 0.6 }, { item: 'wood', chance: 0.4 }],
-        emoji: '👹'
+        emoji: '👹',
+        image: 'assets/monsters/giant_scarecrow.jpg'
     },
     training_robot: {
         id: 'training_robot',
@@ -1703,7 +1707,8 @@ const MONSTERS = {
         hp: 100, atk: 15, def: 10,
         exp: 35, gold: 25,
         drops: [{ item: 'scrap_metal', chance: 0.4 }],
-        emoji: '🤖'
+        emoji: '🤖',
+        image: 'assets/monsters/training_robot.jpg'
     },
     training_golem: {
         id: 'training_golem',

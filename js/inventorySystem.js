@@ -114,7 +114,7 @@ const ITEMS_DATABASE = {
         icon: '🧥',
         sellPrice: 10
     },
-    // 스커미셔
+    // 도적
     old_sword: {
         id: 'old_sword',
         name: '낡은 검',
