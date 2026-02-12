@@ -621,6 +621,12 @@ function startSpar(npcId) {
         return;
     }
 
+    // 이미 보상을 수령한 경우 대련 불가
+    if (player.sparRewardsReceived && player.sparRewardsReceived[sparMonster.id]) {
+        addGameLog(`⚔️ ${npc.name}: "이미 한번 승부를 겨뤘지 않은가. 더 이상의 대련은 불필요하네."`);
+        return;
+    }
+
     // NPC 대화 모달 닫기
     const modal = document.querySelector('.npc-modal-overlay');
     if (modal) modal.remove();

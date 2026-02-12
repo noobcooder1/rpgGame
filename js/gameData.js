@@ -376,7 +376,7 @@ const MAPS = {
                 // 4갈래 랜덤 연결 시스템
                 isRandomCrossroads: true,
                 randomPaths: ['underground_lake', 'abandoned_mine', 'ancient_remnants', 'ominous_space'],
-                connections: ['path_1', 'path_2', 'path_3', 'path_4']
+                connections: ['first_passage', 'path_1', 'path_2', 'path_3', 'path_4']
             },
 
             // 4. 지하 호수 (갈림길에서 랜덤 연결)
@@ -3072,6 +3072,7 @@ const MONSTERS = {
         exp: 0, gold: 0,
         drops: [],
         emoji: '🏹',
+        image: 'assets/monsters/spar_instructor2.jpg',
         isSpar: true,
         sparClass: 'archer',
         trait: 'hawks_eye',
@@ -3103,6 +3104,7 @@ const MONSTERS = {
         exp: 0, gold: 0,
         drops: [],
         emoji: '🔮',
+        image: 'assets/monsters/spar_instructor3.jpg',
         isSpar: true,
         sparClass: 'mage',
         trait: 'meditation',
@@ -3135,6 +3137,7 @@ const MONSTERS = {
         exp: 0, gold: 0,
         drops: [],
         emoji: '🗡️',
+        image: 'assets/monsters/spar_instructor4.jpg',
         isSpar: true,
         sparClass: 'skirmisher',
         trait: 'swift',
@@ -3166,6 +3169,8 @@ const MONSTERS = {
         exp: 0, gold: 0,
         drops: [],
         emoji: '⚔️',
+        image: 'assets/monsters/spar_senior_instructor.jpg',
+        phase2Image: 'assets/monsters/spar_senior_instructor_phase2.jpg',
         isSpar: true,
         sparClass: 'warrior',
         trait: 'unyielding',
@@ -3176,8 +3181,14 @@ const MONSTERS = {
             defend: 10,
             mpRegenPercent: 3
         },
+        phase2Config: {
+            hpThreshold: 0.3,
+            pAtkBonus: 10,
+            activateSkill: 'will_sword'
+        },
         dialogues: {
             start: '자네 강하구만, 이제부터 진심으로 상대해주지.',
+            phase2: '이런 느낌으로... 투지의 검!',
             lowHp: '이런 느낌으로... 투지의 검!',
             victory: '아직 나를 이기기엔 역부족이군.',
             defeat: '놀랍군... 네가 이겼다.'

@@ -70,7 +70,9 @@ function collectSaveData() {
             currentMap: typeof currentMapId !== 'undefined' ? currentMapId : null,
             currentLocation: typeof currentLocationId !== 'undefined' ? currentLocationId : null,
             explorationProgress: typeof explorationProgress !== 'undefined' ? JSON.parse(JSON.stringify(explorationProgress)) : {},
-            unlockedLocations: typeof unlockedLocations !== 'undefined' ? JSON.parse(JSON.stringify(unlockedLocations)) : {}
+            unlockedLocations: typeof unlockedLocations !== 'undefined' ? JSON.parse(JSON.stringify(unlockedLocations)) : {},
+            currentRandomPaths: typeof currentRandomPaths !== 'undefined' ? JSON.parse(JSON.stringify(currentRandomPaths)) : {},
+            mineTunnelDestinations: typeof mineTunnelDestinations !== 'undefined' ? JSON.parse(JSON.stringify(mineTunnelDestinations)) : {}
         },
 
         // 시간 시스템 상태
@@ -258,6 +260,26 @@ function applySaveData(saveData) {
         }
         if (saveData.mapState.unlockedLocations && typeof unlockedLocations !== 'undefined') {
             unlockedLocations = JSON.parse(JSON.stringify(saveData.mapState.unlockedLocations));
+        }
+        // 갈림길 랜덤 경로 복원
+        if (saveData.mapState.currentRandomPaths && typeof currentRandomPaths !== 'undefined') {
+            currentRandomPaths = JSON.parse(JSON.stringify(saveData.mapState.currentRandomPaths));
+        }
+        // 광산 통로 목적지 복원
+        if (saveData.mapState.mineTunnelDestinations && typeof mineTunnelDestinations !== 'undefined') {
+            mineTunnelDestinations = JSON.parse(JSON.stringify(saveData.mapState.mineTunnelDestinations));
+        }
+        // 갈림길에서 로드한 경우 랜덤 경로가 없으면 재설정
+        if (saveData.mapState.currentLocation) {
+            const loadedMap = typeof MAPS !== 'undefined' ? MAPS[saveData.mapState.currentMap] : null;
+            if (loadedMap && loadedMap.locations) {
+                const loadedLoc = loadedMap.locations[saveData.mapState.currentLocation];
+                if (loadedLoc && loadedLoc.isRandomCrossroads && (!currentRandomPaths || Object.keys(currentRandomPaths).length === 0)) {
+                    if (typeof setupRandomCrossroads === 'function') {
+                        setupRandomCrossroads();
+                    }
+                }
+            }
         }
     }
 

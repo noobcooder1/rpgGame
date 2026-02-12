@@ -209,6 +209,52 @@ const ITEMS_DATABASE = {
         icon: '🦷',
         sellPrice: 8,
         stackable: true
+    },
+
+    // ========== 강철 무기 (대련 보상) ==========
+    steel_longsword: {
+        id: 'steel_longsword',
+        name: '강철 대검',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { pAtk: 15, str: 2 },
+        description: '강철로 단조된 전사용 대검입니다. 묵직하고 강력합니다.',
+        icon: '⚔️',
+        sellPrice: 300,
+        job: 'warrior'
+    },
+    steel_bow: {
+        id: 'steel_bow',
+        name: '강철 활',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { pAtk: 15, agi: 2 },
+        description: '강철로 보강된 궁수용 활입니다. 강한 인장력을 가집니다.',
+        icon: '🏹',
+        sellPrice: 300,
+        job: 'archer'
+    },
+    steel_staff: {
+        id: 'steel_staff',
+        name: '강철 지팡이',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { mAtk: 15, int: 2 },
+        description: '강철 장식이 달린 마법사용 지팡이입니다. 마력 전도율이 높습니다.',
+        icon: '🪄',
+        sellPrice: 300,
+        job: 'mage'
+    },
+    steel_dagger: {
+        id: 'steel_dagger',
+        name: '강철 단검',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { pAtk: 15, agi: 2 },
+        description: '강철로 만든 도적용 단검입니다. 날카롭고 빠릅니다.',
+        icon: '🗡️',
+        sellPrice: 300,
+        job: 'skirmisher'
     }
 };
 

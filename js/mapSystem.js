@@ -270,10 +270,15 @@ function moveToLocation(locationId) {
 
     const currentLoc = getCurrentLocation();
 
-    // 랜덤 갈림길에서 이동하는 경우 path_# 연결 확인
-    if (currentLoc && currentLoc.isRandomCrossroads && locationId.startsWith('path_')) {
-        // 랜덤 경로는 path_1~4 중 하나로 연결됨
-        if (!currentLoc.connections.includes(locationId)) {
+    // 랜덤 갈림길에서 이동하는 경우
+    if (currentLoc && currentLoc.isRandomCrossroads) {
+        // path_# 또는 first_passage(뒤로가기)만 허용
+        if (locationId.startsWith('path_')) {
+            if (!currentLoc.connections.includes(locationId)) {
+                addGameLog(`🚫 해당 경로로는 갈 수 없습니다.`);
+                return false;
+            }
+        } else if (!currentLoc.connections.includes(locationId)) {
             addGameLog(`🚫 해당 경로로는 갈 수 없습니다.`);
             return false;
         }
@@ -721,24 +726,20 @@ function showMapSelection() {
         // 랜덤 갈림길인 경우 특별 처리
         if (currentLoc.isRandomCrossroads) {
             // 뒤로가기 (첫 번째 통로)
-            currentLoc.connections.forEach(locId => {
-                if (locId === 'first_passage') {
-                    const loc = map.locations[locId];
-                    if (loc) {
-                        const btn = document.createElement('button');
-                        btn.className = 'map-btn';
-                        btn.innerHTML = `
-                            <span class="map-icon">🔙</span>
-                            <span class="map-name">${loc.name}</span>
-                        `;
-                        btn.onclick = () => {
-                            moveToLocation(locId);
-                            hideMapSelection();
-                        };
-                        locSection.appendChild(btn);
-                    }
-                }
-            });
+            const backLoc = map.locations['first_passage'];
+            if (backLoc) {
+                const backBtn = document.createElement('button');
+                backBtn.className = 'map-btn';
+                backBtn.innerHTML = `
+                    <span class="map-icon">🔙</span>
+                    <span class="map-name">${backLoc.name}(으)로 돌아가기</span>
+                `;
+                backBtn.onclick = () => {
+                    moveToLocation('first_passage');
+                    hideMapSelection();
+                };
+                locSection.appendChild(backBtn);
+            }
 
             // 랜덤 4갈래 길 표시
             const pathNames = ['첫 번째 길', '두 번째 길', '세 번째 길', '네 번째 길'];

@@ -321,7 +321,74 @@ function endBattle(result) {
 
     switch (result) {
         case 'victory':
-            // 모든 몬스터 보상 합산
+            // 대련 승리 처리
+            if (battleState.isSpar) {
+                const sparMonsterData = monster;
+                const sparNpc = battleState.sparNpc;
+                const sparMonsterId = sparMonsterData ? sparMonsterData.id : null;
+                
+                // 이미 보상을 받았는지 확인
+                if (!player.sparRewardsReceived) player.sparRewardsReceived = {};
+                const alreadyRewarded = player.sparRewardsReceived[sparMonsterId];
+                
+                let sparRewards;
+                if (alreadyRewarded) {
+                    // 이미 보상을 받은 경우 → 보상 없음
+                    sparRewards = { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
+                    addGameLog(`⚔️ 대련 승리! (이미 보상을 수령했습니다)`);
+                } else {
+                    // 대련 보상 계산 (직업 기반)
+                    sparRewards = getSparRewards(sparMonsterData);
+                    gold += sparRewards.gold;
+                    player.exp = (player.exp || 0) + sparRewards.exp;
+                    
+                    addGameLog(`🎉 대련 승리! ${sparRewards.exp} EXP, ${sparRewards.gold} Gold 획득!`);
+                    
+                    // 스킬북 보상 적용
+                    if (sparRewards.skillBook) {
+                        sparRewards.skillResult = applySkillBookReward(sparRewards.skillBook);
+                    }
+                    
+                    // 무기 보상 적용
+                    if (sparRewards.weapon) {
+                        const weaponData = typeof ITEMS_DATABASE !== 'undefined' ? ITEMS_DATABASE[sparRewards.weapon] : null;
+                        if (weaponData) {
+                            addItemToInventory(sparRewards.weapon);
+                            sparRewards.weaponName = weaponData.name;
+                        }
+                    }
+                    
+                    // 보상 수령 기록
+                    player.sparRewardsReceived[sparMonsterId] = true;
+                    
+                    checkLevelUp();
+                }
+                
+                // HP/MP 회복 (대련이므로 30% 회복)
+                player.hp = Math.max(player.hp, Math.floor(player.maxHp * 0.3));
+                player.mp = Math.max(player.mp, Math.floor(player.maxMp * 0.3));
+                
+                // 대련 결과 대화 오버레이 표시
+                const victoryDialogue = (sparMonsterData && sparMonsterData.dialogues && sparMonsterData.dialogues.defeat) 
+                    || '대단하군... 네가 이겼다.';
+                const sparName = sparMonsterData ? sparMonsterData.name : (sparNpc ? sparNpc.name : '교관');
+                const sparImage = sparMonsterData ? sparMonsterData.image : null;
+                const sparEmoji = sparMonsterData ? sparMonsterData.emoji : (sparNpc ? sparNpc.emoji : '⚔️');
+                
+                // 전투 상태 초기화
+                battleState = {
+                    inBattle: false, turn: 'player', currentMonster: null,
+                    monsters: [], currentMonsterIndex: 0, isDefending: false,
+                    canEscape: true, turnCount: 0, isSpar: false, sparNpc: null, sparBackground: null
+                };
+                hideBattleUI();
+                
+                showSparResultOverlay('victory', sparName, sparImage, victoryDialogue, alreadyRewarded ? null : sparRewards, sparEmoji);
+                updatePlayerUI();
+                return;
+            }
+            
+            // 일반 몬스터 승리 보상
             let totalExp = 0;
             let totalGold = 0;
             
@@ -356,6 +423,37 @@ function endBattle(result) {
                 monster: monster ? monster.name : '알 수 없는 적'
             };
 
+            // 대련 패배 처리 (대련은 사망/게임오버와 별개)
+            if (battleState.isSpar) {
+                const sparNpc = battleState.sparNpc;
+                const sparMonsterData = monster;
+                
+                // 대련 패배 대사
+                const defeatDialogue = (sparMonsterData && sparMonsterData.dialogues && sparMonsterData.dialogues.victory) 
+                    || '아직 멀었군. 더 수련하게.';
+                const sparName = sparMonsterData ? sparMonsterData.name : (sparNpc ? sparNpc.name : '교관');
+                const sparImage = sparMonsterData ? sparMonsterData.image : null;
+                const sparEmoji = sparMonsterData ? sparMonsterData.emoji : (sparNpc ? sparNpc.emoji : '⚔️');
+                
+                addGameLog(`⚔️ 대련에서 패배했습니다.`);
+                
+                // HP/MP 10% 회복 (대련이므로 사망하지 않음)
+                player.hp = Math.max(1, Math.floor(player.maxHp * 0.1));
+                player.mp = Math.max(1, Math.floor(player.maxMp * 0.1));
+                
+                // 전투 상태 초기화
+                battleState = {
+                    inBattle: false, turn: 'player', currentMonster: null,
+                    monsters: [], currentMonsterIndex: 0, isDefending: false,
+                    canEscape: true, turnCount: 0, isSpar: false, sparNpc: null, sparBackground: null
+                };
+                
+                hideBattleUI();
+                showSparResultOverlay('defeat', sparName, sparImage, defeatDialogue, null, sparEmoji);
+                updatePlayerUI();
+                return;
+            }
+
             // 현재 맵의 noDeathZone 설정 확인
             const currentMapData = getCurrentMap();
             if (currentMapData && currentMapData.noDeathZone) {
@@ -389,15 +487,227 @@ function endBattle(result) {
 }
 
 /**
+ * 대련 보상을 계산합니다.
+ * @param {Object} sparMonster - 대련 몬스터 데이터
+ * @returns {Object} { exp, gold, skillBook, weapon, message[] }
+ */
+function getSparRewards(sparMonster) {
+    if (!sparMonster) return { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
+    
+    const sparClass = sparMonster.sparClass; // archer, mage, skirmisher, warrior
+    const playerJob = player.job; // warrior, archer, mage, skirmisher
+    const isMatchingJob = (playerJob === sparClass);
+    const messages = [];
+    
+    // 직업별 스킬 목록 (하급~중급)
+    const jobSkills = {
+        archer: ['multishot', 'charge_shot'],
+        mage: ['fireball', 'lightning_bolt'],
+        skirmisher: ['slash_combo', 'ambush'],
+        warrior: ['smash', 'spirit_sword']
+    };
+    
+    // 직업별 강철 무기 매핑
+    const steelWeapons = {
+        warrior: 'steel_longsword',
+        archer: 'steel_bow',
+        mage: 'steel_staff',
+        skirmisher: 'steel_dagger'
+    };
+    
+    let rewards = { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
+    
+    if (sparClass === 'warrior') {
+        // 상급교관 (전사): 특별 보상
+        if (isMatchingJob) {
+            rewards.exp = 2000;
+            rewards.gold = 1000;
+            // 전사 스킬북 (랜덤)
+            const availableSkills = jobSkills.warrior;
+            const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+            rewards.skillBook = randomSkill;
+            // 강철 대검
+            rewards.weapon = steelWeapons.warrior;
+        } else {
+            rewards.exp = 3000;  // 1.5배
+            rewards.gold = 1500; // 1.5배
+            // 플레이어 직업에 맞는 강철 무기
+            rewards.weapon = steelWeapons[playerJob] || steelWeapons.warrior;
+        }
+    } else {
+        // 일반 교관 (궁수/마법사/도적)
+        if (isMatchingJob) {
+            rewards.exp = 1000;
+            rewards.gold = 500;
+            // 해당 직업 스킬북 (랜덤)
+            const availableSkills = jobSkills[sparClass] || [];
+            if (availableSkills.length > 0) {
+                const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+                rewards.skillBook = randomSkill;
+            }
+        } else {
+            rewards.exp = 1500;  // 1.5배
+            rewards.gold = 750;  // 1.5배
+        }
+    }
+    
+    return rewards;
+}
+
+/**
+ * 스킬북 보상을 적용합니다 (이미 있으면 레벨업)
+ * @param {string} skillId - 스킬 ID
+ * @returns {Object} { learned, leveledUp, skillName, newLevel }
+ */
+function applySkillBookReward(skillId) {
+    const skill = typeof SKILLS !== 'undefined' ? SKILLS[skillId] : null;
+    if (!skill) return { learned: false, leveledUp: false, skillName: '알 수 없는 스킬', newLevel: 0 };
+    
+    if (!player.skills) player.skills = [];
+    if (!player.skillLevels) player.skillLevels = {};
+    
+    if (player.skills.includes(skillId)) {
+        // 이미 보유한 스킬 → 레벨업
+        player.skillLevels[skillId] = (player.skillLevels[skillId] || 1) + 1;
+        const newLevel = player.skillLevels[skillId];
+        addGameLog(`📖 <span style="color: #f1c40f; font-weight: bold;">${skill.name}</span> 스킬 레벨 상승! Lv.${newLevel}`);
+        return { learned: false, leveledUp: true, skillName: skill.name, newLevel: newLevel };
+    } else {
+        // 새로운 스킬 습득
+        player.skills.push(skillId);
+        player.skillLevels[skillId] = 1;
+        if (!player.skillCooldowns) player.skillCooldowns = {};
+        player.skillCooldowns[skillId] = 0;
+        addGameLog(`📖 <span style="color: #f1c40f; font-weight: bold;">${skill.name} Lv.1</span>을(를) 배웠습니다!`);
+        return { learned: true, leveledUp: false, skillName: skill.name, newLevel: 1 };
+    }
+}
+
+/**
+ * 대련 결과 대화 오버레이를 표시합니다 (보스 대화창 스타일 순차 대화)
+ * @param {string} result - 'victory' 또는 'defeat'
+ * @param {string} npcName - NPC 이름
+ * @param {string} npcImage - NPC 이미지 경로
+ * @param {string} dialogue - 대사
+ * @param {Object|null} rewards - 보상 { exp, gold, skillBook, weapon, skillResult } (승리 시)
+ * @param {string} npcEmoji - NPC 이모지
+ */
+function showSparResultOverlay(result, npcName, npcImage, dialogue, rewards, npcEmoji) {
+    const isVictory = result === 'victory';
+    const emoji = npcEmoji || '⚔️';
+    
+    // 대화 라인 구성
+    const lines = [];
+    lines.push(dialogue);
+    
+    if (isVictory && rewards) {
+        // 보상 관련 추가 대사
+        lines.push(`경험치 ${rewards.exp}과 골드 ${rewards.gold}을 받았다.`);
+        
+        if (rewards.skillResult) {
+            if (rewards.skillResult.learned) {
+                lines.push(`📖 새로운 스킬 "${rewards.skillResult.skillName}" Lv.1을 배웠다!`);
+            } else if (rewards.skillResult.leveledUp) {
+                lines.push(`📖 "${rewards.skillResult.skillName}" 스킬이 Lv.${rewards.skillResult.newLevel}로 상승했다!`);
+            }
+        }
+        
+        if (rewards.weaponName) {
+            lines.push(`⚔️ "${rewards.weaponName}"을(를) 획득했다!`);
+        }
+    } else if (!isVictory) {
+        lines.push('다음에 다시 도전하자.');
+    }
+    
+    // 순차 대화 표시
+    let currentLine = 0;
+    
+    function showNextSparLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+        
+        if (currentLine >= lines.length) {
+            return;
+        }
+        
+        const borderColor = isVictory ? '#ffd700' : '#8b0000';
+        const nameColor = isVictory ? '#ffd700' : '#e74c3c';
+        const btnBg = isVictory ? 'linear-gradient(#b8860b, #8b6914)' : 'linear-gradient(#8b0000, #660000)';
+        const btnBorder = isVictory ? '#ffd700' : '#aa0000';
+        
+        const portraitHtml = npcImage 
+            ? `<img src="${npcImage}" alt="${npcName}" style="width:100px;height:100px;object-fit:cover;border-radius:50%;border:3px solid ${borderColor};" onerror="this.outerHTML='<div class=\\'boss-dialog-portrait\\'>${emoji}</div>'">`
+            : `<div class="boss-dialog-portrait">${emoji}</div>`;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+        
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                ${portraitHtml}
+                <div class="boss-dialog-box" style="border-color: ${borderColor}; box-shadow: 0 0 30px ${borderColor}40;">
+                    <div class="boss-dialog-name" style="color: ${nameColor};">${npcName}</div>
+                    <div class="boss-dialog-text">${lines[currentLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" style="background: ${btnBg}; border-color: ${btnBorder};" onclick="continueSparResultDialog()">
+                    ${currentLine < lines.length - 1 ? '▶ 다음' : '✔ 확인'}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        currentLine++;
+        
+        window.continueSparResultDialog = function() {
+            showNextSparLine();
+        };
+    }
+    
+    showNextSparLine();
+}
+
+/**
+ * 대련 결과 오버레이를 닫습니다 (하위 호환용)
+ */
+function closeSparResultOverlay() {
+    const overlay = document.querySelector('.spar-result-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 300);
+    }
+    const dialog = document.querySelector('.boss-dialog-modal');
+    if (dialog) dialog.remove();
+}
+
+/**
  * 게임오버 화면을 표시합니다.
  */
 function showGameOverScreen() {
+    // 전투 상태 초기화
+    battleState = {
+        inBattle: false,
+        turn: 'player',
+        currentMonster: null,
+        monsters: [],
+        currentMonsterIndex: 0,
+        isDefending: false,
+        canEscape: true,
+        turnCount: 0,
+        isSpar: false,
+        sparNpc: null,
+        sparBackground: null
+    };
+
+    // 전투 UI 숨기기
+    hideBattleUI();
+
     // 게임 데이터 저장 (게임오버 화면에서 사용)
+    const playTimeStr = (typeof getPlayTime === 'function') ? getPlayTime().formatted : '00:00:00';
     const gameOverData = {
         playerName: player.name,
         level: player.level,
         job: player.jobData?.name || '모험가',
-        playTime: getPlayTimeString ? getPlayTimeString() : '00:00:00',
+        playTime: playTimeStr,
         gold: gold || 0,
         lastLocation: player.lastDefeat?.locationName || '알 수 없는 장소',
         lastMonster: player.lastDefeat?.monster || '알 수 없는 적'
@@ -837,6 +1147,9 @@ function useSelectedSkill(skillId) {
         applyStatusEffect(targetMonster, skill.effects.statusEffect, skill.effects.statusDuration, totalDamage);
     }
 
+    // 상급교관 2페이즈 체크 (스킬 공격 후에도 체크)
+    checkSeniorInstructorPhase2(targetMonster);
+
     if (targetMonster.hp <= 0) {
         targetMonster.hp = 0;
         addGameLog(`💀 ${getMonsterNameWithColor(targetMonster)}을(를) 처치했습니다!`);
@@ -953,17 +1266,9 @@ function processMonsterStatusEffects(monster) {
             // 해당 몬스터의 상태이상 효과 모두 제거
             delete battleState.monsterStatusEffects[monsterId];
             
-            // 모든 몬스터 생존 여부 확인
-            const aliveMonsters = battleState.monsters.filter(m => m.hp > 0);
-            if (aliveMonsters.length === 0) {
-                updateBattleUI();
-                setTimeout(() => endBattle('victory'), 500);
-                return;
-            } else {
-                // 다음 생존 몬스터로 자동 타겟 변경
-                selectNextAliveMonster();
-                updateBattleUI();
-            }
+            // 다음 생존 몬스터로 자동 타겟 변경
+            selectNextAliveMonster();
+            updateBattleUI();
         }
     });
 
@@ -1194,6 +1499,28 @@ function doMonsterTurn() {
         
         const monster = aliveMonsters[attackIndex];
         
+        // ★ 턴 시작 시 상태이상 처리 (출혈, 화상 등) - 공격 전에 처리
+        processMonsterStatusEffects(monster);
+        
+        // 상태이상으로 몬스터가 사망한 경우 → 공격 건너뜀
+        if (monster.hp <= 0) {
+            updateBattleUI();
+            // 모든 몬스터 사망 여부 확인
+            const remainingAlive = battleState.monsters.filter(m => m.hp > 0);
+            if (remainingAlive.length === 0) {
+                setTimeout(() => endBattle('victory'), 500);
+                return;
+            }
+            // 다음 몬스터 공격으로 진행
+            attackIndex++;
+            if (attackIndex < aliveMonsters.length) {
+                setTimeout(nextMonsterAttack, 500);
+            } else {
+                finishMonsterTurn();
+            }
+            return;
+        }
+        
         // 자가수복 특성 처리: 매 턴당 최대HP의 3% 회복
         if (monster.traits && monster.traits.includes('self_repair') && monster.hp < monster.maxHp) {
             const healAmount = Math.floor(monster.maxHp * 0.03);
@@ -1261,9 +1588,6 @@ function doMonsterTurn() {
                 addGameLog(`👹 ${getMonsterNameWithColor(monster)}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
             }
         }
-        
-        // 공격 후 상태이상 피해 및 지속시간 처리 (출혈, 화상 등)
-        processMonsterStatusEffectsAfterAttack(monster);
         
         // 플레이어 HP 확인
         if (player.hp <= 0) {
@@ -2126,46 +2450,95 @@ function checkSeniorInstructorPhase2(monster) {
     if (hpPercent <= monster.phase2Config.hpThreshold) {
         monster.isPhase2 = true;
         
-        // 2페이즈 대사 출력
-        if (monster.dialogues && monster.dialogues.phase2) {
-            addGameLog(`⚔️ ${monster.name}: "${monster.dialogues.phase2}"`);
-        }
+        // 전투 버튼 비활성화 (대화 중)
+        enableBattleButtons(false);
         
         // 물리공격력 보너스 적용
         if (monster.phase2Config.pAtkBonus) {
             monster.pAtk = (monster.pAtk || 0) + monster.phase2Config.pAtkBonus;
-            addGameLog(`🔥 ${monster.name}의 물리공격력이 ${monster.phase2Config.pAtkBonus} 상승!`);
         }
         
         // 투지의 검 스킬 발동 (발동중이면 지속시간 초기화)
         if (monster.phase2Config.activateSkill === 'will_sword') {
-            // 투지의 검 효과: 공격력 증가 버프
             if (!monster.activeBuffs) monster.activeBuffs = {};
             
             if (monster.activeBuffs.will_sword) {
-                // 이미 발동 중이면 지속시간 초기화
-                monster.activeBuffs.will_sword.duration = 5;  // 5턴으로 초기화
-                addGameLog(`⚔️ ${monster.name}의 투지의 검 지속시간 초기화!`);
+                monster.activeBuffs.will_sword.duration = 5;
             } else {
-                // 새로 발동
                 monster.activeBuffs.will_sword = {
                     name: '투지의 검',
-                    pAtkBonus: 5,  // 추가 공격력 버프
-                    duration: 5    // 5턴 지속
+                    pAtkBonus: 5,
+                    duration: 5
                 };
                 monster.pAtk = (monster.pAtk || 0) + 5;
-                addGameLog(`⚔️ ${monster.name}이(가) 투지의 검 발동! (공격력 추가 상승)`);
             }
         }
         
         // 이미지 변경
         if (monster.phase2Image) {
+            monster.image = monster.phase2Image;
             updateMonsterImage(monster.phase2Image);
         }
         
         // UI 업데이트
         updateBattleUI();
+        
+        // 2페이즈 대화창 표시 (보스 대화 스타일)
+        const phase2Lines = [];
+        if (monster.dialogues && monster.dialogues.phase2) {
+            phase2Lines.push(monster.dialogues.phase2);
+        }
+        phase2Lines.push('물리공격력이 대폭 상승했다!');
+        phase2Lines.push('투지의 검을 발동했다! 각오하라!');
+        
+        showPhase2DialogSequence(monster, phase2Lines);
     }
+}
+
+/**
+ * 2페이즈 전환 대화 시퀀스를 표시합니다 (보스 대화창 스타일)
+ */
+function showPhase2DialogSequence(monster, lines) {
+    let currentLine = 0;
+    
+    function showNextLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+        
+        if (currentLine >= lines.length) {
+            // 대화 종료 → 전투 버튼 활성화
+            enableBattleButtons(true);
+            addGameLog(`🔥 ${monster.name}이(가) 2페이즈에 돌입했다! 물리공격력 대폭 상승!`);
+            return;
+        }
+        
+        const emoji = monster.emoji || '⚔️';
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+        
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                <div class="boss-dialog-portrait">${emoji}</div>
+                <div class="boss-dialog-box">
+                    <div class="boss-dialog-name">${monster.name}</div>
+                    <div class="boss-dialog-text">${lines[currentLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" onclick="continuePhase2Dialog()">
+                    ${currentLine < lines.length - 1 ? '▶ 다음' : '⚔️ 전투 계속!'}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        addGameLog(`⚔️ ${monster.name}: "${lines[currentLine]}"`);
+        currentLine++;
+        
+        window.continuePhase2Dialog = function() {
+            showNextLine();
+        };
+    }
+    
+    showNextLine();
 }
 
 /**
@@ -2173,11 +2546,18 @@ function checkSeniorInstructorPhase2(monster) {
  * @param {string} imagePath - 새 이미지 경로
  */
 function updateMonsterImage(imagePath) {
-    const monsterImg = document.querySelector('.monster-image img') || 
+    const monsterImg = document.querySelector('img.monster-image') || 
+                       document.querySelector('.monster-sprite img') ||
                        document.querySelector('.battle-monster-img');
     if (monsterImg) {
         monsterImg.src = imagePath;
         console.log('🖼️ 몬스터 이미지 변경:', imagePath);
+    } else {
+        // 이미지 요소가 없으면 몬스터 객체의 image 속성을 변경하고 UI 업데이트
+        if (battleState.currentMonster) {
+            battleState.currentMonster.image = imagePath;
+            updateBattleUI();
+        }
     }
 }
 
