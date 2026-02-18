@@ -67,8 +67,12 @@ function startLoading() {
             setTimeout(() => {
                 showScreen('mainMenu');
                 
-                // 저장된 데이터 확인 (약간의 지연 후 실행)
+                // 재도전 복귀 확인
                 setTimeout(() => {
+                    if (checkRetryAction()) {
+                        return; // 재도전 처리됨
+                    }
+                    // 저장된 데이터 확인
                     if (typeof checkSaveOnStart === 'function') {
                         checkSaveOnStart();
                     }
@@ -143,8 +147,144 @@ function createParticles() {
 // 선택된 난이도
 let currentDifficulty = 'normal';
 
+// 재도전 가능 여부 (기본값: 불가)
+let retryEnabled = false;
+
+/**
+ * 재도전 옵션 토글
+ */
+function toggleRetryOption(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    retryEnabled = !retryEnabled;
+    
+    const toggle = document.getElementById('retryToggle');
+    const knob = toggle ? toggle.querySelector('.retry-toggle-knob') : null;
+    const statusText = document.getElementById('retryStatusText');
+    const description = document.getElementById('retryDescription');
+    
+    if (retryEnabled) {
+        if (toggle) toggle.style.background = '#4CAF50';
+        if (knob) { knob.style.left = '26px'; knob.style.background = '#fff'; }
+        if (statusText) { statusText.textContent = '가능'; statusText.style.color = '#4CAF50'; }
+        if (description) description.textContent = '패배 시 전투 전 상태로 돌아가 재도전할 수 있습니다.';
+    } else {
+        if (toggle) toggle.style.background = '#444';
+        if (knob) { knob.style.left = '2px'; knob.style.background = '#aaa'; }
+        if (statusText) { statusText.textContent = '불가'; statusText.style.color = '#ff6666'; }
+        if (description) description.textContent = '패배 시 세이브가 삭제되고 재도전할 수 없습니다.';
+    }
+    
+    console.log(`🔄 재도전 옵션: ${retryEnabled ? '가능' : '불가'}`);
+}
+
 function startNewGame() {
+    // 재도전 토글 초기화
+    retryEnabled = false;
+    const toggle = document.getElementById('retryToggle');
+    const knob = toggle ? toggle.querySelector('.retry-toggle-knob') : null;
+    const statusText = document.getElementById('retryStatusText');
+    const description = document.getElementById('retryDescription');
+    if (toggle) toggle.style.background = '#444';
+    if (knob) { knob.style.left = '2px'; knob.style.background = '#aaa'; }
+    if (statusText) { statusText.textContent = '불가'; statusText.style.color = '#ff6666'; }
+    if (description) description.textContent = '패배 시 세이브가 삭제되고 재도전할 수 없습니다.';
+    
     showDifficultySelection();
+}
+
+/**
+ * 재도전 복귀 확인 및 처리
+ * gameover.html에서 "다시 도전" 클릭 시 설정된 플래그를 확인합니다.
+ * @returns {boolean} 재도전 처리 여부
+ */
+function checkRetryAction() {
+    const isRetry = sessionStorage.getItem('retryAction');
+    if (!isRetry) return false;
+    
+    // 플래그 제거
+    sessionStorage.removeItem('retryAction');
+    
+    console.log('🔄 재도전 복귀 처리 시작...');
+    
+    // localStorage에서 재도전 슬롯 데이터 로드
+    try {
+        const saveKey = 'rpg_save_data';
+        const saved = localStorage.getItem(saveKey);
+        if (!saved) {
+            console.error('❌ 재도전 데이터를 찾을 수 없습니다.');
+            return false;
+        }
+        
+        const allSaves = JSON.parse(saved);
+        const retryData = allSaves['slot_retry'];
+        if (!retryData) {
+            console.error('❌ 재도전 슬롯 데이터가 없습니다.');
+            return false;
+        }
+        
+        // 재도전 슬롯을 슬롯1에 복사하고 재도전 슬롯 삭제
+        allSaves['slot1'] = retryData;
+        delete allSaves['slot_retry'];
+        localStorage.setItem(saveKey, JSON.stringify(allSaves));
+        
+        // loadGame으로 슬롯1에서 불러오기
+        if (typeof loadGame === 'function') {
+            loadGame(1);
+        }
+        
+        // 부활 연출 표시
+        setTimeout(() => {
+            showRetryReviveOverlay();
+        }, 200);
+        
+        return true;
+    } catch (e) {
+        console.error('❌ 재도전 복귀 실패:', e);
+        return false;
+    }
+}
+
+/**
+ * 재도전 부활 연출 오버레이
+ * 7시간 후 깨어난 것을 표현합니다.
+ */
+function showRetryReviveOverlay() {
+    // 기존 오버레이 제거
+    const existing = document.getElementById('retryReviveOverlay');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'retryReviveOverlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 99999; display: flex;
+        justify-content: center; align-items: center;
+        opacity: 1; transition: opacity 1.5s ease;
+    `;
+    overlay.innerHTML = `
+        <div style="text-align: center; color: #ccc; font-size: 20px; font-family: 'Noto Sans KR', sans-serif;">
+            <div style="font-size: 40px; margin-bottom: 20px;">😵</div>
+            <div>7시간 후...</div>
+            <div style="margin-top: 10px; font-size: 16px; color: #999;">눈을 떴다.</div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    // 게임 로그에도 메시지 추가
+    if (typeof addGameLog === 'function') {
+        addGameLog('😵 의식을 잃었습니다...');
+        addGameLog('⏰ 7시간 후...');
+        addGameLog('💫 눈을 떴습니다. 전투 전 상태로 복귀했습니다.');
+    }
+    
+    // 3초 후 페이드아웃
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.remove();
+        }, 1500);
+    }, 2500);
 }
 
 /**
@@ -224,6 +364,12 @@ function initCharacterCreate() {
     renderJobInfo(null);
     clearStatsPreview();
     updateRerollButton();
+
+    // "← 메인 메뉴로" 버튼 다시 표시 (초기화 시)
+    const backBtn = document.querySelector('.character-create-container > .back-btn');
+    if (backBtn) {
+        backBtn.style.display = '';
+    }
 
     const input = document.getElementById('characterNameInput');
     if (input) {
@@ -400,6 +546,12 @@ function confirmJobSelection(jobId) {
         // 스탯 생성
         generateStatsForJob(jobId);
         updateRerollButton();
+
+        // "← 메인 메뉴로" 버튼 숨기기 (직업 확정 후에는 돌아갈 수 없음)
+        const backBtn = document.querySelector('.character-create-container > .back-btn');
+        if (backBtn) {
+            backBtn.style.display = 'none';
+        }
 
         // 이름 입력 필드 포커스
         const input = document.getElementById('characterNameInput');
@@ -625,6 +777,7 @@ function confirmCharacter() {
         job: selectedJob,
         jobData: job,
         difficulty: currentDifficulty, // 난이도 저장
+        retryEnabled: retryEnabled,    // 재도전 가능 여부
         level: 1,
         exp: 0,
         requiredExp: 100,

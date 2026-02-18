@@ -739,11 +739,78 @@ function deleteSave(slotNumber) {
 }
 
 /**
- * 모든 저장 데이터를 삭제합니다.
+ * 서버에 저장된 세이브 데이터를 삭제합니다.
+ * @returns {Promise<boolean>} 삭제 성공 여부
+ */
+async function deleteServerSave() {
+    try {
+        if (typeof isLoggedIn !== 'function' || !isLoggedIn()) {
+            console.log('⚠️ 로그인되지 않음 - 서버 삭제 건너뜀');
+            return false;
+        }
+        
+        const response = await fetch(`${SAVE_CONFIG.apiBaseUrl}/save`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('🗑️ 서버 저장 데이터 삭제 완료!');
+            return true;
+        } else {
+            console.error('❌ 서버 삭제 실패:', result.error);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ 서버 삭제 요청 실패:', error);
+        return false;
+    }
+}
+
+/**
+ * 모든 저장 데이터를 삭제합니다. (로컬 + 서버)
  */
 function deleteAllSaves() {
+    // 로컬스토리지 삭제
     localStorage.removeItem(SAVE_CONFIG.saveKey);
-    console.log('🗑️ 모든 저장 데이터 삭제 완료!');
+    console.log('🗑️ 로컬 저장 데이터 삭제 완료!');
+    
+    // 서버 저장 데이터도 삭제 (비동기, 결과 기다리지 않음)
+    deleteServerSave().catch(e => console.error('서버 삭제 중 오류:', e));
+}
+
+/**
+ * 전투 진입 시 자동 저장 (로컬스토리지 + 서버)
+ * 대련이 아닌 일반 전투에서만 호출됩니다.
+ */
+function autoSaveBeforeBattle() {
+    try {
+        if (typeof player === 'undefined' || player === null) {
+            console.log('⚠️ 전투 자동저장 건너뜀: 플레이어 데이터 없음');
+            return;
+        }
+        
+        // 로컬스토리지에 자동 저장 (슬롯 1)
+        const localResult = saveGame(1, true); // 서버 저장은 별도 처리
+        if (localResult) {
+            console.log('💾 전투 진입 자동저장 (로컬) 완료');
+        }
+        
+        // 서버에도 자동 저장 (로그인 시, 비동기)
+        if (typeof isLoggedIn === 'function' && isLoggedIn()) {
+            saveGameToServer().then(success => {
+                if (success) {
+                    console.log('☁️ 전투 진입 자동저장 (서버) 완료');
+                }
+            }).catch(e => console.error('서버 자동저장 실패:', e));
+        }
+    } catch (error) {
+        console.error('❌ 전투 자동저장 실패:', error);
+    }
 }
 
 /**
@@ -757,7 +824,9 @@ function hasSaveData(slotNumber = null) {
     }
 
     // 아무 슬롯에나 데이터가 있는지 확인
-    return Object.keys(allSaves).length > 0;
+    // slot_retry 같은 특수 슬롯은 제외
+    const normalSlots = Object.keys(allSaves).filter(k => k.startsWith('slot') && k !== 'slot_retry');
+    return normalSlots.length > 0;
 }
 
 // ============================================

@@ -113,6 +113,11 @@ function startBattle(monsterTypes) {
     // 보스 몬스터가 있으면 도주 불가
     const hasBoss = monsters.some(m => m.isBoss);
 
+    // 대련 상태 보존 (startBattle 호출 전에 설정된 대련 플래그 유지)
+    const preservedIsSpar = battleState.isSpar || false;
+    const preservedSparNpc = battleState.sparNpc || null;
+    const preservedSparBackground = battleState.sparBackground || null;
+
     battleState = {
         inBattle: true,
         turn: 'player',
@@ -123,7 +128,17 @@ function startBattle(monsterTypes) {
         canEscape: !hasBoss,
         turnCount: 1,
         monsterStatusEffects: {},     // 상태이상 초기화
-        playerStatusEffects: []       // 플레이어 상태이상
+        playerStatusEffects: [],      // 플레이어 상태이상
+        // 대련 상태 복원
+        isSpar: preservedIsSpar,
+        sparNpc: preservedSparNpc,
+        sparBackground: preservedSparBackground,
+        phase2Transitioning: false,   // 2페이즈 전환 중 플래그
+        // 전투 전 상태 저장 (재도전 시스템용)
+        preBattleHp: player ? player.hp : 0,
+        preBattleMp: player ? player.mp : 0,
+        preBattleLocationId: typeof currentLocationId !== 'undefined' ? currentLocationId : null,
+        preBattleMapId: typeof currentMapId !== 'undefined' ? currentMapId : null
     };
 
     // 스킬 쿨다운 초기화
@@ -164,6 +179,11 @@ function startBattle(monsterTypes) {
 
     // 첫 턴 특성 효과 즉시 발동 (신속 등)
     processTraitEffectsOnTurnStart();
+
+    // 대련이 아닌 일반 전투 진입 시 자동 저장 (로컬 + 서버)
+    if (!battleState.isSpar && typeof autoSaveBeforeBattle === 'function') {
+        autoSaveBeforeBattle();
+    }
 
     console.log('⚔️ 전투 시작 완료, battleState:', battleState);
 }
@@ -428,7 +448,7 @@ function endBattle(result) {
                 const sparNpc = battleState.sparNpc;
                 const sparMonsterData = monster;
                 
-                // 대련 패배 대사
+                // 대련 패배 대사 (NPC가 승리했을 때의 대사)
                 const defeatDialogue = (sparMonsterData && sparMonsterData.dialogues && sparMonsterData.dialogues.victory) 
                     || '아직 멀었군. 더 수련하게.';
                 const sparName = sparMonsterData ? sparMonsterData.name : (sparNpc ? sparNpc.name : '교관');
@@ -437,9 +457,18 @@ function endBattle(result) {
                 
                 addGameLog(`⚔️ 대련에서 패배했습니다.`);
                 
-                // HP/MP 10% 회복 (대련이므로 사망하지 않음)
-                player.hp = Math.max(1, Math.floor(player.maxHp * 0.1));
-                player.mp = Math.max(1, Math.floor(player.maxMp * 0.1));
+                // HP/MP 최대치의 50%로 회복 (대련이므로 사망하지 않음)
+                player.hp = Math.max(1, Math.floor(player.maxHp * 0.5));
+                player.mp = Math.max(1, Math.floor(player.maxMp * 0.5));
+                
+                // 대련한 NPC가 있는 장소에 그대로 유지 (위치 이동 없음)
+                // NPC의 location에서 세부 위치 추출
+                if (sparNpc && sparNpc.location) {
+                    const locParts = sparNpc.location.split('.');
+                    if (locParts.length >= 2 && typeof currentLocationId !== 'undefined') {
+                        currentLocationId = locParts[1];
+                    }
+                }
                 
                 // 전투 상태 초기화
                 battleState = {
@@ -451,6 +480,7 @@ function endBattle(result) {
                 hideBattleUI();
                 showSparResultOverlay('defeat', sparName, sparImage, defeatDialogue, null, sparEmoji);
                 updatePlayerUI();
+                if (typeof updateLocationUI === 'function') updateLocationUI();
                 return;
             }
 
@@ -683,6 +713,16 @@ function closeSparResultOverlay() {
  * 게임오버 화면을 표시합니다.
  */
 function showGameOverScreen() {
+    // 전투 전 상태 백업 (battleState 초기화 전에 저장)
+    const preBattleHp = battleState.preBattleHp || 0;
+    const preBattleMp = battleState.preBattleMp || 0;
+    const preBattleLocationId = battleState.preBattleLocationId || null;
+    const preBattleMapId = battleState.preBattleMapId || null;
+    
+    // 재도전 가능 여부 확인 (player.retryEnabled 또는 전역 retryEnabled 변수 둘 다 확인)
+    const isRetryEnabled = (player && player.retryEnabled === true) || 
+                           (typeof retryEnabled !== 'undefined' && retryEnabled === true);
+
     // 전투 상태 초기화
     battleState = {
         inBattle: false,
@@ -704,17 +744,68 @@ function showGameOverScreen() {
     // 게임 데이터 저장 (게임오버 화면에서 사용)
     const playTimeStr = (typeof getPlayTime === 'function') ? getPlayTime().formatted : '00:00:00';
     const gameOverData = {
-        playerName: player.name,
-        level: player.level,
-        job: player.jobData?.name || '모험가',
+        playerName: player ? player.name : '모험가',
+        level: player ? player.level : 1,
+        job: player?.jobData?.name || '모험가',
         playTime: playTimeStr,
         gold: gold || 0,
-        lastLocation: player.lastDefeat?.locationName || '알 수 없는 장소',
-        lastMonster: player.lastDefeat?.monster || '알 수 없는 적'
+        lastLocation: player?.lastDefeat?.locationName || '알 수 없는 장소',
+        lastMonster: player?.lastDefeat?.monster || '알 수 없는 적',
+        retryEnabled: isRetryEnabled
     };
     
-    // sessionStorage에 데이터 저장
+    // sessionStorage에 게임오버 데이터 저장
     sessionStorage.setItem('gameOverData', JSON.stringify(gameOverData));
+    
+    // 재도전 처리
+    if (isRetryEnabled) {
+        // 재도전 가능: 전투 전 상태로 복귀할 세이브 데이터 생성
+        try {
+            // 전투 전 HP/MP로 복원
+            player.hp = preBattleHp;
+            player.mp = preBattleMp;
+            
+            // 상태이상 제거
+            player.statusEffects = {};
+            
+            // 모든 활성 버프 제거 (소모 아이템으로 얻은 일시적 버프 포함)
+            if (player.activeBuffs) player.activeBuffs = {};
+            
+            // 일시적 버프로 인한 스탯 보너스 초기화
+            if (player.tempBuffStats) player.tempBuffStats = {};
+            
+            // 전투 전 위치로 복원
+            if (preBattleLocationId && typeof currentLocationId !== 'undefined') {
+                currentLocationId = preBattleLocationId;
+            }
+            if (preBattleMapId && typeof currentMapId !== 'undefined') {
+                currentMapId = preBattleMapId;
+            }
+            
+            // 시간 7시간 경과
+            if (typeof addGameTime === 'function') {
+                addGameTime(7 * 60); // 420분 추가
+            } else if (typeof gameTime !== 'undefined') {
+                gameTime += 7 * 60;
+            }
+            
+            // 현재 상태 기반으로 세이브 데이터 수집
+            // (전투 중 사용한 소모품은 이미 차감된 상태이므로 그대로 반영됨)
+            if (typeof collectSaveData === 'function') {
+                const retryData = collectSaveData();
+                sessionStorage.setItem('retryData', JSON.stringify(retryData));
+                console.log('💾 재도전 데이터 저장 완료 (소모품 차감, 버프 제거 반영)');
+            }
+        } catch (e) {
+            console.error('❌ 재도전 데이터 생성 실패:', e);
+        }
+    } else {
+        // 재도전 불가: 로컬스토리지 + 서버 세이브 데이터 모두 삭제
+        if (typeof deleteAllSaves === 'function') {
+            deleteAllSaves();
+            console.log('🗑️ 재도전 불가 - 로컬+서버 세이브 데이터 삭제');
+        }
+    }
     
     // 페이드 아웃 효과 후 이동
     const overlay = document.createElement('div');
@@ -953,6 +1044,12 @@ function doBattleAttack() {
     // 상급교관 2페이즈 체크 (HP 30% 이하 시 강화)
     checkSeniorInstructorPhase2(targetMonster);
 
+    // 2페이즈 전환 중이면 대화 완료 후 턴이 자동 진행됨
+    if (battleState.phase2Transitioning) {
+        updateBattleUI();
+        return;
+    }
+
     if (targetMonster.hp <= 0) {
         targetMonster.hp = 0;
         addGameLog(`💀 ${getMonsterNameWithColor(targetMonster)}을(를) 처치했습니다!`);
@@ -1150,6 +1247,12 @@ function useSelectedSkill(skillId) {
     // 상급교관 2페이즈 체크 (스킬 공격 후에도 체크)
     checkSeniorInstructorPhase2(targetMonster);
 
+    // 2페이즈 전환 중이면 대화 완료 후 턴이 자동 진행됨
+    if (battleState.phase2Transitioning) {
+        updateBattleUI();
+        return;
+    }
+
     if (targetMonster.hp <= 0) {
         targetMonster.hp = 0;
         addGameLog(`💀 ${getMonsterNameWithColor(targetMonster)}을(를) 처치했습니다!`);
@@ -1247,6 +1350,28 @@ function processMonsterStatusEffects(monster) {
 
             case 'confusion': // 혼란: 특별한 턴 효과 없음 (공격 시 적용)
                 addGameLog(`😵 ${getMonsterNameWithColor(monster)}은(는) 혼란 상태!`);
+                break;
+
+            case 'shock': // 감전: 최대HP의 8% 마법 피해 + 15% 확률로 인접 몬스터에 스플래시
+                damage = Math.max(1, Math.round(monster.maxHp * 0.08));
+                monster.hp -= damage;
+                addGameLog(`⚡ ${getMonsterNameWithColor(monster)}이(가) 감전으로 ${damage} 마법 피해!`);
+                // 15% 확률로 인접 몬스터에 스플래시 피해
+                if (Math.random() < 0.15 && battleState.monsters) {
+                    const otherMonsters = battleState.monsters.filter(m => m !== monster && m.hp > 0);
+                    const splashTargets = otherMonsters.slice(0, 2); // 인접 2명까지
+                    splashTargets.forEach(target => {
+                        const splashDamage = Math.max(1, Math.floor(damage * 0.5));
+                        target.hp -= splashDamage;
+                        if (target.hp < 0) target.hp = 0;
+                        addGameLog(`⚡ 감전 스플래시! ${getMonsterNameWithColor(target)}에게 ${splashDamage} 마법 피해!`);
+                    });
+                }
+                break;
+
+            case 'stun': // 기절: 턴 스킵
+                addGameLog(`💫 ${getMonsterNameWithColor(monster)}은(는) 기절 상태! 행동 불가!`);
+                monster._stunned = true; // 턴 스킵 플래그
                 break;
         }
 
@@ -1536,27 +1661,102 @@ function doMonsterTurn() {
             const mpRegen = Math.floor((monster.maxMp || 0) * (monster.aiPattern.mpRegenPercent || 3) / 100);
             monster.currentMp = Math.min(monster.currentMp + mpRegen, monster.maxMp || 0);
             
-            // AI 행동 결정 (일반공격 60%, 스킬 30%, 방어 10%)
-            const actionRoll = Math.random() * 100;
-            const attackChance = monster.aiPattern.attack || 60;
-            const skillChance = monster.aiPattern.skill || 30;
-            
-            if (actionRoll < attackChance) {
-                // 일반 공격
-                executeSparAttack(monster);
-            } else if (actionRoll < attackChance + skillChance) {
-                // 스킬 사용 시도
-                if (!tryUseSparSkill(monster)) {
-                    // 스킬 사용 불가시 일반공격 또는 방어
-                    if (Math.random() < 0.7) {
-                        executeSparAttack(monster);
-                    } else {
-                        executeSparDefend(monster);
+            // 대련 몬스터 특성 처리: 신속 (swift) - 첫 턴 2회 행동
+            if (monster.trait === 'swift') {
+                if (!monster.traitState) monster.traitState = {};
+                
+                // 첫 턴(또는 10턴 쿨타임 후)에 2회 행동
+                const swiftCooldown = monster.traitState.swiftCooldown || 0;
+                if (battleState.turnCount === 1 || (swiftCooldown <= 0 && !monster.traitState.swiftUsedFirst)) {
+                    if (!monster.traitState.swiftActive) {
+                        monster.traitState.swiftActive = true;
+                        monster.traitState.swiftActionsLeft = 2;
+                        monster.traitState.swiftUsedFirst = true;
+                        addGameLog(`💨 ${monster.name}의 신속 발동! 이번 턴에 2회 행동!`);
                     }
                 }
+                
+                // 쿨다운 감소
+                if (monster.traitState.swiftCooldown > 0) {
+                    monster.traitState.swiftCooldown--;
+                }
+            }
+            
+            // 대련 몬스터 특성 처리: 명상 (meditation) - 매 턴 MP 2% 추가 회복
+            if (monster.trait === 'meditation') {
+                const meditationRegen = Math.ceil((monster.maxMp || 0) * 0.02);
+                monster.currentMp = Math.min(monster.currentMp + meditationRegen, monster.maxMp || 0);
+                if (meditationRegen > 0) {
+                    addGameLog(`🧘 ${monster.name}의 명상 효과: MP +${meditationRegen} 회복`);
+                }
+            }
+            
+            // 대련 몬스터 AI 행동 실행 함수
+            function executeSparAction() {
+                // AI 행동 결정 (일반공격 60%, 스킬 30%, 방어 10%)
+                const actionRoll = Math.random() * 100;
+                const attackChance = monster.aiPattern.attack || 60;
+                const skillChance = monster.aiPattern.skill || 30;
+                
+                if (actionRoll < attackChance) {
+                    executeSparAttack(monster);
+                } else if (actionRoll < attackChance + skillChance) {
+                    if (!tryUseSparSkill(monster)) {
+                        if (Math.random() < 0.7) {
+                            executeSparAttack(monster);
+                        } else {
+                            executeSparDefend(monster);
+                        }
+                    }
+                } else {
+                    executeSparDefend(monster);
+                }
+            }
+            
+            // 신속 특성 2회 행동 처리
+            if (monster.traitState?.swiftActive && monster.traitState.swiftActionsLeft > 0) {
+                executeSparAction();
+                monster.traitState.swiftActionsLeft--;
+                
+                // 플레이어 HP 0이면 중단
+                if (player.hp <= 0) {
+                    // 2회차 행동 취소
+                    monster.traitState.swiftActive = false;
+                } else if (monster.traitState.swiftActionsLeft > 0) {
+                    // 추가 행동 (2번째)
+                    addGameLog(`💨 ${monster.name}의 신속: 추가 행동! (남은 행동: ${monster.traitState.swiftActionsLeft})`);
+                    // 짧은 딜레이 후 추가 행동
+                    setTimeout(() => {
+                        executeSparAction();
+                        monster.traitState.swiftActionsLeft--;
+                        if (monster.traitState.swiftActionsLeft <= 0) {
+                            monster.traitState.swiftActive = false;
+                            monster.traitState.swiftCooldown = 10; // 10턴 쿨다운
+                        }
+                        updateBattleUI();
+                        
+                        // 플레이어 HP 확인
+                        if (player.hp <= 0) {
+                            player.hp = 0;
+                            updateBattleUI();
+                            setTimeout(() => endBattle('defeat'), 500);
+                            return;
+                        }
+                        
+                        attackIndex++;
+                        if (attackIndex < aliveMonsters.length) {
+                            setTimeout(nextMonsterAttack, 500);
+                        } else {
+                            finishMonsterTurn();
+                        }
+                    }, 400);
+                    return; // 비동기 처리이므로 여기서 리턴
+                } else {
+                    monster.traitState.swiftActive = false;
+                    monster.traitState.swiftCooldown = 10;
+                }
             } else {
-                // 방어
-                executeSparDefend(monster);
+                executeSparAction();
             }
         } else {
             // 기존 몬스터 공격 로직
@@ -1618,6 +1818,39 @@ function finishMonsterTurn() {
     // 방어 해제
     battleState.isDefending = false;
 
+    // 대련 몬스터 버프 지속시간 감소 처리
+    const monsters = battleState.monsters || [];
+    monsters.forEach(monster => {
+        if (monster.hp <= 0 || !monster.activeBuffs) return;
+        
+        const expiredBuffs = [];
+        Object.entries(monster.activeBuffs).forEach(([buffId, buff]) => {
+            buff.duration--;
+            if (buff.duration <= 0) {
+                expiredBuffs.push(buffId);
+                // 버프 종료 시 공격력 보너스 제거
+                if (buff.pAtkFlat || buff.pAtkBonus) {
+                    monster.pAtk = Math.max(0, (monster.pAtk || 0) - (buff.pAtkFlat || buff.pAtkBonus || 0));
+                }
+                addGameLog(`💨 ${monster.name}의 ${buff.name} 효과가 종료되었다!`);
+            }
+        });
+        
+        // 만료된 버프 제거
+        expiredBuffs.forEach(buffId => {
+            delete monster.activeBuffs[buffId];
+        });
+        
+        // 스킬 쿨다운 감소
+        if (monster.cooldowns) {
+            Object.keys(monster.cooldowns).forEach(skillId => {
+                if (monster.cooldowns[skillId] > 0) {
+                    monster.cooldowns[skillId]--;
+                }
+            });
+        }
+    });
+
     updateBattleUI();
 
     // 다음 턴 - 자연회복 적용
@@ -1666,11 +1899,34 @@ function executeSparAttack(monster) {
         damage = Math.max(1, Math.floor(damage * 0.4));
         addGameLog(`🛡️ 방어로 피해 감소!`);
     }
+    
+    // 투지의 검 버프 공격력 보정 적용
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.pAtkPercent) {
+                damage = Math.ceil(damage * (1 + buff.pAtkPercent / 100));
+            }
+        });
+    }
 
     player.hp -= damage;
     if (player.hp < 0) player.hp = 0;
     
     addGameLog(`⚔️ ${monster.name}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
+    
+    // 투지의 검 흡혈 효과 (가한 피해의 10% HP 회복, 최대HP 초과 불가)
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(damage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    monster.hp = Math.min(monster.maxHp, (monster.hp || 0) + healAmount);
+                    addGameLog(`💚 ${monster.name}이(가) ${buff.name} 효과로 HP ${healAmount} 회복!`);
+                }
+            }
+        });
+    }
+    
     updateBattleUI();
 }
 
@@ -1711,7 +1967,31 @@ function tryUseSparSkill(monster) {
     if (!monster.cooldowns) monster.cooldowns = {};
     monster.cooldowns[skillId] = skill.cooldown || 0;
     
-    // 스킬 효과 적용
+    // 버프형 스킬 처리 (투지의 검 등)
+    if (skill.damageType === 'buff') {
+        addGameLog(`🗡️ ${monster.name}의 ${skill.name} 스킬 발동!`);
+        
+        // 버프 효과 적용
+        if (!monster.activeBuffs) monster.activeBuffs = {};
+        monster.activeBuffs[skillId] = {
+            name: skill.name,
+            duration: skill.effects?.buffDuration || 3,
+            pAtkFlat: skill.effects?.pAtkFlat || 0,
+            pAtkPercent: skill.effects?.pAtkPercent || 0,
+            lifestealPercent: skill.effects?.lifestealPercent || 0,
+            noTurnEndChance: skill.effects?.noTurnEndChance || 0
+        };
+        
+        // 물리공격력 보너스 즉시 적용
+        if (skill.effects?.pAtkFlat) {
+            monster.pAtk = (monster.pAtk || 0) + skill.effects.pAtkFlat;
+        }
+        
+        updateBattleUI();
+        return true;
+    }
+    
+    // 데미지형 스킬 처리
     const damageType = skill.damageType || monster.damageType || 'physical';
     const atk = damageType === 'magical' ? (monster.mAtk || 20) : (monster.pAtk || monster.atk || 20);
     const damageMultiplier = skill.damageMultiplier || 1.5;
@@ -1736,10 +2016,50 @@ function tryUseSparSkill(monster) {
         damage = Math.max(1, Math.floor(damage * 0.4));
     }
     
+    // 투지의 검 버프 공격력 보정 적용
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.pAtkPercent) {
+                damage = Math.ceil(damage * (1 + buff.pAtkPercent / 100));
+            }
+        });
+    }
+    
     player.hp -= damage;
     if (player.hp < 0) player.hp = 0;
     
-    addGameLog(`🌟 ${monster.name}의 ${skill.name}! ${damage} 데미지!`);
+    addGameLog(`🌟 ${monster.name}의 ${skill.name}! ${damage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
+    
+    // 스킬의 상태이상 효과 적용 (감전, 화상 등)
+    if (skill.effects?.statusEffect) {
+        const statusEffectId = skill.effects.statusEffect;
+        const statusDuration = skill.effects.statusDuration || 1;
+        const statusChance = skill.effects.statusChance || 100; // 기본 100% (gameData에 별도 정의 없으면)
+        const effectInfo = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[statusEffectId] : null;
+        if (effectInfo) {
+            // 상태이상 적용 (플레이어에게)
+            if (!player.statusEffects) player.statusEffects = {};
+            player.statusEffects[statusEffectId] = {
+                duration: statusDuration,
+                damage: damage
+            };
+            addGameLog(`${effectInfo.icon} ${player.name}에게 ${effectInfo.name} 상태이상 부여! (${statusDuration}턴)`);
+        }
+    }
+    
+    // 투지의 검 흡혈 효과 (가한 피해의 10% HP 회복)
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(damage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    monster.hp = Math.min(monster.maxHp, (monster.hp || 0) + healAmount);
+                    addGameLog(`💚 ${monster.name}이(가) ${buff.name} 효과로 HP ${healAmount} 회복!`);
+                }
+            }
+        });
+    }
+    
     updateBattleUI();
     
     return true;
@@ -2331,6 +2651,20 @@ function hideBattleUI() {
         battleArena.style.backgroundPosition = '';
     }
 
+    // 게임 배경 복원 (대련 배경에서 원래 배경으로)
+    const gameBackground = document.getElementById('gameBackground');
+    if (gameBackground && battleState._originalBackground) {
+        gameBackground.style.backgroundImage = battleState._originalBackground;
+        battleState._originalBackground = null;
+    } else if (gameBackground && battleState.sparBackground) {
+        // 원래 배경 정보가 없으면 위치 기반으로 재적용
+        if (typeof updateLocationBackground === 'function') {
+            const map = typeof getCurrentMap === 'function' ? getCurrentMap() : null;
+            const loc = typeof getCurrentLocation === 'function' ? getCurrentLocation() : null;
+            if (map && loc) updateLocationBackground(map, loc);
+        }
+    }
+
     console.log('전투 UI 숨김 완료');
 }
 
@@ -2419,14 +2753,26 @@ function selectMonsterTarget(index) {
  * @param {string} imagePath - 배경 이미지 경로
  */
 function applyBattleBackground(imagePath) {
-    // 전투 아레나에 배경 적용
+    // 전체 게임 배경에 대련 배경 적용 (gameBackground)
+    const gameBackground = document.getElementById('gameBackground');
+    if (gameBackground) {
+        // 기존 배경 저장 (전투 종료 후 복원용)
+        if (!battleState._originalBackground) {
+            battleState._originalBackground = gameBackground.style.backgroundImage || '';
+        }
+        gameBackground.style.backgroundImage = `url('${imagePath}')`;
+        gameBackground.style.backgroundSize = 'cover';
+        gameBackground.style.backgroundPosition = 'center';
+        console.log('🎨 대련 배경 적용 (gameBackground):', imagePath);
+    }
+
+    // 전투 아레나에도 배경 적용
     const battleArena = document.querySelector('.battle-arena');
     if (battleArena) {
         battleArena.style.backgroundImage = `url('${imagePath}')`;
         battleArena.style.backgroundSize = 'cover';
         battleArena.style.backgroundPosition = 'center';
         battleArena.style.borderRadius = '10px';
-        console.log('🎨 대련 배경 적용:', imagePath);
     }
     
     // 몬스터 컨테이너에도 배경 투명하게 설정
@@ -2450,6 +2796,9 @@ function checkSeniorInstructorPhase2(monster) {
     if (hpPercent <= monster.phase2Config.hpThreshold) {
         monster.isPhase2 = true;
         
+        // 2페이즈 전환 중 플래그 설정 (대화 완료까지 턴 진행 차단)
+        battleState.phase2Transitioning = true;
+        
         // 전투 버튼 비활성화 (대화 중)
         enableBattleButtons(false);
         
@@ -2468,6 +2817,8 @@ function checkSeniorInstructorPhase2(monster) {
                 monster.activeBuffs.will_sword = {
                     name: '투지의 검',
                     pAtkBonus: 5,
+                    pAtkPercent: 5,
+                    lifestealPercent: 10,
                     duration: 5
                 };
                 monster.pAtk = (monster.pAtk || 0) + 5;
@@ -2483,13 +2834,19 @@ function checkSeniorInstructorPhase2(monster) {
         // UI 업데이트
         updateBattleUI();
         
-        // 2페이즈 대화창 표시 (보스 대화 스타일)
+        // 2페이즈 대화창 표시 (게임 데이터의 대사 사용)
         const phase2Lines = [];
         if (monster.dialogues && monster.dialogues.phase2) {
             phase2Lines.push(monster.dialogues.phase2);
         }
-        phase2Lines.push('물리공격력이 대폭 상승했다!');
-        phase2Lines.push('투지의 검을 발동했다! 각오하라!');
+        if (monster.dialogues && monster.dialogues.lowHp) {
+            phase2Lines.push(monster.dialogues.lowHp.trim());
+        }
+        
+        // 대사가 없으면 기본 대사
+        if (phase2Lines.length === 0) {
+            phase2Lines.push('이제부터 진심으로 상대해주지!');
+        }
         
         showPhase2DialogSequence(monster, phase2Lines);
     }
@@ -2506,9 +2863,18 @@ function showPhase2DialogSequence(monster, lines) {
         if (existing) existing.remove();
         
         if (currentLine >= lines.length) {
-            // 대화 종료 → 전투 버튼 활성화
-            enableBattleButtons(true);
-            addGameLog(`🔥 ${monster.name}이(가) 2페이즈에 돌입했다! 물리공격력 대폭 상승!`);
+            // 대화 종료 → 2페이즈 전환 완료
+            battleState.phase2Transitioning = false;
+            
+            addGameLog(`🔥 ${monster.name}이(가) 2페이즈에 돌입했다!`);
+            
+            // 투지의 검 스킬 발동 메시지 출력
+            if (monster.phase2Config && monster.phase2Config.activateSkill === 'will_sword') {
+                addGameLog(`🗡️ ${monster.name}의 투지의 검 스킬 발동!`);
+            }
+            
+            // 대화 완료 후 플레이어 턴 종료 → 몬스터 공격 턴으로 진행
+            endPlayerTurn();
             return;
         }
         

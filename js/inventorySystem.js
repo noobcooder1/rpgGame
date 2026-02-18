@@ -1238,20 +1238,32 @@ function showSkillTraitModal() {
     if (skills.length === 0) {
         skillsHtml = '<div class="no-skills">습득한 스킬이 없습니다.</div>';
     } else {
+        // 전투 중인지 확인 (전투 중일 때만 쿨타임 표시)
+        const isInBattle = typeof battleState !== 'undefined' && battleState.inBattle;
+        
         skills.forEach(skillId => {
             const skill = typeof SKILLS !== 'undefined' ? SKILLS[skillId] : null;
             if (skill) {
+                const skillLevel = player.skillLevels?.[skillId] || 1;
                 const cooldown = player.skillCooldowns?.[skillId] || 0;
+                
+                // 전투 중일 때만 현재 쿨타임 표시
+                let cooldownDisplay = '';
+                if (isInBattle && cooldown > 0) {
+                    cooldownDisplay = `<span style="color: #e74c3c;">현재 쿨타임: ${cooldown}턴</span>`;
+                }
+                
                 skillsHtml += `
                     <div class="skill-trait-item">
                         <div class="skill-trait-icon">${skill.icon}</div>
                         <div class="skill-trait-info">
-                            <div class="skill-trait-name">${skill.name}</div>
+                            <div class="skill-trait-name">${skill.name} <span style="color: #f1c40f; font-size: 0.85em;">Lv.${skillLevel}</span></div>
                             <div class="skill-trait-desc">${skill.description}</div>
                             <div class="skill-trait-stats">
                                 <span>MP: ${skill.mpCost}</span>
                                 <span>쿨타임: ${skill.cooldown}턴</span>
                                 ${skill.unlockLevel ? `<span>해금 레벨: ${skill.unlockLevel}</span>` : ''}
+                                ${cooldownDisplay}
                             </div>
                         </div>
                     </div>
@@ -1263,20 +1275,29 @@ function showSkillTraitModal() {
     let traitHtml = '';
     if (traitData) {
         const traitState = player.traitState || {};
+        // 전투 중인지 확인
+        const isInBattle = typeof battleState !== 'undefined' && battleState.inBattle;
+        
         let statusText = '';
-        if (traitState.active) {
-            statusText = `<span class="trait-active">활성화 (${traitState.duration}턴)</span>`;
-        } else if (traitState.cooldown > 0) {
-            statusText = `<span class="trait-cooldown">쿨다운 (${traitState.cooldown}턴)</span>`;
-        } else {
-            statusText = '<span class="trait-ready">발동 대기</span>';
+        // 전투 중일 때만 쿨타임/활성화 상태 표시
+        if (isInBattle) {
+            if (traitState.active) {
+                statusText = `<span class="trait-active">활성화 (${traitState.duration}턴)</span>`;
+            } else if (traitState.cooldown > 0) {
+                statusText = `<span class="trait-cooldown">쿨다운 (${traitState.cooldown}턴)</span>`;
+            } else {
+                statusText = '<span class="trait-ready">발동 대기</span>';
+            }
         }
+        
+        // 쿨다운 정보 (기본 스펙)
+        const cooldownInfo = traitData.effects?.cooldown ? `<span style="color: #5DADE2; font-size: 0.8em; margin-left: 5px;">쿨다운 (${traitData.effects.cooldown}턴)</span>` : '';
         
         traitHtml = `
             <div class="skill-trait-item trait-item">
                 <div class="skill-trait-icon">${traitData.icon}</div>
                 <div class="skill-trait-info">
-                    <div class="skill-trait-name">${traitData.name} ${statusText}</div>
+                    <div class="skill-trait-name">${traitData.name} ${cooldownInfo} ${statusText}</div>
                     <div class="skill-trait-desc">${traitData.description}</div>
                 </div>
             </div>
