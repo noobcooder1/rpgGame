@@ -172,9 +172,11 @@ const MAPS = {
         canEscape: true,
 
         // 출현 몬스터 (기본)
-        monsters: ['infected_villager', 'ghost', 'rat_swarm', 'bandit', 'infected_dog', 'infected_cow', 'undead', 'goblin'],
+        monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin'],
         // 강력한 몬스터 (밤에 출현 확률 증가)
-        nightMonsters: ['infected_soldier', 'death_knight'],
+        nightMonsters: ['cursed_guard', 'cursed_soldier'],
+        // 미니보스 몬스터
+        miniBossMonsters: ['death_knight'],
         // 보스 몬스터
         bossMonsters: ['cursed_lord'],
 
@@ -222,7 +224,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['infected_villager', 'ghost', 'rat_swarm'],
+                monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin', 'cursed_guard', 'cursed_soldier'],
                 connections: ['entrance', 'collapsed_houses', 'abandoned_church', 'village_well']
             },
 
@@ -234,7 +236,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['infected_villager', 'bandit', 'infected_dog', 'goblin'],
+                monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin', 'cursed_guard', 'cursed_soldier'],
                 connections: ['ruined_plaza', 'lord_mansion']
             },
 
@@ -246,7 +248,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['ghost', 'undead'],
+                monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin', 'cursed_guard', 'cursed_soldier'],
                 connections: ['ruined_plaza', 'abandoned_church_interior', 'lord_mansion']
             },
 
@@ -258,7 +260,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['ghost', 'undead', 'infected_soldier'],
+                monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin', 'cursed_guard', 'cursed_soldier'],
                 connections: ['abandoned_church']
             },
 
@@ -270,7 +272,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['rat_swarm', 'infected_cow'],
+                monsters: ['infected_villager', 'ghost', 'rat', 'bandit', 'infected_dog', 'zombie', 'goblin', 'cursed_guard', 'cursed_soldier'],
                 connections: ['ruined_plaza']
             },
 
@@ -282,7 +284,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['undead', 'infected_soldier', 'death_knight'],
+                monsters: ['ghost', 'cursed_guard', 'cursed_soldier', 'death_knight'],
                 connections: ['collapsed_houses', 'abandoned_church', 'lord_mansion_interior']
             },
 
@@ -294,7 +296,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['undead', 'death_knight'],
+                monsters: ['ghost', 'cursed_guard', 'cursed_soldier', 'death_knight'],
                 bossMonster: 'cursed_lord',
                 isBossArea: true,
                 connections: ['lord_mansion']
@@ -314,11 +316,13 @@ const MAPS = {
         canEscape: true,
 
         // 출현 몬스터 (기본)
-        monsters: ['cave_bat', 'giant_spider', 'zombie', 'orc', 'cave_ghost', 'slime'],
-        // 강력한 몬스터 (심층부)
-        eliteMonsters: ['orc_warrior', 'ancient_guardian'],
+        monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'orc', 'wraith', 'slime'],
+        // 엘리트 몬스터
+        eliteMonsters: ['skeleton_warrior', 'skeleton_mage'],
+        // 미니보스 몬스터
+        miniBossMonsters: ['skeleton_knight'],
         // 보스 몬스터
-        bossMonsters: ['cave_troll'],
+        bossMonsters: ['ancient_guardian', 'cave_troll'],
 
         actions: ['battle', 'move', 'explore', 'rest'],
         unlockCondition: { map: 'village', clear: true },
@@ -360,7 +364,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['cave_bat', 'giant_spider'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith'],
                 connections: ['entrance', 'crossroads']
             },
 
@@ -372,7 +376,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['cave_bat', 'zombie', 'slime'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'slime'],
                 // 4갈래 랜덤 연결 시스템
                 isRandomCrossroads: true,
                 randomPaths: ['underground_lake', 'abandoned_mine', 'ancient_remnants', 'ominous_space'],
@@ -387,7 +391,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore', 'rest'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['cave_ghost', 'slime', 'zombie'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'slime'],
                 connections: ['crossroads']
             },
 
@@ -399,7 +403,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['zombie', 'orc', 'giant_spider'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'orc'],
                 // 1차 광산 광석 (기본 광석)
                 specialExploreItems: [
                     { id: 'stone', name: '돌', chance: 0.35 },
@@ -447,7 +451,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['orc', 'orc_warrior', 'cave_ghost'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'orc'],
                 // 2차 광산 광석 (희귀 금속)
                 specialExploreItems: [
                     { id: 'gold_ore', name: '금광석', chance: 0.15 },
@@ -468,7 +472,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['ancient_guardian', 'cave_ghost', 'slime'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'slime'],
                 // 3차 광산 광석 (보석류)
                 specialExploreItems: [
                     { id: 'amethyst', name: '자수정', chance: 0.15 },
@@ -492,7 +496,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['zombie', 'cave_ghost', 'giant_spider'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'skeleton_knight'],
                 specialExploreItems: [
                     { id: 'ancient_coin', name: '고대 동전', chance: 0.10 },
                     { id: 'rune_fragment', name: '룬 파편', chance: 0.08 }
@@ -500,15 +504,18 @@ const MAPS = {
                 connections: ['crossroads', 'ancient_ruins']
             },
 
-            // 7. 고대 유적 (고대의 잔재에서 진입)
+            // 7. 고대 유적 (고대의 잔재에서 진입 - 특수 조우 시스템)
             ancient_ruins: {
                 id: 'ancient_ruins',
                 name: '고대 유적',
-                description: '신비로운 고대 문명의 유적. 강력한 수호자가 지키고 있다.',
-                actions: ['move', 'battle', 'explore'],
+                description: '신비로운 고대 문명의 유적. 강력한 수호자가 지키고 있다. 진입 시 자동으로 전투가 시작된다.',
+                actions: ['move', 'explore'],
                 canExplore: true,
-                canBattle: true,
-                monsters: ['cave_ghost', 'ancient_guardian'],
+                canBattle: false,
+                monsters: ['wraith', 'skeleton_warrior', 'skeleton_mage', 'skeleton_knight'],
+                bossMonster: 'ancient_guardian',
+                isBossArea: true,
+                isAncientRuinsEncounter: true,  // 특수 조우 시스템 플래그
                 // 고대 유적 특수 아이템
                 specialExploreItems: [
                     { id: 'ancient_coin', name: '고대 동전', chance: 0.15 },
@@ -526,7 +533,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['orc', 'orc_warrior', 'zombie'],
+                monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'orc'],
                 specialExploreItems: [
                     { id: 'bone_fragment', name: '뼈 파편', chance: 0.12 },
                     { id: 'troll_blood', name: '트롤의 피', chance: 0.05 }
@@ -542,7 +549,7 @@ const MAPS = {
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
-                monsters: ['orc', 'orc_warrior', 'zombie'],
+                monsters: ['wraith', 'orc'],
                 bossMonster: 'cave_troll',
                 isBossArea: true,
                 connections: ['ominous_space']
@@ -791,7 +798,7 @@ const MAPS = {
                 canBattle: true,
                 floor: 5,
                 recommendedLevel: 25,
-                monsters: ['elf', 'dwarf', 'orc', 'ogre', 'basilisk'],
+                monsters: ['elf', 'dwarf', 'orc', 'ogre', 'basilisk', 'wraith'],
                 trialMonsterCount: 7,
                 connections: ['floor_4', 'floor_6']
             },
@@ -2068,105 +2075,203 @@ const MONSTERS = {
         name: '감염된 주민',
         type: 'normal',
         tier: 2,
-        hp: 80, atk: 18, pDef: 2, mDef: 2,
-        exp: 25, gold: 15,
-        drops: [{ item: 'tattered_cloth', chance: 0.3 }, { item: 'cursed_bone', chance: 0.1 }],
-        emoji: '🧟'
+        hp: 80, mp: 0, pAtk: 7, mAtk: 0, pDef: 3, mDef: 3,
+        damageType: 'physical',
+        exp: 30, gold: 13,
+        drops: [
+            { item: 'tattered_cloth', chance: 0.4 },
+            { item: 'unknown_pouch', chance: 0.1 },
+            { item: 'strange_pendant', chance: 0.01 }
+        ],
+        emoji: '🧟',
+        description: '오직 물리공격만 한다.'
     },
     ghost: {
         id: 'ghost',
         name: '유령',
         type: 'normal',
         tier: 2,
-        hp: 60, atk: 22, pDef: 0, mDef: 5,
+        hp: 50, mp: 40, pAtk: 0, mAtk: 10, pDef: 0, mDef: 3,
         damageType: 'magical',
-        exp: 30, gold: 20,
-        drops: [{ item: 'ectoplasm', chance: 0.25 }],
-        emoji: '👻'
+        evasion: 50,
+        exp: 45, gold: 20,
+        drops: [{ item: 'ghost_fragment', chance: 0.2 }],
+        emoji: '👻',
+        description: '회피율이 높고, 마법 공격으로 상대하는것이 좋다.',
+        skills: [{
+            id: 'confusion_curse_1',
+            name: '혼란의 저주 Lv.1',
+            cooldown: 3,
+            description: '대상에게 혼란 상태를 부여한다.',
+            effect: { type: 'status', statusEffect: 'confusion', statusDuration: 2 }
+        }],
+        possibleTraits: [
+            { id: 'spirit_body_1', chance: 1.0 }
+        ]
     },
-    rat_swarm: {
-        id: 'rat_swarm',
-        name: '감염된 쥐',
+    rat: {
+        id: 'rat',
+        name: '쥐',
         type: 'normal',
         tier: 1,
-        hp: 40, atk: 12, pDef: 1, mDef: 1,
-        exp: 15, gold: 8,
-        drops: [{ item: 'rat_tail', chance: 0.5 }],
+        hp: 30, mp: 0, pAtk: 10, mAtk: 0, pDef: 2, mDef: 2,
+        damageType: 'physical',
+        evasion: 10,
+        exp: 20, gold: 3,
+        drops: [
+            { item: 'rat_tail', chance: 0.3 },
+            { item: 'rat_meat', chance: 0.1 }
+        ],
         emoji: '🐀',
-        minSpawn: 2  // 최소 2마리 이상 출현 (최대는 전투 10마리 제한에 따름)
+        minSpawn: 2,
+        description: '무리를 지어다니며, 성가시다.'
     },
     bandit: {
         id: 'bandit',
         name: '약탈자',
         type: 'normal',
-        tier: 2,
-        hp: 100, atk: 20, pDef: 4, mDef: 2,
-        exp: 35, gold: 30,
-        drops: [{ item: 'stolen_gold', chance: 0.4 }, { item: 'dagger', chance: 0.1 }],
-        emoji: '🗡️'
+        tier: 3,
+        hp: 100, mp: 30, pAtk: 20, mAtk: 0, pDef: 10, mDef: 9,
+        damageType: 'physical',
+        evasion: 10,
+        exp: 100, gold: 60,
+        drops: [
+            { item: 'bandit_sack', chance: 0.2 },
+            { item: 'normal_equipment', chance: 0.01 }
+        ],
+        emoji: '🗡️',
+        description: '마을을 약탈하는 도적이다. 특별한 아이템을 얻을 수도?',
+        skills: [{
+            id: 'slash_combo_1',
+            name: '연속베기 Lv.1',
+            cooldown: 2,
+            description: '적에게 연속으로 2회 베기 공격을 한다.',
+            effect: { type: 'multi_attack', attackCount: 2, damagePercent: 110 }
+        }]
     },
     infected_dog: {
         id: 'infected_dog',
         name: '감염된 개',
         type: 'normal',
         tier: 2,
-        hp: 70, atk: 25, pDef: 2, mDef: 1,
-        exp: 28, gold: 12,
-        drops: [{ item: 'infected_fang', chance: 0.2 }],
-        emoji: '🐕'
+        hp: 80, mp: 0, pAtk: 15, mAtk: 0, pDef: 7, mDef: 5,
+        damageType: 'physical',
+        evasion: 5,
+        exp: 50, gold: 19,
+        drops: [{ item: 'dirty_tooth', chance: 0.3 }],
+        emoji: '🐕',
+        description: '광견병을 조심할 것!',
+        possibleTraits: [
+            { id: 'rabies_1', chance: 1.0 }
+        ]
     },
-    infected_cow: {
-        id: 'infected_cow',
-        name: '감염된 소',
+    zombie: {
+        id: 'zombie',
+        name: '좀비',
         type: 'normal',
         tier: 3,
-        hp: 150, atk: 15, pDef: 6, mDef: 3,
-        exp: 40, gold: 25,
-        drops: [{ item: 'infected_hide', chance: 0.25 }],
-        emoji: '🐄'
-    },
-    undead: {
-        id: 'undead',
-        name: '언데드',
-        type: 'normal',
-        tier: 3,
-        hp: 120, atk: 18, pDef: 5, mDef: 5,
-        exp: 35, gold: 22,
-        drops: [{ item: 'bone', chance: 0.4 }, { item: 'cursed_bone', chance: 0.15 }],
-        emoji: '💀'
+        hp: 110, mp: 0, pAtk: 20, mAtk: 0, pDef: 8, mDef: 3,
+        damageType: 'physical',
+        exp: 50, gold: 25,
+        drops: [{ item: 'rotten_flesh', chance: 0.1 }],
+        emoji: '🧟‍♂️',
+        description: '마법공격에 취약하다.',
+        possibleTraits: [
+            { id: 'infection_1', chance: 0.5 }
+        ]
     },
     goblin: {
         id: 'goblin',
         name: '고블린',
         type: 'normal',
         tier: 2,
-        hp: 60, atk: 15, pDef: 3, mDef: 2,
-        exp: 20, gold: 18,
-        drops: [{ item: 'goblin_ear', chance: 0.3 }, { item: 'cloth', chance: 0.2 }],
-        emoji: '👺'
+        hp: 90, mp: 0, pAtk: 15, mAtk: 0, pDef: 5, mDef: 3,
+        damageType: 'physical',
+        evasion: 5,
+        exp: 40, gold: 20,
+        drops: [{ item: 'goblin_ear', chance: 0.3 }],
+        emoji: '👺',
+        description: '강하지는 않지만 성가시다.'
     },
 
-    // 강력한 몬스터 (밤에 출현 확률 증가)
-    infected_soldier: {
-        id: 'infected_soldier',
-        name: '감염된 병사',
+    // 엘리트 몬스터
+    cursed_guard: {
+        id: 'cursed_guard',
+        name: '저주받은 경비병',
         type: 'elite',
         tier: 4,
-        hp: 125, atk: 27, pDef: 3, mDef: 3,
-        exp: 100, gold: 70,
-        drops: [{ item: 'soldier_badge', chance: 0.2 }, { item: 'rusty_sword', chance: 0.15 }],
-        emoji: '⚔️'
+        hp: 170, mp: 0, pAtk: 20, mAtk: 0, pDef: 15, mDef: 12,
+        damageType: 'physical',
+        exp: 150, gold: 50,
+        drops: [
+            { item: 'cursed_armor_fragment', chance: 0.1 },
+            { item: 'cursed_weapon_fragment', chance: 0.1 }
+        ],
+        emoji: '🛡️',
+        description: '마을을 지키던 경비병이다.'
     },
+    cursed_soldier: {
+        id: 'cursed_soldier',
+        name: '저주받은 병사',
+        type: 'elite',
+        tier: 4,
+        hp: 145, mp: 0, pAtk: 25, mAtk: 0, pDef: 9, mDef: 7,
+        damageType: 'physical',
+        exp: 150, gold: 50,
+        drops: [
+            { item: 'cursed_armor_fragment', chance: 0.1 },
+            { item: 'cursed_weapon_fragment', chance: 0.1 },
+            { item: 'cursed_bow', chance: 0.02 }
+        ],
+        emoji: '🏹',
+        description: '지원요청 특성을 주의할 것!',
+        skills: [{
+            id: 'multishot_1',
+            name: '멀티샷',
+            cooldown: 2,
+            description: '여러 발의 화살을 동시에 발사한다.',
+            effect: { type: 'multi_attack', attackCount: 2, damagePercent: 100 }
+        }]
+    },
+
+    // 미니 보스 몬스터
     death_knight: {
         id: 'death_knight',
         name: '저주받은 경비대장',
         type: 'miniboss',
         tier: 5,
-        hp: 350, atk: 35, pDef: 10, mDef: 10,
-        exp: 750, gold: 500,
-        drops: [{ item: 'dark_essence', chance: 0.3 }, { item: 'knight_armor', chance: 0.1 }],
-        emoji: '🗡️',
-        isMiniBoss: true
+        hp: 350, mp: 0, pAtk: 50, mAtk: 0, pDef: 25, mDef: 20,
+        damageType: 'physical',
+        exp: 850, gold: 250,
+        drops: [
+            { item: 'cursed_armor_fragment', chance: 1.0 },
+            { item: 'cursed_weapon_fragment', chance: 0.8 },
+            { item: 'cursed_greatsword', chance: 0.1 },
+            { item: 'cursed_dagger', chance: 0.07 }
+        ],
+        emoji: '⚔️',
+        isMiniBoss: true,
+        description: '제법 강하니 조심할 것',
+        skills: [
+            {
+                id: 'smash_1',
+                name: '강타',
+                cooldown: 2,
+                description: '강력한 일격을 가한다.',
+                effect: { type: 'damage', damagePercent: 200, statusEffect: 'stun', statusDuration: 1 }
+            },
+            {
+                id: 'guard_1',
+                name: '수호',
+                cooldown: 4,
+                description: '방어 태세를 취하여 받는 피해를 줄인다.',
+                effect: { type: 'buff', buffType: 'defense', defenseBonus: 50, duration: 2 }
+            }
+        ],
+        possibleTraits: [
+            { id: 'summon_call', chance: 1.0 },
+            { id: 'guard_skill', chance: 0.5 }
+        ]
     },
 
     // 보스 몬스터
@@ -2175,146 +2280,382 @@ const MONSTERS = {
         name: '저주받은 영주',
         type: 'boss',
         tier: 6,
-        hp: 500, atk: 45, pDef: 10, mDef: 10,
-        exp: 1500, gold: 1000,
+        hp: 600, mp: 100, pAtk: 0, mAtk: 56, pDef: 16, mDef: 16,
+        damageType: 'magical',
+        exp: 3000, gold: 1000,
         drops: [
-            { item: 'lord_ring', chance: 0.2 },
-            { item: 'cursed_crown', chance: 0.1 },
-            { item: 'dark_essence', chance: 0.5 }
+            { item: 'cursed_shoes', chance: 1.0 },
+            { item: 'cursed_gloves', chance: 1.0 },
+            { item: 'cursed_staff', chance: 1.0 },
+            { item: 'cursed_necklace', chance: 0.9 },
+            { item: 'cursed_ring', chance: 0.85 },
+            { item: 'unknown_book', chance: 0.7 }
         ],
-        emoji: '👑',
+        emoji: '👻',
         isBoss: true,
-        // 특수 스킬: 감염된 주민 소환 (3턴마다)
-        skills: [{
-            id: 'summon_infected',
-            name: '감염된 주민 소환',
-            cooldown: 3,
-            description: '저주받은 영주가 감염된 주민을 소환합니다.',
-            effect: {
-                type: 'summon',
-                summonId: 'infected_villager',
-                // 소환 확률: 1마리 60%, 2마리 30%, 3마리 10%
-                countChances: [
-                    { count: 1, chance: 0.6 },
-                    { count: 2, chance: 0.3 },
-                    { count: 3, chance: 0.1 }
-                ]
+        description: '저주를 받아 흑마법사로 바뀌어버린 영주입니다.',
+        skills: [
+            {
+                id: 'summon_undead',
+                name: '소환',
+                cooldown: 3,
+                description: '저주받은 영주가 언데드를 소환합니다.',
+                effect: {
+                    type: 'summon',
+                    summonId: 'zombie',
+                    countChances: [
+                        { count: 1, chance: 0.5 },
+                        { count: 2, chance: 0.3 },
+                        { count: 3, chance: 0.2 }
+                    ]
+                }
+            },
+            {
+                id: 'plague_curse',
+                name: '역병의 저주',
+                cooldown: 4,
+                description: '대상에게 역병의 저주를 걸어 지속 피해를 입힌다.',
+                effect: { type: 'dot', damagePercent: 15, duration: 3, damageType: 'magical' }
+            },
+            {
+                id: 'weakness_curse',
+                name: '약화의 저주',
+                cooldown: 5,
+                description: '대상의 공격력과 방어력을 감소시킨다.',
+                effect: { type: 'debuff', atkReduction: 20, defReduction: 20, duration: 3 }
             }
-        }]
+        ]
     },
 
     // ===== 수상한 동굴 몬스터 =====
     // 일반 몬스터
     cave_bat: {
         id: 'cave_bat',
-        name: '동굴 박쥐',
+        name: '박쥐',
         type: 'normal',
         tier: 3,
-        hp: 80, atk: 20, pDef: 3, mDef: 3,
-        exp: 40, gold: 22,
-        drops: [{ item: 'bat_wing', chance: 0.4 }],
-        emoji: '🦇'
+        hp: 80, mp: 0, pAtk: 7, mAtk: 0, pDef: 3, mDef: 3,
+        damageType: 'physical',
+        exp: 35, gold: 20,
+        drops: [{ item: 'bat_wing', chance: 0.25 }],
+        emoji: '🦇',
+        description: '그닥 강하지는 않지만 수가많아서 거슬린다.'
     },
     giant_spider: {
         id: 'giant_spider',
-        name: '거대 거미',
+        name: '거대거미',
         type: 'normal',
-        tier: 3,
-        hp: 100, atk: 25, pDef: 5, mDef: 4,
-        exp: 55, gold: 30,
-        drops: [{ item: 'spider_silk', chance: 0.45 }, { item: 'venom', chance: 0.2 }],
-        emoji: '🕷️'
+        tier: 4,
+        hp: 200, mp: 0, pAtk: 24, mAtk: 0, pDef: 10, mDef: 9,
+        damageType: 'physical',
+        exp: 200, gold: 50,
+        drops: [{ item: 'spider_silk', chance: 0.25 }],
+        emoji: '🕷️',
+        description: '생각보다 강함',
+        skills: [{
+            id: 'web_bind',
+            name: '거미줄 속박',
+            cooldown: 3,
+            description: '거미줄로 대상을 속박하여 행동을 제한한다.',
+            effect: { type: 'status', statusEffect: 'stun', statusDuration: 1 }
+        }]
     },
-    zombie: {
-        id: 'zombie',
-        name: '좀비',
+    skeleton: {
+        id: 'skeleton',
+        name: '스켈레톤',
         type: 'normal',
         tier: 3,
-        hp: 120, atk: 22, pDef: 6, mDef: 2,
+        hp: 100, mp: 0, pAtk: 21, mAtk: 0, pDef: 5, mDef: 5,
+        damageType: 'physical',
         exp: 50, gold: 25,
-        drops: [{ item: 'rotten_flesh', chance: 0.35 }, { item: 'bone', chance: 0.25 }],
-        emoji: '🧟'
+        drops: [
+            { item: 'strange_bone', chance: 0.5 },
+            { item: 'cursed_bone', chance: 0.2 }
+        ],
+        emoji: '💀',
+        description: '생각보다 강함'
+    },
+    ghoul: {
+        id: 'ghoul',
+        name: '구울',
+        type: 'normal',
+        tier: 4,
+        hp: 220, mp: 0, pAtk: 31, mAtk: 0, pDef: 12, mDef: 4,
+        damageType: 'physical',
+        exp: 220, gold: 70,
+        drops: [{ item: 'rotten_flesh', chance: 0.25 }],
+        emoji: '🧟',
+        description: '좀비보다 강력한 언데드다. 마법에 취약하다.',
+        skills: [{
+            id: 'flesh_explosion_2',
+            name: '살점폭파 Lv.2',
+            cooldown: 3,
+            description: '부패한 살점을 폭파시켜 주변에 피해를 준다.',
+            effect: { type: 'aoe_damage', damageMultiplier: 1.3 }
+        }],
+        possibleTraits: [
+            { id: 'infection_2', chance: 0.8 }
+        ]
     },
     orc: {
         id: 'orc',
         name: '오크',
         type: 'normal',
         tier: 4,
-        hp: 150, atk: 30, pDef: 8, mDef: 4,
-        exp: 70, gold: 45,
-        drops: [{ item: 'orc_tooth', chance: 0.3 }, { item: 'crude_axe', chance: 0.1 }],
-        emoji: '👹'
+        hp: 200, mp: 0, pAtk: 30, mAtk: 0, pDef: 11, mDef: 10,
+        damageType: 'physical',
+        exp: 200, gold: 60,
+        drops: [
+            { item: 'orc_tooth', chance: 0.3 },
+            { item: 'broken_axe_blade', chance: 0.1 }
+        ],
+        emoji: '👹',
+        description: '일반 몬스터입니다.'
     },
-    cave_ghost: {
-        id: 'cave_ghost',
-        name: '동굴 유령',
+    wraith: {
+        id: 'wraith',
+        name: '망령',
         type: 'normal',
-        tier: 3,
-        hp: 70, atk: 28, pDef: 0, mDef: 8,
-        damageType: 'magical',
-        exp: 60, gold: 35,
-        drops: [{ item: 'ectoplasm', chance: 0.3 }],
-        emoji: '👻'
+        tier: 4,
+        hp: 100, mp: 0, pAtk: 30, mAtk: 0, pDef: 0, mDef: 10,
+        damageType: 'physical',
+        evasion: 50,
+        exp: 150, gold: 40,
+        drops: [{ item: 'wraith_fragment', chance: 0.2 }],
+        emoji: '👻',
+        description: '회피율이 높고, 마법 공격으로 상대하는것이 좋다.',
+        skills: [{
+            id: 'confusion_curse_3',
+            name: '혼란의 저주 Lv.3',
+            cooldown: 3,
+            description: '대상에게 강력한 혼란 상태를 부여한다.',
+            effect: { type: 'status', statusEffect: 'confusion', statusDuration: 3 }
+        }],
+        possibleTraits: [
+            { id: 'spirit_body_3', chance: 1.0 }
+        ]
     },
     slime: {
         id: 'slime',
         name: '슬라임',
         type: 'normal',
-        tier: 2,
-        hp: 60, atk: 15, pDef: 10, mDef: 10,
-        exp: 35, gold: 20,
+        tier: 3,
+        hp: 150, mp: 0, pAtk: 12, mAtk: 0, pDef: 7, mDef: 7,
+        damageType: 'physical',
+        exp: 100, gold: 40,
         drops: [{ item: 'slime_gel', chance: 0.5 }],
-        emoji: '🟢'
+        emoji: '🟢',
+        description: 'HP가 0이될시 두 마리의 작은 슬라임으로 분열한다.',
+        possibleTraits: [
+            { id: 'split', chance: 1.0 }
+        ]
+    },
+    small_slime: {
+        id: 'small_slime',
+        name: '작은 슬라임',
+        type: 'normal',
+        tier: 1,
+        hp: 40, mp: 0, pAtk: 4, mAtk: 0, pDef: 2, mDef: 2,
+        damageType: 'physical',
+        exp: 12, gold: 7,
+        drops: [{ item: 'slime_gel', chance: 0.1 }],
+        emoji: '🟢',
+        description: '강하지는 않지만 귀찮다.',
+        isSpawned: true  // 슬라임 분열로만 출현
     },
 
     // 엘리트 몬스터
-    orc_warrior: {
-        id: 'orc_warrior',
-        name: '오크 전사',
+    skeleton_warrior: {
+        id: 'skeleton_warrior',
+        name: '스켈레톤 워리어',
         type: 'elite',
-        tier: 5,
-        hp: 250, atk: 40, pDef: 12, mDef: 6,
-        exp: 150, gold: 100,
-        drops: [{ item: 'orc_sword', chance: 0.2 }, { item: 'warrior_badge', chance: 0.15 }],
-        emoji: '⚔️'
+        tier: 4,
+        hp: 170, mp: 0, pAtk: 25, mAtk: 0, pDef: 10, mDef: 9,
+        damageType: 'physical',
+        exp: 180, gold: 60,
+        drops: [
+            { item: 'strange_bone', chance: 0.5 },
+            { item: 'cursed_bone', chance: 0.2 }
+        ],
+        emoji: '💀',
+        description: '일반 스켈레톤보다 강함'
     },
-    ancient_guardian: {
-        id: 'ancient_guardian',
-        name: '고대 수호자',
+    skeleton_mage: {
+        id: 'skeleton_mage',
+        name: '스켈레톤 메이지',
         type: 'elite',
+        tier: 4,
+        hp: 100, mp: 50, pAtk: 0, mAtk: 30, pDef: 5, mDef: 5,
+        damageType: 'magical',
+        exp: 190, gold: 55,
+        drops: [
+            { item: 'strange_bone', chance: 0.5 },
+            { item: 'cursed_bone', chance: 0.2 },
+            { item: 'shining_bone', chance: 0.15 }
+        ],
+        emoji: '💀🔥',
+        description: '마법공격을 한다.',
+        // 파이어볼 또는 라이트닝볼트 중 랜덤 1개 보유
+        skillPool: [
+            {
+                id: 'fireball_monster',
+                name: '파이어볼',
+                cooldown: 3,
+                description: '마법 화염을 발사한다.',
+                damageType: 'magical',
+                effect: { type: 'damage', damagePercent: 200, statusEffect: 'burn', statusDuration: 2 }
+            },
+            {
+                id: 'lightning_bolt_monster',
+                name: '라이트닝볼트',
+                cooldown: 3,
+                description: '번개를 소환하여 공격한다.',
+                damageType: 'magical',
+                effect: { type: 'damage', damagePercent: 270, statusEffect: 'shock', statusDuration: 1 }
+            }
+        ],
+        randomSkillCount: 1  // skillPool에서 랜덤 1개 선택
+    },
+
+    // 미니 보스 몬스터
+    skeleton_knight: {
+        id: 'skeleton_knight',
+        name: '스켈레톤 나이트',
+        type: 'miniboss',
         tier: 5,
-        hp: 300, atk: 35, pDef: 15, mDef: 15,
-        exp: 180, gold: 120,
-        drops: [{ item: 'ancient_artifact', chance: 0.15 }, { item: 'rune_stone', chance: 0.2 }],
-        emoji: '🗿'
+        hp: 380, mp: 80, pAtk: 50, mAtk: 0, pDef: 25, mDef: 25,
+        damageType: 'physical',
+        efficiency: 10,
+        exp: 1000, gold: 300,
+        drops: [
+            { item: 'strange_bone', chance: 1.0, count: 7 },
+            { item: 'cursed_bone', chance: 1.0, count: 3 },
+            { item: 'shining_bone', chance: 1.0, count: 2 },
+            { item: 'bone_dagger', chance: 0.1 },
+            { item: 'bone_greatsword', chance: 0.2 }
+        ],
+        emoji: '⚔️💀',
+        isMiniBoss: true,
+        description: '고대의 유적을 지키고있는 신비한 몬스터입니다.',
+        skills: [
+            {
+                id: 'spirit_sword_2',
+                name: '투지의 검 Lv.2',
+                cooldown: 2,
+                description: '투지의 검으로 공격력을 올리고 흡혈한다.',
+                effect: { type: 'buff', buffType: 'attack', pAtkBonus: 10, lifestealPercent: 15, duration: 3 }
+            },
+            {
+                id: 'smash_3',
+                name: '강타 Lv.3',
+                cooldown: 2,
+                description: '강력한 일격으로 적에게 큰 피해를 준다.',
+                effect: { type: 'damage', damagePercent: 250, statusEffect: 'stun', statusDuration: 1 }
+            }
+        ],
+        possibleTraits: [
+            { id: 'unyielding_2', chance: 1.0 }
+        ]
     },
 
     // 보스 몬스터
+    ancient_guardian: {
+        id: 'ancient_guardian',
+        name: '고대 수호자',
+        type: 'boss',
+        tier: 7,
+        hp: 1000, mp: 130, pAtk: 80, mAtk: 0, pDef: 37, mDef: 33,
+        damageType: 'physical',
+        efficiency: 20,
+        evasion: 10,
+        exp: 10000, gold: 8000,
+        drops: [
+            { item: 'nameless_king_ring', chance: 1.0 },
+            { item: 'ancient_rune', chance: 1.0 },
+            { item: 'kings_necklace', chance: 1.0 },
+            { item: 'magic_gloves', chance: 0.8 },
+            { item: 'swift_boots', chance: 0.7 }
+        ],
+        emoji: '🗿',
+        isBoss: true,
+        description: '고대의 유적을 지키고있는 신비한 몬스터입니다.',
+        skills: [
+            {
+                id: 'spirit_sword_5',
+                name: '투지의 검 Lv.5',
+                cooldown: 2,
+                description: '투지의 힘으로 공격력을 올리고 흡혈한다.',
+                effect: { type: 'buff', buffType: 'attack', pAtkBonus: 25, lifestealPercent: 20, duration: 3 }
+            },
+            {
+                id: 'smash_5',
+                name: '강타 Lv.5',
+                cooldown: 2,
+                description: '매우 강력한 일격을 가한다.',
+                effect: { type: 'damage', damagePercent: 300, statusEffect: 'stun', statusDuration: 1 }
+            },
+            {
+                id: 'doom_strike_3',
+                name: '멸망의 일격 Lv.3',
+                cooldown: 5,
+                description: '전신의 힘을 모아 파괴적인 일격을 가한다.',
+                effect: { type: 'damage', damagePercent: 500 }
+            }
+        ],
+        possibleTraits: [
+            { id: 'unyielding_5', chance: 1.0 },
+            { id: 'counter_5', chance: 1.0 }
+        ]
+    },
     cave_troll: {
         id: 'cave_troll',
-        name: '동굴 트롤',
+        name: '동굴트롤',
         type: 'boss',
-        tier: 6,
-        hp: 600, atk: 55, pDef: 15, mDef: 8,
-        exp: 2000, gold: 1500,
+        tier: 7,
+        hp: 800, mp: 80, pAtk: 65, mAtk: 0, pDef: 30, mDef: 30,
+        damageType: 'physical',
+        healEfficiency: 20,
+        exp: 8000, gold: 2000,
         drops: [
-            { item: 'troll_hide', chance: 0.4 },
-            { item: 'troll_club', chance: 0.2 },
-            { item: 'cave_crystal', chance: 0.15 }
+            { item: 'troll_blood', chance: 1.0 },
+            { item: 'bone_necklace', chance: 1.0 },
+            { item: 'troll_greatsword', chance: 1.0 },
+            { item: 'bone_ring', chance: 1.0 },
+            { item: 'regeneration_elixir', chance: 0.9 },
+            { item: 'strength_elixir', chance: 0.6 }
         ],
         emoji: '👾',
         isBoss: true,
-        // 특수 스킬: 대지 진동 (3턴마다)
-        skills: [{
-            id: 'earthquake',
-            name: '대지 진동',
-            cooldown: 3,
-            description: '트롤이 땅을 내리쳐 강력한 진동을 일으킵니다.',
-            effect: {
-                type: 'aoe_damage',
-                damageMultiplier: 1.5
+        description: '부족에서 추방당해 동굴에서 살고있는 흉폭한 트롤전사입니다.',
+        skills: [
+            {
+                id: 'roar_3',
+                name: '포효 Lv.3',
+                cooldown: 4,
+                description: '트롤이 포효하여 공격력을 높인다.',
+                effect: { type: 'buff', buffType: 'attack', pAtkBonus: 20, duration: 3 }
+            },
+            {
+                id: 'smash_4',
+                name: '강타 Lv.4',
+                cooldown: 2,
+                description: '트롤의 강력한 일격.',
+                effect: { type: 'damage', damagePercent: 250, statusEffect: 'stun', statusDuration: 1 }
+            },
+            {
+                id: 'earth_smash_3',
+                name: '대지강타 Lv.3',
+                cooldown: 3,
+                description: '트롤이 땅을 내리쳐 강력한 진동을 일으킵니다.',
+                effect: {
+                    type: 'aoe_damage',
+                    damageMultiplier: 1.5
+                }
             }
-        }]
+        ],
+        possibleTraits: [
+            { id: 'regeneration_4', chance: 1.0 }
+        ]
     },
 
     // ===== 이상한 숲 몬스터 =====

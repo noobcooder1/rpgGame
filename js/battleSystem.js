@@ -430,6 +430,15 @@ function endBattle(result) {
 
             // 레벨업 체크
             checkLevelUp();
+
+            // 고대유적 특수 조우 - 전투 승리 후 고대 수호자 대화 시작
+            if (window._ancientRuinsPostBattle) {
+                setTimeout(() => {
+                    if (typeof showAncientGuardianDialogue === 'function') {
+                        showAncientGuardianDialogue();
+                    }
+                }, 1500);
+            }
             break;
 
         case 'defeat':
@@ -491,6 +500,10 @@ function endBattle(result) {
                 handleNoDeathZoneDefeat(currentMapData, monster);
                 return;  // 패배 처리 중이므로 즉시 종료
             } else {
+                // 고대유적 전투 패배 시 플래그 초기화
+                if (window._ancientRuinsPostBattle) {
+                    window._ancientRuinsPostBattle = false;
+                }
                 // 일반 사망 처리 - 게임오버 화면으로 이동
                 showGameOverScreen();
                 return;  // 게임오버 화면 전환 중이므로 즉시 종료
@@ -498,6 +511,10 @@ function endBattle(result) {
 
         case 'escape':
             addGameLog('🏃 전투에서 도망쳤습니다.');
+            // 고대유적 전투 도주 시 플래그 초기화
+            if (window._ancientRuinsPostBattle) {
+                window._ancientRuinsPostBattle = false;
+            }
             break;
     }
 

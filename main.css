@@ -4020,6 +4020,113 @@ body {
     box-shadow: 0 0 20px rgba(139, 0, 0, 0.8);
 }
 
+/* 보스 대화 선택지 버튼 컨테이너 */
+.boss-dialog-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 700px;
+}
+
+/* 선택지 버튼 */
+.boss-dialog-choice-btn {
+    background: linear-gradient(135deg, rgba(30, 30, 60, 0.95), rgba(40, 40, 80, 0.95));
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid #4a4a8a;
+    text-align: left;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.boss-dialog-choice-btn:hover {
+    transform: scale(1.02);
+    border-color: #6a6aaa;
+    box-shadow: 0 0 15px rgba(100, 100, 200, 0.5);
+    background: linear-gradient(135deg, rgba(40, 40, 80, 0.95), rgba(50, 50, 100, 0.95));
+}
+
+/* 전투 선택지 (빨간색) */
+.boss-dialog-choice-btn.battle {
+    border-color: #8b0000;
+    background: linear-gradient(135deg, rgba(60, 20, 20, 0.95), rgba(80, 30, 30, 0.95));
+}
+
+.boss-dialog-choice-btn.battle:hover {
+    border-color: #aa0000;
+    box-shadow: 0 0 15px rgba(200, 50, 50, 0.5);
+    background: linear-gradient(135deg, rgba(80, 30, 30, 0.95), rgba(100, 40, 40, 0.95));
+}
+
+/* 도주 선택지 (회색) */
+.boss-dialog-choice-btn.escape {
+    border-color: #555;
+    background: linear-gradient(135deg, rgba(40, 40, 40, 0.95), rgba(60, 60, 60, 0.95));
+    color: #aaa;
+}
+
+.boss-dialog-choice-btn.escape:hover {
+    border-color: #888;
+    box-shadow: 0 0 10px rgba(150, 150, 150, 0.3);
+    background: linear-gradient(135deg, rgba(50, 50, 50, 0.95), rgba(70, 70, 70, 0.95));
+    color: #ddd;
+}
+
+/* 퀘스트 알림 */
+.quest-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 10001;
+    animation: questSlideIn 0.5s ease-out, questFadeOut 0.5s ease-in 2.5s forwards;
+}
+
+.quest-notif-content {
+    background: linear-gradient(135deg, rgba(20, 60, 20, 0.95), rgba(30, 80, 30, 0.95));
+    border: 2px solid #2ecc71;
+    border-radius: 12px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+    min-width: 250px;
+}
+
+.quest-notif-icon {
+    font-size: 32px;
+}
+
+.quest-notif-text {
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.quest-notif-text strong {
+    color: #2ecc71;
+    font-size: 16px;
+}
+
+.quest-notif-text small {
+    color: #aaa;
+}
+
+@keyframes questSlideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes questFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
 /* ============================================
    난이도 선택 패널 닫기 버튼
    ============================================ */

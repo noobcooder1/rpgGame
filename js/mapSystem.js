@@ -327,11 +327,25 @@ function executeLocationMove(resolvedLocationId) {
     updateLocationUI();
     addGameLog(`🚶 ${newLoc.name}(으)로 이동했습니다.`);
 
+    // 고대유적 특수 조우 시스템 (스켈레톤 나이트 + 워리어 + 메이지 전투 → 고대 수호자 대화)
+    if (newLoc && newLoc.isAncientRuinsEncounter) {
+        // 고대유적 클리어 여부 확인
+        if (!player.ancientRuinsCleared) {
+            setTimeout(() => {
+                showAncientRuinsEncounter();
+            }, 500);
+            return true;
+        }
+    }
+
     // 보스방 진입 시 보스 대화 및 전투 시작
     if (newLoc && newLoc.isBossArea && newLoc.bossMonster) {
-        setTimeout(() => {
-            showBossEncounter(newLoc);
-        }, 500);
+        // 고대유적은 별도 시스템으로 처리
+        if (!newLoc.isAncientRuinsEncounter) {
+            setTimeout(() => {
+                showBossEncounter(newLoc);
+            }, 500);
+        }
     }
 
     return true;
@@ -433,13 +447,22 @@ function showBossEncounter(location) {
                 '숲의 분노를 느껴보아라!'
             ]
         },
-        ancient_golem: {
-            name: '고대 골렘',
+        cave_troll: {
+            name: '동굴트롤',
+            emoji: '👾',
+            lines: [
+                '크아아아!!',
+                '감히 내 영역에 발을 들이다니...',
+                '네 뼈로 목걸이를 만들어주마!'
+            ]
+        },
+        ancient_guardian: {
+            name: '고대 수호자',
             emoji: '🗿',
             lines: [
-                '... 침입자 감지...',
-                '... 고대의 명령... 수호 임무 수행...',
-                '... 제거 시작...'
+                '오랫만에 맞이하는 손님이로군.',
+                '네 용기는 인정하마. 하지만 그것이 끝이다!',
+                '이 유적의 보물을 탐하는 것이라면, 용서하지 않겠다!'
             ]
         },
         demon_archduke: {
@@ -536,7 +559,387 @@ function showBossDialogSequence(dialogue, bossType) {
 }
 
 // ============================================
-// 🎨 맵 UI
+// �️ 고대유적 특수 조우 시스템
+// ============================================
+
+/**
+ * 고대유적 진입 시 특수 조우 시퀀스를 시작합니다.
+ * 1단계: 스켈레톤 나이트 1기 + 스켈레톤 워리어 2기 + 스켈레톤 메이지 1기 전투
+ * 2단계: 전투 승리 시 고대 수호자와 대화 (선택지 포함)
+ */
+function showAncientRuinsEncounter() {
+    // 진입 경고 대화
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">💀</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name">???</div>
+                <div class="boss-dialog-text">고대 유적에 발을 들이자, 뼈로 만들어진 전사들이 길을 막아선다!</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="startAncientRuinsGuardBattle()">
+                ⚔️ 전투 시작!
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('💀 고대 유적에 진입하자 스켈레톤 전사들이 길을 막아섭니다!');
+}
+
+/**
+ * 고대유적 수호 전투를 시작합니다 (스켈레톤 나이트 1 + 워리어 2 + 메이지 1).
+ * 전투 승리 후 고대 수호자와의 대화가 시작됩니다.
+ */
+function startAncientRuinsGuardBattle() {
+    // 대화 모달 제거
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 전투 승리 후 콜백 설정
+    window._ancientRuinsPostBattle = true;
+
+    // 스켈레톤 나이트 1 + 스켈레톤 워리어 2 + 스켈레톤 메이지 1 전투 시작
+    addGameLog('⚔️ 스켈레톤 나이트, 스켈레톤 워리어 2기, 스켈레톤 메이지와의 전투!');
+    startBattle(['skeleton_knight', 'skeleton_warrior', 'skeleton_warrior', 'skeleton_mage']);
+}
+
+/**
+ * 고대유적 전투 승리 후 고대 수호자와의 대화를 시작합니다.
+ * endBattle에서 호출됩니다.
+ */
+function showAncientGuardianDialogue() {
+    window._ancientRuinsPostBattle = false;
+
+    // 약간의 딜레이 후 대화 시작
+    setTimeout(() => {
+        showGuardianDialogueLine1();
+    }, 1000);
+}
+
+/**
+ * 고대 수호자 첫 번째 대화 (선택지 포함)
+ */
+function showGuardianDialogueLine1() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const playerName = (typeof player !== 'undefined' && player.name) ? player.name : '용사';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">오랫만에 맞이하는 손님이로군. 너는 누구냐?</div>
+            </div>
+            <div class="boss-dialog-choices">
+                <button class="boss-dialog-choice-btn" onclick="guardianChoice1()">
+                    💬 계속 대화한다
+                </button>
+                <button class="boss-dialog-choice-btn battle" onclick="guardianChoice2()">
+                    ⚔️ 몬스터로군, 죽어라!
+                </button>
+                <button class="boss-dialog-choice-btn escape" onclick="guardianChoice3()">
+                    🏃 싸늘함을 느끼고 고대유적에서 도주한다
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자: "오랫만에 맞이하는 손님이로군. 너는 누구냐?"');
+}
+
+/**
+ * 선택지 1: 계속 대화한다
+ */
+function guardianChoice1() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const playerName = (typeof player !== 'undefined' && player.name) ? player.name : '용사';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🧑</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #3498db; font-weight: bold;">${playerName}</div>
+                <div class="boss-dialog-text">나는 ${playerName}입니다. 당신은 누구십니까?</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="guardianDialogue2()">
+                ▶ 다음
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog(`🧑 ${playerName}: "나는 ${playerName}입니다. 당신은 누구십니까?"`);
+}
+
+/**
+ * 고대 수호자 응답 (자기소개)
+ */
+function guardianDialogue2() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">나는 이 유적을 지키는 자. 수천 년 동안 이곳을 지켜왔다. 네가 내 수하들을 쓰러뜨린 것을 보아하니... 제법 실력이 있는 모양이군.</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="guardianDialogue3()">
+                ▶ 다음
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자: "나는 이 유적을 지키는 자..."');
+}
+
+/**
+ * 고대 수호자 대화 3 (퀘스트 제안 선택지)
+ */
+function guardianDialogue3() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">오랜 세월 동안 이 유적에 침입하는 어둠의 존재들과 싸워왔다. 하지만 이제 나도 힘이 약해지고 있어... 혹시 네가 나를 도와줄 수 있겠느냐?</div>
+            </div>
+            <div class="boss-dialog-choices">
+                <button class="boss-dialog-choice-btn" onclick="guardianAcceptQuest()">
+                    ✅ 무엇을 도와드릴까요?
+                </button>
+                <button class="boss-dialog-choice-btn battle" onclick="guardianRefuseAndFight()">
+                    ⚔️ 거절한다. 나는 네 보물이 필요하다!
+                </button>
+                <button class="boss-dialog-choice-btn escape" onclick="guardianLeaveQuietly()">
+                    🚶 조용히 자리를 뜬다
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자: "혹시 네가 나를 도와줄 수 있겠느냐?"');
+}
+
+/**
+ * 퀘스트 수락
+ */
+function guardianAcceptQuest() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const playerName = (typeof player !== 'undefined' && player.name) ? player.name : '용사';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">고맙군, ${playerName}. 이 동굴 심층부에 흉폭한 트롤이 살고 있다. 그 트롤이 이 유적까지 침범하려 하고 있어. 트롤을 처치하고 돌아와준다면, 내가 가진 보물 중 일부를 네게 주겠다.</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="guardianQuestAccepted()">
+                ▶ 퀘스트 수락!
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자가 퀘스트를 제안합니다!');
+}
+
+/**
+ * 퀘스트 수락 완료 처리
+ */
+function guardianQuestAccepted() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 퀘스트 등록
+    if (!player.quests) player.quests = {};
+    player.quests.ancient_guardian_quest = {
+        id: 'ancient_guardian_quest',
+        name: '고대 수호자의 부탁',
+        description: '동굴 심층부의 동굴트롤을 처치하고 고대 수호자에게 보고하라.',
+        status: 'active',
+        objective: { type: 'kill', target: 'cave_troll', count: 1, current: 0 },
+        rewards: {
+            exp: 5000,
+            gold: 3000,
+            items: ['ancient_rune', 'nameless_king_ring']
+        }
+    };
+
+    // 고대유적 클리어 플래그 (대화 완료)
+    player.ancientRuinsCleared = true;
+
+    addGameLog('📜 퀘스트 수락: "고대 수호자의 부탁"');
+    addGameLog('💡 목표: 동굴 심층부의 동굴트롤을 처치하고 고대 수호자에게 보고하라.');
+
+    // 퀘스트 알림 표시
+    const questNotif = document.createElement('div');
+    questNotif.className = 'quest-notification';
+    questNotif.innerHTML = `
+        <div class="quest-notif-content">
+            <div class="quest-notif-icon">📜</div>
+            <div class="quest-notif-text">
+                <strong>퀘스트 수락!</strong><br>
+                고대 수호자의 부탁<br>
+                <small>동굴트롤을 처치하고 돌아오라</small>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(questNotif);
+    
+    // 3초 후 알림 제거
+    setTimeout(() => {
+        if (questNotif && questNotif.parentNode) {
+            questNotif.remove();
+        }
+    }, 3000);
+}
+
+/**
+ * 선택지 2: 전투 선택
+ */
+function guardianChoice2() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 고대유적 클리어 플래그 (전투 선택)
+    player.ancientRuinsCleared = true;
+
+    addGameLog('⚔️ 고대 수호자와의 전투를 선택했습니다!');
+    
+    // 고대 수호자와 전투 시작
+    startBattle(['ancient_guardian']);
+}
+
+/**
+ * 선택지 2-2: 퀘스트 거절 후 전투
+ */
+function guardianRefuseAndFight() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 고대유적 클리어 플래그 (전투 선택)
+    player.ancientRuinsCleared = true;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">...그렇군. 그것이 네 선택이라면 어쩔 수 없다. 이 유적의 보물은 내 목숨과 함께 지키겠다!</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="startGuardianBattleAfterRefuse()">
+                ⚔️ 전투 시작!
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자: "이 유적의 보물은 내 목숨과 함께 지키겠다!"');
+}
+
+/**
+ * 퀘스트 거절 후 전투 시작
+ */
+function startGuardianBattleAfterRefuse() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    startBattle(['ancient_guardian']);
+}
+
+/**
+ * 선택지 3: 도주
+ */
+function guardianChoice3() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 고대유적 클리어 플래그는 설정하지 않음 (다시 진입 시 이벤트 재발생)
+    addGameLog('🏃 싸늘한 기운을 느끼고 고대유적에서 도주합니다!');
+    
+    // 고대의 잔재로 이동
+    executeLocationMove('ancient_remnants');
+}
+
+/**
+ * 선택지 3-2: 조용히 자리를 뜬다
+ */
+function guardianLeaveQuietly() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 고대유적 클리어 플래그 (대화는 했으므로)
+    player.ancientRuinsCleared = true;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+    
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🗿</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
+                <div class="boss-dialog-text">...그래. 마음이 바뀌면 언제든 돌아오거라.</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="dismissGuardianDialogue()">
+                ▶ 확인
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🗿 고대 수호자: "마음이 바뀌면 언제든 돌아오거라."');
+}
+
+/**
+ * 고대 수호자 대화 창 닫기
+ */
+function dismissGuardianDialogue() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+}
+
+// ============================================
+// �🎨 맵 UI
 // ============================================
 
 /**
