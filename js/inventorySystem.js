@@ -1124,6 +1124,7 @@ function allocateStatPoint(statId) {
 
 /**
  * 스탯 배분 UI를 표시합니다.
+ * 각 스탯에 원하는 수치만큼 투자할 수 있습니다.
  */
 function showStatAllocationUI() {
     // 기존 UI 제거
@@ -1133,6 +1134,29 @@ function showStatAllocationUI() {
         addGameLog('⚠️ 배분할 스탯포인트가 없습니다!');
         return;
     }
+
+    // 임시 배분 상태 초기화
+    window._statAllocation = {
+        str: 0,
+        vit: 0,
+        int: 0,
+        agi: 0,
+        remaining: player.statPoints || 0
+    };
+
+    renderStatAllocationUI();
+}
+
+/**
+ * 스탯 배분 UI를 렌더링합니다.
+ */
+function renderStatAllocationUI() {
+    // 기존 UI 제거
+    const existing = document.getElementById('statAllocationUI');
+    if (existing) existing.remove();
+
+    const alloc = window._statAllocation;
+    if (!alloc) return;
 
     const container = document.createElement('div');
     container.id = 'statAllocationUI';
@@ -1148,28 +1172,41 @@ function showStatAllocationUI() {
     let html = `
         <div class="stat-allocation-panel">
             <h3>📊 스탯포인트 배분</h3>
-            <p class="stat-points-available">남은 포인트: <span class="bonus">${player.statPoints}</span></p>
+            <p class="stat-points-available">남은 포인트: <span class="bonus">${alloc.remaining}</span></p>
             <div class="stat-allocation-list">
     `;
 
     stats.forEach(stat => {
+        const added = alloc[stat.id] || 0;
+        const currentValue = stat.value + added;
+        const addedText = added > 0 ? ` <span class="bonus">(+${added})</span>` : '';
+
         html += `
             <div class="stat-allocation-row">
                 <div class="stat-allocation-info">
                     <span class="stat-allocation-icon">${stat.icon}</span>
                     <div class="stat-allocation-details">
-                        <span class="stat-allocation-name">${stat.name}: ${stat.value}</span>
+                        <span class="stat-allocation-name">${stat.name}: ${currentValue}${addedText}</span>
                         <span class="stat-allocation-desc">${stat.desc}</span>
                     </div>
                 </div>
-                <button class="stat-plus-btn" onclick="allocateStatPoint('${stat.id}')">+1</button>
+                <div class="stat-allocation-controls">
+                    <button class="stat-minus-btn" onclick="adjustStatAllocation('${stat.id}', -1)" ${added <= 0 ? 'disabled' : ''}>-</button>
+                    <input type="number" class="stat-amount-input" id="statInput_${stat.id}" 
+                        value="${added}" min="0" max="${added + alloc.remaining}" 
+                        onchange="setStatAllocation('${stat.id}', this.value)">
+                    <button class="stat-plus-btn" onclick="adjustStatAllocation('${stat.id}', 1)" ${alloc.remaining <= 0 ? 'disabled' : ''}>+</button>
+                </div>
             </div>
         `;
     });
 
     html += `
             </div>
-            <button class="stat-close-btn" onclick="closeStatAllocationUI()">✅ 완료</button>
+            <div class="stat-allocation-buttons">
+                <button class="stat-confirm-btn" onclick="confirmStatAllocation()">✅ 확정</button>
+                <button class="stat-close-btn" onclick="closeStatAllocationUI()">❌ 취소</button>
+            </div>
         </div>
     `;
 
@@ -1178,11 +1215,110 @@ function showStatAllocationUI() {
 }
 
 /**
+ * 스탯 배분량을 조정합니다 (+1 또는 -1).
+ * @param {string} statId - 스탯 ID
+ * @param {number} delta - 변경량 (+1 또는 -1)
+ */
+function adjustStatAllocation(statId, delta) {
+    const alloc = window._statAllocation;
+    if (!alloc) return;
+
+    const newValue = (alloc[statId] || 0) + delta;
+
+    // 범위 체크
+    if (newValue < 0) return;
+    if (delta > 0 && alloc.remaining <= 0) return;
+
+    alloc[statId] = newValue;
+    alloc.remaining = (player.statPoints || 0) - alloc.str - alloc.vit - alloc.int - alloc.agi;
+
+    renderStatAllocationUI();
+}
+
+/**
+ * 스탯 배분량을 직접 입력으로 설정합니다.
+ * @param {string} statId - 스탯 ID
+ * @param {string|number} value - 입력된 값
+ */
+function setStatAllocation(statId, value) {
+    const alloc = window._statAllocation;
+    if (!alloc) return;
+
+    let numValue = parseInt(value) || 0;
+    if (numValue < 0) numValue = 0;
+
+    // 다른 스탯에 이미 배분된 포인트 계산
+    const otherAllocated = Object.keys(alloc)
+        .filter(k => k !== statId && k !== 'remaining')
+        .reduce((sum, k) => sum + (alloc[k] || 0), 0);
+
+    // 최대 배분 가능량 = 총 포인트 - 다른 스탯에 배분된 포인트
+    const maxAllowable = (player.statPoints || 0) - otherAllocated;
+    if (numValue > maxAllowable) numValue = maxAllowable;
+
+    alloc[statId] = numValue;
+    alloc.remaining = (player.statPoints || 0) - alloc.str - alloc.vit - alloc.int - alloc.agi;
+
+    renderStatAllocationUI();
+}
+
+/**
+ * 스탯 배분을 확정합니다.
+ */
+function confirmStatAllocation() {
+    const alloc = window._statAllocation;
+    if (!alloc) return;
+
+    const totalAllocated = alloc.str + alloc.vit + alloc.int + alloc.agi;
+    if (totalAllocated <= 0) {
+        addGameLog('⚠️ 배분할 포인트를 지정해주세요!');
+        return;
+    }
+
+    // 각 스탯에 포인트 적용
+    const statNames = { str: '근력', vit: '체력', int: '지능', agi: '민첩' };
+    const allocated = [];
+
+    ['str', 'vit', 'int', 'agi'].forEach(statId => {
+        if (alloc[statId] > 0) {
+            player[statId] = (player[statId] || 0) + alloc[statId];
+            allocated.push(`${statNames[statId]} +${alloc[statId]}`);
+        }
+    });
+
+    player.statPoints -= totalAllocated;
+
+    // 파생 스탯 재계산
+    if (typeof recalculatePlayerStats === 'function') {
+        recalculatePlayerStats();
+    }
+
+    addGameLog(`📊 스탯 배분 완료! ${allocated.join(', ')} (남은 포인트: ${player.statPoints})`);
+
+    // UI 업데이트
+    renderCharacterInfo();
+    if (typeof updatePlayerUI === 'function') {
+        updatePlayerUI();
+    }
+
+    // 임시 데이터 정리
+    window._statAllocation = null;
+
+    // 포인트가 남아있으면 UI 재표시, 없으면 닫기
+    if ((player.statPoints || 0) > 0) {
+        showStatAllocationUI();
+    } else {
+        closeStatAllocationUI();
+    }
+}
+
+/**
  * 스탯 배분 UI를 닫습니다.
  */
 function closeStatAllocationUI() {
     const ui = document.getElementById('statAllocationUI');
     if (ui) ui.remove();
+    window._statAllocation = null;
 }
 
 /**

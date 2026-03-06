@@ -509,7 +509,8 @@ const MAPS = {
                 id: 'ancient_ruins',
                 name: '고대 유적',
                 description: '신비로운 고대 문명의 유적. 강력한 수호자가 지키고 있다. 진입 시 자동으로 전투가 시작된다.',
-                actions: ['move', 'explore'],
+                actions: ['move', 'explore', 'talk'],
+                npcs: ['ancient_guardian_npc'],
                 canExplore: true,
                 canBattle: false,
                 monsters: ['wraith', 'skeleton_warrior', 'skeleton_mage', 'skeleton_knight'],
@@ -1549,7 +1550,7 @@ const JOBS = {
             str: 10, vit: 6, int: 3, agi: 13
         },
         startingEquipment: ['old_sword', 'old_leather_armor'],
-        startingSkill: 'slash_combo',
+        startingSkill: 'rapid_slash',
         startingTrait: 'swift',
         level5Skill: 'ambush',
         icon: '🗡️'
@@ -4533,6 +4534,27 @@ const NPCS = {
             farewell: '몸조심하게! 또 다치면 안 되네.'
         },
         canGiveQuest: false,
+        canTrade: false
+    },
+
+    // ===== 수상한 동굴 NPC =====
+
+    // 고대 유적 - 고대 수호자
+    ancient_guardian_npc: {
+        id: 'ancient_guardian_npc',
+        name: '고대 수호자',
+        location: 'cave.ancient_ruins',
+        emoji: '🗿',
+        description: '고대 유적을 지키는 신비로운 존재입니다.',
+        dialogues: {
+            greeting: '다시 왔군. 무엇이 필요하냐?',
+            info: '이 유적은 수천 년 전 고대 문명이 남긴 것이다. 여전히 강력한 힘이 잠들어 있지...',
+            quest: '동굴 심층부의 동굴트롤을 처치해주게. 그 흉폭한 놈이 이 유적까지 침범하려 하고 있어.',
+            quest_complete: '잘 해냈군! 약속대로 보물을 주겠다.',
+            quest_in_progress: '동굴트롤은 아직 살아있는 것 같군. 서둘러 처치해주게.',
+            farewell: '조심해서 가거라. 이 동굴은 위험한 곳이니까.'
+        },
+        canGiveQuest: true,
         canTrade: false
     }
 };

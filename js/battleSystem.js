@@ -283,11 +283,11 @@ function createBattleMonster(monsterType) {
         template = monsterTemplates[monsterType];
     }
 
-    // 템플릿이 없으면 기본 몬스터
+    // 템플릿이 없으면 기본 몬스터 테스트를위해서 경험치 조절함!! 나중에 다시 원래대로 수정할 예정 원 20
     if (!template) {
         template = {
             name: '알 수 없는 몬스터',
-            hp: 50, atk: 10, def: 5, exp: 20, gold: 10, emoji: '👹'
+            hp: 50, atk: 10, def: 5, exp: 2000000000000000, gold: 10, emoji: '👹'
         };
     }
 
@@ -327,7 +327,13 @@ function createBattleMonster(monsterType) {
         def: Math.ceil((template.def || 5) * finalHpMult),
         exp: Math.ceil((template.exp || 10) * gradeData.expMultiplier),
         gold: Math.ceil((template.gold || 5) * gradeData.goldMultiplier),
-        traits: activeTraits  // 활성화된 특성 배열
+        traits: activeTraits,  // 활성화된 특성 배열
+        // 스킬 사용 지원 속성 초기화
+        cooldowns: {},
+        activeBuffs: {},
+        currentMp: template.mp || 0,
+        maxMp: template.mp || 0,
+        turnActionCount: 0  // 전투 중 행동 횟수 추적 (첫 행동 판별용)
     };
 }
 
@@ -1837,7 +1843,52 @@ function doMonsterTurn() {
                 executeSparAction();
             }
         } else {
-            // 기존 몬스터 공격 로직
+            // 기존 몬스터 공격 로직 (스킬 보유 몬스터 AI 포함)
+            
+            // 스킬이 있는 몬스터 (보스 등)의 AI 행동 결정
+            if (monster.skills && monster.skills.length > 0 && !monster.isSpar) {
+                // 행동 횟수 추적
+                if (typeof monster.turnActionCount === 'undefined') monster.turnActionCount = 0;
+                monster.turnActionCount++;
+                
+                // 고대수호자: 첫 행동은 무조건 투지의 검
+                let useSkill = false;
+                let forcedSkillId = null;
+                
+                if (monster.id === 'ancient_guardian' && monster.turnActionCount === 1) {
+                    // 첫 번째 행동: 투지의 검 강제 발동
+                    forcedSkillId = 'spirit_sword';
+                    useSkill = true;
+                } else {
+                    // 이후: 일반공격 65%, 스킬 35%
+                    const actionRoll = Math.random() * 100;
+                    useSkill = actionRoll >= 65; // 35% 확률로 스킬 사용
+                }
+                
+                if (useSkill) {
+                    const skillUsed = tryUseMonsterSkill(monster, forcedSkillId);
+                    if (skillUsed) {
+                        updateBattleUI();
+                        // 스킬 사용 후 다음 몬스터로
+                        if (player.hp <= 0) {
+                            player.hp = 0;
+                            updateBattleUI();
+                            setTimeout(() => endBattle('defeat'), 500);
+                            return;
+                        }
+                        attackIndex++;
+                        if (attackIndex < aliveMonsters.length) {
+                            setTimeout(nextMonsterAttack, 500);
+                        } else {
+                            finishMonsterTurn();
+                        }
+                        return;
+                    }
+                    // 스킬 사용 실패 시 일반 공격으로 대체
+                }
+            }
+            
+            // 일반 공격
             // 회피 체크
             const evasionRoll = Math.random() * 100;
             if (evasionRoll < (player.evasion || 0)) {
@@ -1847,6 +1898,15 @@ function doMonsterTurn() {
                 // 혼란 상태면 calculateMonsterDamage에서 데미지 배수가 감소됨
                 const damageType = monster.damageType || 'physical';
                 let damage = calculateMonsterDamage(monster, player, damageType);
+
+                // 활성 버프 공격력 보정 적용 (투지의 검 등)
+                if (monster.activeBuffs) {
+                    Object.values(monster.activeBuffs).forEach(buff => {
+                        if (buff.pAtkPercent) {
+                            damage = Math.ceil(damage * (1 + buff.pAtkPercent / 100));
+                        }
+                    });
+                }
 
                 // 방어 중이면 데미지 감소
                 if (battleState.isDefending) {
@@ -1864,6 +1924,19 @@ function doMonsterTurn() {
 
                 player.hp -= damage;
                 addGameLog(`👹 ${getMonsterNameWithColor(monster)}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
+
+                // 흡혈 효과 적용 (투지의 검 버프 등)
+                if (monster.activeBuffs) {
+                    Object.values(monster.activeBuffs).forEach(buff => {
+                        if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                            const healAmount = Math.floor(damage * buff.lifestealPercent / 100);
+                            if (healAmount > 0) {
+                                monster.hp = Math.min(monster.maxHp, (monster.hp || 0) + healAmount);
+                                addGameLog(`💚 ${getMonsterNameWithColor(monster)}이(가) ${buff.name} 효과로 HP ${healAmount} 회복!`);
+                            }
+                        }
+                    });
+                }
             }
         }
         
@@ -2159,6 +2232,179 @@ function executeSparDefend(monster) {
     monster.isDefending = true;
     addGameLog(`🛡️ ${monster.name}이(가) 방어 자세를 취했다!`);
     updateBattleUI();
+}
+
+// ============================================
+// 🗡️ 일반 몬스터 스킬 AI 시스템
+// ============================================
+
+/**
+ * 일반(비대련) 몬스터의 스킬 사용을 시도합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @param {string|null} forcedSkillId - 강제 발동할 스킬 ID (null이면 조건 만족하는 스킬 중 랜덤)
+ * @returns {boolean} 스킬 사용 성공 여부
+ */
+function tryUseMonsterSkill(monster, forcedSkillId) {
+    if (!monster.skills || monster.skills.length === 0) return false;
+    
+    // 사용 가능한 스킬 찾기 (MP, 쿨타임 체크)
+    const availableSkills = [];
+    
+    monster.skills.forEach(skillEntry => {
+        const skillId = typeof skillEntry === 'string' ? skillEntry : (skillEntry.skillRef || skillEntry.id || skillEntry);
+        const skillLevel = typeof skillEntry === 'object' ? (skillEntry.level || 1) : 1;
+        const skill = typeof SKILLS !== 'undefined' ? SKILLS[skillId] : null;
+        
+        // SKILLS에 없는 경우 skillEntry 자체에 정의된 effect 사용
+        const skillData = skill || (typeof skillEntry === 'object' ? skillEntry : null);
+        if (!skillData) return;
+        
+        // 쿨타임 체크
+        if (!monster.cooldowns) monster.cooldowns = {};
+        if (monster.cooldowns[skillId] > 0) return;
+        
+        // MP 체크
+        const mpCost = skillData.mpCost || skillEntry.mpCost || 0;
+        if ((monster.currentMp || 0) < mpCost) return;
+        
+        availableSkills.push({ 
+            skillId, 
+            skill: skillData, 
+            skillLevel,
+            skillEntry: typeof skillEntry === 'object' ? skillEntry : null,
+            mpCost
+        });
+    });
+    
+    if (availableSkills.length === 0) return false;
+    
+    // 강제 스킬 지정 시 해당 스킬만 시도
+    let selected = null;
+    if (forcedSkillId) {
+        selected = availableSkills.find(s => s.skillId === forcedSkillId);
+        if (!selected) {
+            // 강제 스킬을 사용할 수 없으면 (쿨다운, MP 부족 등) 다른 스킬 시도
+            selected = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+        }
+    } else {
+        // 랜덤 스킬 선택
+        selected = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+    }
+    
+    if (!selected) return false;
+    
+    const { skillId, skill, skillLevel, skillEntry, mpCost } = selected;
+    
+    // 스킬 레벨 배율 계산
+    const levelMultiplier = typeof getSkillLevelMultiplier === 'function' 
+        ? getSkillLevelMultiplier(skillLevel) 
+        : 1.0;
+    
+    // MP 소모
+    monster.currentMp -= mpCost;
+    
+    // 쿨타임 설정
+    monster.cooldowns[skillId] = skill.cooldown || (skillEntry && skillEntry.cooldown) || 0;
+    
+    // 스킬의 effect 데이터 결정 (SKILLS에 정의된 것 우선, 없으면 skillEntry의 effect 사용)
+    const effectData = skill.effects || (skillEntry && skillEntry.effect) || {};
+    
+    // 버프형 스킬 처리 (투지의 검 등)
+    if (skill.damageType === 'buff' || (effectData.type === 'buff')) {
+        const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
+        addGameLog(`🗡️ ${getMonsterNameWithColor(monster)}의 ${skillName} 스킬 발동!`);
+        
+        // 버프 효과 적용
+        if (!monster.activeBuffs) monster.activeBuffs = {};
+        monster.activeBuffs[skillId] = {
+            name: skillName,
+            duration: effectData.buffDuration || effectData.duration || 3,
+            pAtkFlat: effectData.pAtkFlat || 0,
+            pAtkPercent: effectData.pAtkPercent || 0,
+            lifestealPercent: effectData.lifestealPercent || 0,
+            noTurnEndChance: effectData.noTurnEndChance || 0
+        };
+        
+        // 물리공격력 보너스 즉시 적용
+        if (effectData.pAtkFlat) {
+            monster.pAtk = (monster.pAtk || 0) + effectData.pAtkFlat;
+        }
+        
+        updateBattleUI();
+        return true;
+    }
+    
+    // 데미지형 스킬 처리
+    const damageType = skill.damageType || monster.damageType || 'physical';
+    const atk = damageType === 'magical' ? (monster.mAtk || 20) : (monster.pAtk || monster.atk || 20);
+    const damagePercent = effectData.damagePercent || (skill.damageMultiplier ? skill.damageMultiplier * 100 : 150);
+    const baseDamage = Math.floor(atk * (damagePercent / 100) * levelMultiplier);
+    
+    // 회피 체크
+    const evasionRoll = Math.random() * 100;
+    if (evasionRoll < (player.evasion || 0)) {
+        const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
+        addGameLog(`💫 ${player.name}이(가) ${getMonsterNameWithColor(monster)}의 ${skillName}을(를) 회피했다!`);
+        updateBattleUI();
+        return true;
+    }
+    
+    const def = damageType === 'magical' ? 
+        (player.mDef || 0) + (player.bonusMDef || 0) : 
+        (player.pDef || 0) + (player.bonusPDef || 0);
+    
+    let damage = Math.max(1, baseDamage - Math.floor(def * 0.5));
+    
+    // 방어 중이면 데미지 감소
+    if (battleState.isDefending) {
+        damage = Math.max(1, Math.floor(damage * 0.4));
+    }
+    
+    // 활성 버프 공격력 보정 적용
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.pAtkPercent) {
+                damage = Math.ceil(damage * (1 + buff.pAtkPercent / 100));
+            }
+        });
+    }
+    
+    player.hp -= damage;
+    if (player.hp < 0) player.hp = 0;
+    
+    const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
+    addGameLog(`🌟 ${getMonsterNameWithColor(monster)}의 ${skillName}! ${damage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
+    
+    // 상태이상 효과 적용
+    if (effectData.statusEffect) {
+        const statusEffectId = effectData.statusEffect;
+        const statusDuration = effectData.statusDuration || 1;
+        const effectInfo = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[statusEffectId] : null;
+        if (effectInfo) {
+            if (!player.statusEffects) player.statusEffects = {};
+            player.statusEffects[statusEffectId] = {
+                duration: statusDuration,
+                damage: damage
+            };
+            addGameLog(`${effectInfo.icon} ${player.name}에게 ${effectInfo.name} 상태이상 부여! (${statusDuration}턴)`);
+        }
+    }
+    
+    // 흡혈 효과 (버프의 lifesteal)
+    if (monster.activeBuffs) {
+        Object.values(monster.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(damage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    monster.hp = Math.min(monster.maxHp, (monster.hp || 0) + healAmount);
+                    addGameLog(`💚 ${getMonsterNameWithColor(monster)}이(가) ${buff.name} 효과로 HP ${healAmount} 회복!`);
+                }
+            }
+        });
+    }
+    
+    updateBattleUI();
+    return true;
 }
 
 // ============================================

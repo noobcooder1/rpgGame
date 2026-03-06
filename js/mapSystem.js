@@ -607,6 +607,8 @@ function startAncientRuinsGuardBattle() {
     // 스켈레톤 나이트 1 + 스켈레톤 워리어 2 + 스켈레톤 메이지 1 전투 시작
     addGameLog('⚔️ 스켈레톤 나이트, 스켈레톤 워리어 2기, 스켈레톤 메이지와의 전투!');
     startBattle(['skeleton_knight', 'skeleton_warrior', 'skeleton_warrior', 'skeleton_mage']);
+    // 고대유적 전투에서는 도주 불가
+    battleState.canEscape = false;
 }
 
 /**
@@ -844,6 +846,8 @@ function guardianChoice2() {
     
     // 고대 수호자와 전투 시작
     startBattle(['ancient_guardian']);
+    // 고대유적 전투에서는 도주 불가
+    battleState.canEscape = false;
 }
 
 /**
@@ -884,6 +888,8 @@ function startGuardianBattleAfterRefuse() {
     if (existing) existing.remove();
 
     startBattle(['ancient_guardian']);
+    // 고대유적 전투에서는 도주 불가
+    battleState.canEscape = false;
 }
 
 /**
@@ -1043,6 +1049,11 @@ function updateLocationActions() {
         location.actions.forEach(actionId => {
             const action = ACTION_TYPES[actionId];
             if (action) {
+                // 고대유적의 NPC 대화 버튼은 클리어 후에만 표시
+                if ((actionId === 'talk' || actionId === 'npc') && location.isAncientRuinsEncounter && player && !player.ancientRuinsCleared) {
+                    return; // 아직 첫 이벤트가 발생하지 않았으므로 NPC 버튼 숨김
+                }
+
                 const btn = document.createElement('button');
                 btn.className = 'action-btn';
 

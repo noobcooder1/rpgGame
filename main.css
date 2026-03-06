@@ -2767,13 +2767,93 @@ body {
     transition: all 0.2s ease;
 }
 
-.stat-plus-btn:hover {
+.stat-plus-btn:hover:not(:disabled) {
     transform: scale(1.1);
     box-shadow: 0 0 15px rgba(31, 171, 137, 0.5);
 }
 
+.stat-plus-btn:disabled,
+.stat-minus-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.stat-minus-btn {
+    width: 50px;
+    height: 40px;
+    background: linear-gradient(180deg, #e74c3c, #c0392b);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-minus-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+}
+
+.stat-allocation-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stat-amount-input {
+    width: 60px;
+    height: 40px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    -moz-appearance: textfield;
+}
+
+.stat-amount-input::-webkit-outer-spin-button,
+.stat-amount-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.stat-amount-input:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 10px rgba(31, 171, 137, 0.3);
+}
+
+.stat-allocation-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stat-confirm-btn {
+    flex: 2;
+    padding: 15px;
+    background: linear-gradient(180deg, var(--secondary), #1fab89);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stat-confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(31, 171, 137, 0.4);
+}
+
 .stat-close-btn {
-    width: 100%;
+    flex: 1;
     padding: 15px;
     background: linear-gradient(180deg, var(--primary), #c0392b);
     border: none;

@@ -575,9 +575,122 @@ function showNPCQuest(npcId) {
     const npc = NPCS[npcId];
     if (!npc) return;
 
+    // 고대 수호자 NPC 특수 퀘스트 처리
+    if (npcId === 'ancient_guardian_npc') {
+        closeNPCModal();
+        showAncientGuardianNPCQuest();
+        return;
+    }
+
     const bubble = document.querySelector('.npc-dialog-bubble p');
     if (bubble) {
         bubble.textContent = npc.dialogues.quest || '아직 자네에게 줄 임무는 없네.';
+    }
+}
+
+/**
+ * 고대 수호자 NPC 퀘스트 대화를 표시합니다.
+ * 퀘스트 상태에 따라 다른 대화를 보여줍니다.
+ */
+function showAncientGuardianNPCQuest() {
+    const npc = NPCS['ancient_guardian_npc'];
+    if (!npc) return;
+
+    const quest = player.quests ? player.quests.ancient_guardian_quest : null;
+
+    // 퀘스트 완료 후 보상 수령
+    if (quest && quest.status === 'completed') {
+        const overlay = document.createElement('div');
+        overlay.className = 'npc-modal-overlay';
+        overlay.innerHTML = `
+            <div class="npc-modal">
+                <div class="npc-dialog-bubble">
+                    <p>${npc.dialogues.quest_complete}</p>
+                </div>
+                <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_complete}"`);
+        return;
+    }
+
+    // 퀘스트 진행 중
+    if (quest && quest.status === 'active') {
+        // 퀘스트 목표 달성 확인 (동굴트롤 처치)
+        if (quest.objective.current >= quest.objective.count) {
+            // 퀘스트 완료 처리
+            quest.status = 'completed';
+            
+            // 보상 지급
+            if (quest.rewards) {
+                if (quest.rewards.exp) {
+                    player.exp += quest.rewards.exp;
+                    addGameLog(`✨ ${quest.rewards.exp} EXP 획득!`);
+                    if (typeof checkLevelUp === 'function') checkLevelUp();
+                }
+                if (quest.rewards.gold) {
+                    if (typeof gold !== 'undefined') {
+                        gold += quest.rewards.gold;
+                    }
+                    addGameLog(`💰 ${quest.rewards.gold} Gold 획득!`);
+                }
+                if (quest.rewards.items && Array.isArray(quest.rewards.items)) {
+                    quest.rewards.items.forEach(itemId => {
+                        if (typeof addItemToInventory === 'function') {
+                            addItemToInventory(itemId);
+                        }
+                    });
+                    addGameLog('📦 보상 아이템을 획득했습니다!');
+                }
+            }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'npc-modal-overlay';
+            overlay.innerHTML = `
+                <div class="npc-modal">
+                    <div class="npc-dialog-bubble">
+                        <p>${npc.dialogues.quest_complete}</p>
+                    </div>
+                    <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_complete}"`);
+            
+            if (typeof updatePlayerUI === 'function') updatePlayerUI();
+        } else {
+            const overlay = document.createElement('div');
+            overlay.className = 'npc-modal-overlay';
+            overlay.innerHTML = `
+                <div class="npc-modal">
+                    <div class="npc-dialog-bubble">
+                        <p>${npc.dialogues.quest_in_progress} (${quest.objective.current}/${quest.objective.count})</p>
+                    </div>
+                    <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_in_progress}"`);
+        }
+        return;
+    }
+
+    // 퀘스트가 없을 때: 고대 수호자 대화 시퀀스 시작
+    if (typeof showGuardianDialogueLine1 === 'function') {
+        showGuardianDialogueLine1();
+    } else {
+        const overlay = document.createElement('div');
+        overlay.className = 'npc-modal-overlay';
+        overlay.innerHTML = `
+            <div class="npc-modal">
+                <div class="npc-dialog-bubble">
+                    <p>${npc.dialogues.quest}</p>
+                </div>
+                <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
     }
 }
 
