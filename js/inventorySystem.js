@@ -210,6 +210,268 @@ const ITEMS_DATABASE = {
         sellPrice: 8,
         stackable: true
     },
+    // 몬스터 드랍 재료
+    wood_piece: {
+        id: 'wood_piece',
+        name: '나무 조각',
+        type: 'material',
+        rarity: 'common',
+        description: '허수아비에서 떨어진 나무 조각입니다.',
+        icon: '🪵',
+        sellPrice: 2,
+        stackable: true
+    },
+    metal_piece: {
+        id: 'metal_piece',
+        name: '금속 조각',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '로봇에서 떨어진 금속 조각입니다.',
+        icon: '⚙️',
+        sellPrice: 10,
+        stackable: true
+    },
+    bat_wing: {
+        id: 'bat_wing',
+        name: '박쥐 날개',
+        type: 'material',
+        rarity: 'common',
+        description: '박쥐의 얇은 날개입니다.',
+        icon: '🦇',
+        sellPrice: 5,
+        stackable: true
+    },
+    spider_silk: {
+        id: 'spider_silk',
+        name: '거미줄',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '질긴 거미줄입니다.',
+        icon: '🕸️',
+        sellPrice: 8,
+        stackable: true
+    },
+    strange_bone: {
+        id: 'strange_bone',
+        name: '이상한 뼈',
+        type: 'material',
+        rarity: 'common',
+        description: '스켈레톤에서 떨어진 뼈입니다.',
+        icon: '🦴',
+        sellPrice: 5,
+        stackable: true
+    },
+    cursed_bone: {
+        id: 'cursed_bone',
+        name: '저주받은 뼈',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '저주가 깃든 뼈입니다.',
+        icon: '💀',
+        sellPrice: 15,
+        stackable: true
+    },
+    rotten_flesh: {
+        id: 'rotten_flesh',
+        name: '썩은 살점',
+        type: 'material',
+        rarity: 'common',
+        description: '언데드에서 떨어진 썩은 살점입니다.',
+        icon: '🍖',
+        sellPrice: 3,
+        stackable: true
+    },
+    goblin_ear: {
+        id: 'goblin_ear',
+        name: '고블린 귀',
+        type: 'material',
+        rarity: 'common',
+        description: '고블린의 뾰족한 귀입니다.',
+        icon: '👂',
+        sellPrice: 5,
+        stackable: true
+    },
+    troll_tooth: {
+        id: 'troll_tooth',
+        name: '동굴트롤의 이빨',
+        type: 'material',
+        rarity: 'epic',
+        description: '동굴트롤의 거대하고 날카로운 이빨입니다. 고대 수호자가 찾고 있다.',
+        icon: '🦷',
+        sellPrice: 500,
+        stackable: true
+    },
+    troll_blood: {
+        id: 'troll_blood',
+        name: '트롤의 피',
+        type: 'material',
+        rarity: 'rare',
+        description: '재생력이 있는 트롤의 피입니다.',
+        icon: '🩸',
+        sellPrice: 100,
+        stackable: true
+    },
+    bone_necklace: {
+        id: 'bone_necklace',
+        name: '뼈 목걸이',
+        type: 'necklace',
+        rarity: 'rare',
+        stats: { pAtk: 5, pDef: 3 },
+        description: '뼈로 만든 거친 목걸이입니다.',
+        icon: '📿',
+        sellPrice: 200
+    },
+    troll_greatsword: {
+        id: 'troll_greatsword',
+        name: '트롤 대검',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { pAtk: 25, str: 5 },
+        description: '동굴트롤이 사용하던 거대한 대검입니다.',
+        icon: '⚔️',
+        sellPrice: 500
+    },
+    bone_ring: {
+        id: 'bone_ring',
+        name: '뼈 반지',
+        type: 'ring',
+        rarity: 'rare',
+        stats: { pAtk: 3, vit: 2 },
+        description: '뼈로 깎아 만든 반지입니다.',
+        icon: '💍',
+        sellPrice: 150
+    },
+    regeneration_elixir: {
+        id: 'regeneration_elixir',
+        name: '재생의 엘릭서',
+        type: 'consumable',
+        rarity: 'epic',
+        effect: { hp: 200 },
+        description: '강력한 재생력을 가진 엘릭서입니다.',
+        icon: '🧪',
+        sellPrice: 300,
+        stackable: true
+    },
+    strength_elixir: {
+        id: 'strength_elixir',
+        name: '힘의 엘릭서',
+        type: 'consumable',
+        rarity: 'epic',
+        effect: { hp: 100 },
+        description: '힘이 넘치는 엘릭서입니다.',
+        icon: '💪',
+        sellPrice: 250,
+        stackable: true
+    },
+    nameless_king_ring: {
+        id: 'nameless_king_ring',
+        name: '이름 없는 왕의 반지',
+        type: 'ring',
+        rarity: 'legendary',
+        stats: { pAtk: 10, mAtk: 10, pDef: 5, mDef: 5 },
+        description: '고대 왕이 사용했다는 전설의 반지입니다.',
+        icon: '💍',
+        sellPrice: 2000
+    },
+    ancient_rune: {
+        id: 'ancient_rune',
+        name: '고대 룬',
+        type: 'special',
+        rarity: 'legendary',
+        description: '고대의 마력이 깃든 신비한 룬입니다.',
+        icon: '🔮',
+        sellPrice: 1500,
+        stackable: true
+    },
+    kings_necklace: {
+        id: 'kings_necklace',
+        name: '왕의 목걸이',
+        type: 'necklace',
+        rarity: 'legendary',
+        stats: { pAtk: 8, mAtk: 8, pDef: 4, mDef: 4 },
+        description: '고대 왕이 사용했다는 목걸이입니다.',
+        icon: '📿',
+        sellPrice: 1800
+    },
+    magic_gloves: {
+        id: 'magic_gloves',
+        name: '마법 장갑',
+        type: 'gloves',
+        rarity: 'epic',
+        stats: { mAtk: 8, int: 3 },
+        description: '마력이 깃든 장갑입니다.',
+        icon: '🧤',
+        sellPrice: 800
+    },
+    swift_boots: {
+        id: 'swift_boots',
+        name: '신속의 부츠',
+        type: 'boots',
+        rarity: 'epic',
+        stats: { agi: 5, pDef: 3 },
+        description: '착용자를 빠르게 해주는 부츠입니다.',
+        icon: '👟',
+        sellPrice: 800
+    },
+    cursed_shoes: {
+        id: 'cursed_shoes',
+        name: '저주받은 신발',
+        type: 'boots',
+        rarity: 'rare',
+        stats: { mAtk: 5, agi: 3 },
+        description: '저주가 깃든 신발입니다.',
+        icon: '👞',
+        sellPrice: 400
+    },
+    cursed_gloves: {
+        id: 'cursed_gloves',
+        name: '저주받은 장갑',
+        type: 'gloves',
+        rarity: 'rare',
+        stats: { mAtk: 5, int: 2 },
+        description: '저주가 깃든 장갑입니다.',
+        icon: '🧤',
+        sellPrice: 400
+    },
+    cursed_staff: {
+        id: 'cursed_staff',
+        name: '저주받은 지팡이',
+        type: 'weapon',
+        rarity: 'rare',
+        stats: { mAtk: 20, int: 3 },
+        description: '저주가 깃든 지팡이입니다.',
+        icon: '🪄',
+        sellPrice: 600
+    },
+    cursed_necklace: {
+        id: 'cursed_necklace',
+        name: '저주받은 목걸이',
+        type: 'necklace',
+        rarity: 'rare',
+        stats: { mAtk: 6, mDef: 3 },
+        description: '저주가 깃든 목걸이입니다.',
+        icon: '📿',
+        sellPrice: 350
+    },
+    cursed_ring: {
+        id: 'cursed_ring',
+        name: '저주받은 반지',
+        type: 'ring',
+        rarity: 'rare',
+        stats: { mAtk: 4, int: 2 },
+        description: '저주가 깃든 반지입니다.',
+        icon: '💍',
+        sellPrice: 300
+    },
+    unknown_book: {
+        id: 'unknown_book',
+        name: '알 수 없는 책',
+        type: 'special',
+        rarity: 'epic',
+        description: '해독할 수 없는 문자로 씌어진 책입니다.',
+        icon: '📖',
+        sellPrice: 500
+    },
 
     // ========== 강철 무기 (대련 보상) ==========
     steel_longsword: {

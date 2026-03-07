@@ -507,6 +507,15 @@ function showNPCConversation(npc) {
         `;
     }
 
+    // 고대 수호자 NPC: 전투 선택지 추가
+    if (npc.id === 'ancient_guardian_npc') {
+        optionsHtml += `
+            <button class="dialog-option-btn spar-btn" onclick="startGuardianNPCBattle()">
+                ⚔️ 전투한다
+            </button>
+        `;
+    }
+
     // 대화 종료 옵션
     optionsHtml += `
         <button class="dialog-option-btn dialog-exit" onclick="closeNPCConversation()">
@@ -617,8 +626,45 @@ function showAncientGuardianNPCQuest() {
 
     // 퀘스트 진행 중
     if (quest && quest.status === 'active') {
-        // 퀘스트 목표 달성 확인 (동굴트롤 처치)
-        if (quest.objective.current >= quest.objective.count) {
+        // 아이템 전달 퀘스트: 인벤토리에 필요 아이템이 있는지 확인
+        let questComplete = false;
+        if (quest.objective.type === 'item_delivery') {
+            const requiredItem = quest.objective.requiredItem;
+            const requiredCount = quest.objective.count || 1;
+            const inventoryItem = (typeof inventoryItems !== 'undefined') 
+                ? inventoryItems.find(item => item.id === requiredItem)
+                : null;
+            const hasEnough = inventoryItem && (inventoryItem.quantity || 1) >= requiredCount;
+            questComplete = hasEnough;
+        } else {
+            // 기존 킬 타입 퀘스트
+            questComplete = quest.objective.current >= quest.objective.count;
+        }
+
+        if (questComplete) {
+            // 아이템 전달 퀘스트인 경우 아이템 소비
+            if (quest.objective.type === 'item_delivery') {
+                const requiredItem = quest.objective.requiredItem;
+                const requiredCount = quest.objective.count || 1;
+                // slotIndex로 아이템 제거
+                const idx = (typeof inventoryItems !== 'undefined') 
+                    ? inventoryItems.findIndex(item => item.id === requiredItem)
+                    : -1;
+                if (idx !== -1) {
+                    if (typeof removeItemFromInventory === 'function') {
+                        removeItemFromInventory(idx, requiredCount);
+                    } else {
+                        inventoryItems[idx].quantity = (inventoryItems[idx].quantity || 1) - requiredCount;
+                        if (inventoryItems[idx].quantity <= 0) {
+                            inventoryItems.splice(idx, 1);
+                        }
+                    }
+                }
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
+                const itemName = itemData ? itemData.name : requiredItem;
+                addGameLog(`📦 ${itemName}을(를) 전달했습니다!`);
+            }
+
             // 퀘스트 완료 처리
             quest.status = 'completed';
             
@@ -660,12 +706,27 @@ function showAncientGuardianNPCQuest() {
             
             if (typeof updatePlayerUI === 'function') updatePlayerUI();
         } else {
+            // 아이템 전달 퀘스트일 경우 현재 보유 상황 표시
+            let progressText = '';
+            if (quest.objective.type === 'item_delivery') {
+                const requiredItem = quest.objective.requiredItem;
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
+                const itemName = itemData ? itemData.name : requiredItem;
+                const inventoryItem = (typeof inventoryItems !== 'undefined') 
+                    ? inventoryItems.find(item => item.id === requiredItem)
+                    : null;
+                const currentCount = inventoryItem ? (inventoryItem.quantity || 1) : 0;
+                progressText = `필요 아이템: ${itemName} (${currentCount}/${quest.objective.count})`;
+            } else {
+                progressText = `(${quest.objective.current}/${quest.objective.count})`;
+            }
+
             const overlay = document.createElement('div');
             overlay.className = 'npc-modal-overlay';
             overlay.innerHTML = `
                 <div class="npc-modal">
                     <div class="npc-dialog-bubble">
-                        <p>${npc.dialogues.quest_in_progress} (${quest.objective.current}/${quest.objective.count})</p>
+                        <p>${npc.dialogues.quest_in_progress}<br><small>${progressText}</small></p>
                     </div>
                     <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
                 </div>
@@ -701,6 +762,25 @@ function closeNPCModal() {
     const modal = document.querySelector('.npc-modal-overlay');
     if (modal) modal.remove();
     currentNpcDialogOpen = false;
+}
+
+/**
+ * 고대 수호자 NPC와 전투를 시작합니다.
+ */
+function startGuardianNPCBattle() {
+    // NPC 대화 닫기
+    closeNPCConversation();
+    closeNPCModal();
+
+    addGameLog('⚔️ 고대 수호자와의 전투를 시작합니다!');
+    
+    if (typeof startBattle === 'function') {
+        startBattle(['ancient_guardian']);
+        // 보스 전투이므로 도주 불가
+        if (typeof battleState !== 'undefined') {
+            battleState.canEscape = false;
+        }
+    }
 }
 
 /**

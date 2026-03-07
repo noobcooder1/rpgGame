@@ -287,7 +287,7 @@ function createBattleMonster(monsterType) {
     if (!template) {
         template = {
             name: '알 수 없는 몬스터',
-            hp: 50, atk: 10, def: 5, exp: 2000000000000000, gold: 10, emoji: '👹'
+            hp: 50, atk: 10, def: 5, exp: 200000000000, gold: 10, emoji: '👹'
         };
     }
 
@@ -433,6 +433,52 @@ function endBattle(result) {
                 addGameLog(`🎉 승리! ${monsters.length}마리 처치! ${totalExp} EXP, ${totalGold} Gold 획득!`);
             } else {
                 addGameLog(`🎉 승리! ${totalExp} EXP, ${totalGold} Gold 획득!`);
+            }
+
+            // 드랍 아이템 처리
+            for (const m of monsters) {
+                if (m && m.drops && Array.isArray(m.drops)) {
+                    for (const drop of m.drops) {
+                        const dropChance = drop.chance || 0;
+                        if (Math.random() < dropChance) {
+                            // ITEMS_DATABASE에 없는 아이템은 자동 등록
+                            if (typeof ITEMS_DATABASE !== 'undefined' && !ITEMS_DATABASE[drop.item]) {
+                                const autoName = drop.item.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                ITEMS_DATABASE[drop.item] = {
+                                    id: drop.item,
+                                    name: autoName,
+                                    type: 'material',
+                                    rarity: 'uncommon',
+                                    description: `${m.name}에게서 얻은 전리품입니다.`,
+                                    icon: '📦',
+                                    sellPrice: Math.max(5, Math.floor((m.exp || 10) * 0.1)),
+                                    stackable: true
+                                };
+                            }
+                            if (typeof addItemToInventory === 'function') {
+                                const added = addItemToInventory(drop.item, drop.quantity || 1);
+                                if (!added) {
+                                    addGameLog(`❌ 인벤토리가 가득 차서 아이템을 놓쳤습니다!`);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 퀘스트 진행도 업데이트 (킬 타입 퀘스트)
+            if (player.quests) {
+                for (const questKey in player.quests) {
+                    const quest = player.quests[questKey];
+                    if (quest.status === 'active' && quest.objective && quest.objective.type === 'kill') {
+                        for (const m of monsters) {
+                            if (m && m.id === quest.objective.target) {
+                                quest.objective.current = (quest.objective.current || 0) + 1;
+                                addGameLog(`📜 퀘스트 진행: ${quest.name} (${quest.objective.current}/${quest.objective.count})`);
+                            }
+                        }
+                    }
+                }
             }
 
             // 레벨업 체크
@@ -1062,10 +1108,32 @@ function doBattleAttack() {
     }
 
     const targetMonster = battleState.currentMonster;
-    const damage = calculateDamage(player, targetMonster, false);
+    let damage = calculateDamage(player, targetMonster, false);
+
+    // 몬스터 방어 특성 적용
+    const atkDamageType = player.jobData?.damageType || 'physical';
+    if (checkMonsterIronSkin(targetMonster, atkDamageType)) {
+        addGameLog(`🛡️ ${getMonsterNameWithColor(targetMonster)}의 아이언 스킨이 공격을 무시했다!`);
+        updateBattleUI();
+        endPlayerTurn();
+        return;
+    }
+    damage = applyMonsterToughBodyModifier(targetMonster, damage);
+    damage = applyMonsterSpiritBodyModifier(targetMonster, damage, atkDamageType);
+    damage = applyMonsterUnyieldingModifier(targetMonster, damage, false);
 
     targetMonster.hp -= damage;
     addGameLog(`⚔️ ${player.name}의 공격! ${getMonsterNameWithColor(targetMonster)}에게 ${damage} 데미지!`);
+
+    // 몬스터 반격 특성 처리
+    if (targetMonster.hp > 0) {
+        processMonsterCounterTrait(targetMonster, damage);
+    }
+
+    // 몬스터 분노(rage) 특성 처리
+    if (targetMonster.hp > 0) {
+        processMonsterRageTrait(targetMonster, 'physical');
+    }
 
     // 상급교관 2페이즈 체크 (HP 30% 이하 시 강화)
     checkSeniorInstructorPhase2(targetMonster);
@@ -1251,6 +1319,11 @@ function useSelectedSkill(skillId) {
         const defStat = damageType === 'magical' ? (targetMonster.mDef || 0) : (targetMonster.pDef || targetMonster.def || 0);
         damage = Math.max(1, damage - Math.floor(defStat * 0.3));
 
+        // 몬스터 방어 특성 적용
+        damage = applyMonsterToughBodyModifier(targetMonster, damage);
+        damage = applyMonsterSpiritBodyModifier(targetMonster, damage, damageType);
+        damage = applyMonsterUnyieldingModifier(targetMonster, damage, false);
+
         totalDamage += damage;
         targetMonster.hp -= damage;
 
@@ -1268,6 +1341,16 @@ function useSelectedSkill(skillId) {
     // 상태이상 적용 (적이 살아있을 때만)
     if (skill.effects?.statusEffect && targetMonster.hp > 0) {
         applyStatusEffect(targetMonster, skill.effects.statusEffect, skill.effects.statusDuration, totalDamage);
+    }
+
+    // 몬스터 반격 특성 처리
+    if (targetMonster.hp > 0) {
+        processMonsterCounterTrait(targetMonster, totalDamage);
+    }
+
+    // 몬스터 분노(rage) 특성 처리
+    if (targetMonster.hp > 0) {
+        processMonsterRageTrait(targetMonster, damageType);
     }
 
     // 상급교관 2페이즈 체크 (스킬 공격 후에도 체크)
@@ -1738,6 +1821,9 @@ function doMonsterTurn() {
             updateBattleUI();
         }
         
+        // 불굴 특성 처리 (HP 30% 이하 시 발동)
+        processMonsterUnyieldingTrait(monster);
+        
         // 대련 몬스터인 경우 턴당 MP 회복 및 AI 행동 결정
         if (monster.isSpar && monster.aiPattern) {
             // 턴당 MP 3% 회복
@@ -1922,8 +2008,15 @@ function doMonsterTurn() {
                     }
                 }
 
+                // 몬스터 불굴 특성에 의한 가하는 피해 증가
+                damage = applyMonsterUnyieldingModifier(monster, damage, true);
+
                 player.hp -= damage;
                 addGameLog(`👹 ${getMonsterNameWithColor(monster)}의 ${damageType === 'magical' ? '마법 ' : ''}공격! ${damage} 데미지!`);
+
+                // 감염/광견병 특성 처리 (공격 성공 시)
+                processMonsterInfectionTrait(monster);
+                processMonsterRabiesTrait(monster);
 
                 // 흡혈 효과 적용 (투지의 검 버프 등)
                 if (monster.activeBuffs) {
@@ -2130,20 +2223,22 @@ function tryUseSparSkill(monster) {
     if (skill.damageType === 'buff') {
         addGameLog(`🗡️ ${monster.name}의 ${skill.name} 스킬 발동!`);
         
-        // 버프 효과 적용
+        // 버프 효과 적용 (레벨에 따라 스케일)
         if (!monster.activeBuffs) monster.activeBuffs = {};
+        const baseDuration = skill.effects?.buffDuration || 3;
         monster.activeBuffs[skillId] = {
             name: skill.name,
-            duration: skill.effects?.buffDuration || 3,
-            pAtkFlat: skill.effects?.pAtkFlat || 0,
-            pAtkPercent: skill.effects?.pAtkPercent || 0,
-            lifestealPercent: skill.effects?.lifestealPercent || 0,
-            noTurnEndChance: skill.effects?.noTurnEndChance || 0
+            duration: Math.max(1, Math.floor(baseDuration * levelMultiplier)),
+            pAtkFlat: Math.floor((skill.effects?.pAtkFlat || 0) * levelMultiplier),
+            pAtkPercent: Math.floor((skill.effects?.pAtkPercent || 0) * levelMultiplier),
+            lifestealPercent: Math.floor((skill.effects?.lifestealPercent || 0) * levelMultiplier),
+            noTurnEndChance: Math.floor((skill.effects?.noTurnEndChance || 0) * levelMultiplier)
         };
         
-        // 물리공격력 보너스 즉시 적용
+        // 물리공격력 보너스 즉시 적용 (스케일 적용)
         if (skill.effects?.pAtkFlat) {
-            monster.pAtk = (monster.pAtk || 0) + skill.effects.pAtkFlat;
+            const scaledFlat = Math.floor(skill.effects.pAtkFlat * levelMultiplier);
+            monster.pAtk = (monster.pAtk || 0) + scaledFlat;
         }
         
         updateBattleUI();
@@ -2189,11 +2284,12 @@ function tryUseSparSkill(monster) {
     
     addGameLog(`🌟 ${monster.name}의 ${skill.name}! ${damage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
     
-    // 스킬의 상태이상 효과 적용 (감전, 화상 등)
+    // 스킬의 상태이상 효과 적용 (레벨에 따라 지속시간 스케일)
     if (skill.effects?.statusEffect) {
         const statusEffectId = skill.effects.statusEffect;
-        const statusDuration = skill.effects.statusDuration || 1;
-        const statusChance = skill.effects.statusChance || 100; // 기본 100% (gameData에 별도 정의 없으면)
+        const baseStatusDuration = skill.effects.statusDuration || 1;
+        const statusDuration = Math.max(1, Math.floor(baseStatusDuration * levelMultiplier));
+        const statusChance = skill.effects.statusChance || 100;
         const effectInfo = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[statusEffectId] : null;
         if (effectInfo) {
             // 상태이상 적용 (플레이어에게)
@@ -2314,39 +2410,117 @@ function tryUseMonsterSkill(monster, forcedSkillId) {
         const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
         addGameLog(`🗡️ ${getMonsterNameWithColor(monster)}의 ${skillName} 스킬 발동!`);
         
-        // 버프 효과 적용
+        // 버프 효과 적용 (레벨에 따라 스케일)
         if (!monster.activeBuffs) monster.activeBuffs = {};
+        const baseDuration = effectData.buffDuration || effectData.duration || 3;
         monster.activeBuffs[skillId] = {
             name: skillName,
-            duration: effectData.buffDuration || effectData.duration || 3,
-            pAtkFlat: effectData.pAtkFlat || 0,
-            pAtkPercent: effectData.pAtkPercent || 0,
-            lifestealPercent: effectData.lifestealPercent || 0,
-            noTurnEndChance: effectData.noTurnEndChance || 0
+            duration: Math.max(1, Math.floor(baseDuration * levelMultiplier)),
+            pAtkFlat: Math.floor((effectData.pAtkFlat || 0) * levelMultiplier),
+            pAtkPercent: Math.floor((effectData.pAtkPercent || 0) * levelMultiplier),
+            lifestealPercent: Math.floor((effectData.lifestealPercent || 0) * levelMultiplier),
+            noTurnEndChance: Math.floor((effectData.noTurnEndChance || 0) * levelMultiplier)
         };
         
-        // 물리공격력 보너스 즉시 적용
+        // 물리공격력 보너스 즉시 적용 (스케일 적용)
         if (effectData.pAtkFlat) {
-            monster.pAtk = (monster.pAtk || 0) + effectData.pAtkFlat;
+            const scaledFlat = Math.floor(effectData.pAtkFlat * levelMultiplier);
+            monster.pAtk = (monster.pAtk || 0) + scaledFlat;
         }
         
         updateBattleUI();
         return true;
     }
     
+    // 소환형 스킬 처리 (저주받은 영주의 소환 등)
+    if (effectData.type === 'summon' || skill.damageType === 'summon') {
+        const skillName = skill.name || (skillEntry && skillEntry.name) || '소환';
+        const summonId = effectData.summonId;
+        const summonTemplate = (typeof MONSTERS !== 'undefined') ? MONSTERS[summonId] : null;
+        
+        if (!summonTemplate) {
+            addGameLog(`⚠️ ${getMonsterNameWithColor(monster)}이(가) 소환을 시도했지만 실패!`);
+            return false;
+        }
+
+        // 소환 수 결정
+        let summonCount = 1;
+        if (effectData.countChances && Array.isArray(effectData.countChances)) {
+            const roll = Math.random();
+            let cumulative = 0;
+            for (const entry of effectData.countChances) {
+                cumulative += entry.chance;
+                if (roll < cumulative) {
+                    summonCount = entry.count;
+                    break;
+                }
+            }
+        }
+
+        addGameLog(`📢 ${getMonsterNameWithColor(monster)}이(가) ${skillName} 발동!`);
+        
+        for (let i = 0; i < summonCount; i++) {
+            const summonedMonster = (typeof createBattleMonster === 'function') 
+                ? createBattleMonster(summonId) 
+                : { ...summonTemplate, hp: summonTemplate.hp, maxHp: summonTemplate.hp, cooldowns: {}, activeBuffs: {}, currentMp: summonTemplate.mp || 0, maxMp: summonTemplate.mp || 0, turnActionCount: 0 };
+            
+            battleState.monsters.push(summonedMonster);
+            addGameLog(`🧟 ${summonedMonster.name}이(가) 소환되었다!`);
+        }
+        
+        updateBattleUI();
+        return true;
+    }
+
+    // 저주형 스킬 처리 (역병의 저주, 약화의 저주 등)
+    if (effectData.type === 'curse') {
+        const skillName = skill.name || (skillEntry && skillEntry.name) || '저주';
+        
+        // 저주는 회피 불가 (ignoreEvasion 설정에 따라)
+        // 저항 체크 (resistible이면 마법방어에 따라 저항 가능)
+        if (effectData.resistible) {
+            const resistChance = Math.min(50, (player.mDef || 0) * 0.5);
+            if (Math.random() * 100 < resistChance) {
+                addGameLog(`🛡️ ${player.name}이(가) ${getMonsterNameWithColor(monster)}의 ${skillName}에 저항했다!`);
+                updateBattleUI();
+                return true;
+            }
+        }
+
+        const statusEffectId = effectData.statusEffect;
+        const baseStatusDuration = effectData.statusDuration || 3;
+        const statusDuration = Math.max(1, Math.floor(baseStatusDuration * levelMultiplier));
+        const effectInfo = (typeof STATUS_EFFECTS !== 'undefined') ? STATUS_EFFECTS[statusEffectId] : null;
+        
+        if (effectInfo) {
+            if (!player.statusEffects) player.statusEffects = {};
+            player.statusEffects[statusEffectId] = {
+                duration: statusDuration,
+                damage: 0
+            };
+            addGameLog(`🌟 ${getMonsterNameWithColor(monster)}의 ${skillName}!`);
+            addGameLog(`${effectInfo.icon} ${player.name}에게 ${effectInfo.name} 상태이상 부여! (${statusDuration}턴)`);
+        }
+        
+        updateBattleUI();
+        return true;
+    }
+
     // 데미지형 스킬 처리
     const damageType = skill.damageType || monster.damageType || 'physical';
     const atk = damageType === 'magical' ? (monster.mAtk || 20) : (monster.pAtk || monster.atk || 20);
     const damagePercent = effectData.damagePercent || (skill.damageMultiplier ? skill.damageMultiplier * 100 : 150);
     const baseDamage = Math.floor(atk * (damagePercent / 100) * levelMultiplier);
     
-    // 회피 체크
-    const evasionRoll = Math.random() * 100;
-    if (evasionRoll < (player.evasion || 0)) {
-        const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
-        addGameLog(`💫 ${player.name}이(가) ${getMonsterNameWithColor(monster)}의 ${skillName}을(를) 회피했다!`);
-        updateBattleUI();
-        return true;
+    // 회피 체크 (ignoreEvasion이면 무시)
+    if (!effectData.ignoreEvasion) {
+        const evasionRoll = Math.random() * 100;
+        if (evasionRoll < (player.evasion || 0)) {
+            const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
+            addGameLog(`💫 ${player.name}이(가) ${getMonsterNameWithColor(monster)}의 ${skillName}을(를) 회피했다!`);
+            updateBattleUI();
+            return true;
+        }
     }
     
     const def = damageType === 'magical' ? 
@@ -2375,10 +2549,11 @@ function tryUseMonsterSkill(monster, forcedSkillId) {
     const skillName = skill.name || (skillEntry && skillEntry.name) || '알 수 없는 스킬';
     addGameLog(`🌟 ${getMonsterNameWithColor(monster)}의 ${skillName}! ${damage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
     
-    // 상태이상 효과 적용
+    // 상태이상 효과 적용 (레벨에 따라 지속시간 스케일)
     if (effectData.statusEffect) {
         const statusEffectId = effectData.statusEffect;
-        const statusDuration = effectData.statusDuration || 1;
+        const baseStatusDuration = effectData.statusDuration || 1;
+        const statusDuration = Math.max(1, Math.floor(baseStatusDuration * levelMultiplier));
         const effectInfo = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[statusEffectId] : null;
         if (effectInfo) {
             if (!player.statusEffects) player.statusEffects = {};
@@ -2401,6 +2576,12 @@ function tryUseMonsterSkill(monster, forcedSkillId) {
                 }
             }
         });
+    }
+
+    // 감염/광견병 특성 처리 (몬스터 스킬로 데미지를 줬을 때도 적용)
+    if (damage > 0) {
+        processMonsterInfectionTrait(monster);
+        processMonsterRabiesTrait(monster);
     }
     
     updateBattleUI();
@@ -2588,6 +2769,259 @@ function checkSwiftExtraAction() {
         player.traitState.doubleAction = false;
         player.traitState.cooldown = TRAITS?.swift?.effects?.cooldown || 10;
         return false;
+    }
+}
+
+/**
+ * 몬스터의 반격 특성을 처리합니다 (플레이어가 몬스터를 공격한 후 호출).
+ * @param {Object} monster - 공격받은 몬스터
+ * @param {number} damageTaken - 몬스터가 받은 피해량
+ */
+function processMonsterCounterTrait(monster, damageTaken) {
+    const counterTrait = getMonsterTrait(monster, 'counter');
+    if (!counterTrait.has) return;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.counter : null;
+    if (!traitData) return;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(counterTrait.level) : 1.0;
+
+    // 발동 확률 (레벨에 따라 스케일)
+    const triggerChance = (traitData.effects.triggerChance || 25) * levelMultiplier;
+    const roll = Math.random() * 100;
+    if (roll >= triggerChance) return;
+
+    // 반격 발동!
+    addGameLog(`⚔️ ${getMonsterNameWithColor(monster)}의 반격 특성 발동!`);
+
+    // HP 회복 (받은 피해의 healPercent%)
+    const healPercent = (traitData.effects.healPercent || 10) * levelMultiplier;
+    const healAmount = Math.floor(damageTaken * healPercent / 100);
+    if (healAmount > 0) {
+        monster.hp = Math.min(monster.maxHp, monster.hp + healAmount);
+        addGameLog(`💚 ${getMonsterNameWithColor(monster)}이(가) HP ${healAmount} 회복!`);
+    }
+
+    // 반격 데미지 (높은 공격력의 counterAtkPercent% + 받은 피해의 counterDamageBonusPercent%)
+    const counterAtkPercent = (traitData.effects.counterAtkPercent || 75) * levelMultiplier;
+    const counterDamageBonusPercent = (traitData.effects.counterDamageBonusPercent || 20) * levelMultiplier;
+    const monsterAtk = Math.max(monster.pAtk || 0, monster.mAtk || 0);
+    const counterDamage = Math.floor(monsterAtk * counterAtkPercent / 100) + Math.floor(damageTaken * counterDamageBonusPercent / 100);
+
+    const finalDamage = Math.max(1, counterDamage);
+    player.hp -= finalDamage;
+    if (player.hp < 0) player.hp = 0;
+    addGameLog(`💥 ${getMonsterNameWithColor(monster)}의 반격! ${finalDamage} 데미지!`);
+
+    updateBattleUI();
+}
+
+/**
+ * 몬스터의 분노(rage) 특성을 처리합니다.
+ * @param {Object} monster - 공격받은 몬스터
+ * @param {string} damageType - 피해 타입 ('physical' 또는 'magical')
+ */
+function processMonsterRageTrait(monster, damageType) {
+    const rageTrait = getMonsterTrait(monster, 'rage');
+    if (!rageTrait.has) return;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.rage : null;
+    if (!traitData) return;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(rageTrait.level) : 1.0;
+    const atkGain = Math.floor((traitData.effects.atkGainOnHit || 5) * levelMultiplier);
+
+    if (damageType === 'magical') {
+        monster.mAtk = (monster.mAtk || 0) + atkGain;
+        addGameLog(`😡 ${getMonsterNameWithColor(monster)}의 분노! 마법공격력 +${atkGain}!`);
+    } else {
+        monster.pAtk = (monster.pAtk || 0) + atkGain;
+        addGameLog(`😡 ${getMonsterNameWithColor(monster)}의 분노! 물리공격력 +${atkGain}!`);
+    }
+}
+
+/**
+ * 몬스터의 불굴 특성을 처리합니다 (턴 시작 시 호출).
+ * @param {Object} monster - 대상 몬스터
+ */
+function processMonsterUnyieldingTrait(monster) {
+    const unyieldingTrait = getMonsterTrait(monster, 'unyielding');
+    if (!unyieldingTrait.has) return;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.unyielding : null;
+    if (!traitData) return;
+
+    if (!monster.traitState) monster.traitState = {};
+
+    // 이미 활성화되어 있으면 지속시간 감소
+    if (monster.traitState.unyieldingActive) {
+        monster.traitState.unyieldingDuration--;
+        if (monster.traitState.unyieldingDuration <= 0) {
+            monster.traitState.unyieldingActive = false;
+            monster.traitState.unyieldingCooldown = traitData.effects.cooldown || 5;
+            addGameLog(`🔥 ${getMonsterNameWithColor(monster)}의 불굴 효과가 종료되었다!`);
+        }
+        return;
+    }
+
+    // 쿨다운 중이면 감소
+    if (monster.traitState.unyieldingCooldown > 0) {
+        monster.traitState.unyieldingCooldown--;
+        return;
+    }
+
+    // HP 30% 이하 확인
+    const hpPercent = (monster.hp / monster.maxHp) * 100;
+    const threshold = traitData.effects.hpThreshold || 30;
+    if (hpPercent <= threshold) {
+        const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+            ? getSkillLevelMultiplier(unyieldingTrait.level) : 1.0;
+        const duration = Math.floor((traitData.effects.duration || 4) * levelMultiplier);
+        monster.traitState.unyieldingActive = true;
+        monster.traitState.unyieldingDuration = duration;
+        addGameLog(`🔥 ${getMonsterNameWithColor(monster)}의 불굴 발동! ${duration}턴간 피해 감소, 공격력 증가!`);
+    }
+}
+
+/**
+ * 몬스터의 불굴 특성에 의한 피해 보정을 적용합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @param {number} damage - 원래 피해량
+ * @param {boolean} isMonsterDealing - 몬스터가 가하는 피해인지 여부
+ * @returns {number} - 보정된 피해량
+ */
+function applyMonsterUnyieldingModifier(monster, damage, isMonsterDealing) {
+    const unyieldingTrait = getMonsterTrait(monster, 'unyielding');
+    if (!unyieldingTrait.has || !monster.traitState?.unyieldingActive) return damage;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.unyielding : null;
+    if (!traitData) return damage;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(unyieldingTrait.level) : 1.0;
+
+    if (isMonsterDealing) {
+        // 가하는 피해 증가
+        const bonus = (traitData.effects.damageBonus || 10) * levelMultiplier;
+        return Math.ceil(damage * (1 + bonus / 100));
+    } else {
+        // 받는 피해 감소
+        const reduction = (traitData.effects.damageReduction || 10) * levelMultiplier;
+        return Math.ceil(damage * (1 - reduction / 100));
+    }
+}
+
+/**
+ * 몬스터의 강인한 육체 특성에 의한 피해 감소를 적용합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @param {number} damage - 원래 피해량
+ * @returns {number} - 보정된 피해량
+ */
+function applyMonsterToughBodyModifier(monster, damage) {
+    const toughTrait = getMonsterTrait(monster, 'tough_body');
+    if (!toughTrait.has) return damage;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.tough_body : null;
+    if (!traitData) return damage;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(toughTrait.level) : 1.0;
+    const reduction = (traitData.effects.damageReduction || 15) * levelMultiplier;
+    return Math.ceil(damage * (1 - reduction / 100));
+}
+
+/**
+ * 몬스터의 아이언 스킨 특성에 의한 물리공격 무시를 확인합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @param {string} damageType - 피해 타입
+ * @returns {boolean} - 공격 무시 여부
+ */
+function checkMonsterIronSkin(monster, damageType) {
+    if (damageType !== 'physical') return false;
+    const ironSkinTrait = getMonsterTrait(monster, 'iron_skin');
+    if (!ironSkinTrait.has) return false;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.iron_skin : null;
+    if (!traitData) return false;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(ironSkinTrait.level) : 1.0;
+    const blockChance = (traitData.effects.physicalBlockChance || 10) * levelMultiplier;
+    return Math.random() * 100 < blockChance;
+}
+
+/**
+ * 몬스터의 영체 특성에 의한 물리피해 감소를 적용합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @param {number} damage - 원래 피해량
+ * @param {string} damageType - 피해 타입
+ * @returns {number} - 보정된 피해량
+ */
+function applyMonsterSpiritBodyModifier(monster, damage, damageType) {
+    if (damageType !== 'physical') return damage;
+    const spiritTrait = getMonsterTrait(monster, 'spirit_body');
+    if (!spiritTrait.has) return damage;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.spirit_body : null;
+    if (!traitData) return damage;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(spiritTrait.level) : 1.0;
+    const reduction = (traitData.effects.physicalDamageReduction || 50) * levelMultiplier;
+    const reducedDamage = Math.ceil(damage * (1 - Math.min(reduction, 90) / 100));
+    if (reducedDamage < damage) {
+        addGameLog(`👻 ${getMonsterNameWithColor(monster)}의 영체 특성으로 물리피해 감소!`);
+    }
+    return reducedDamage;
+}
+
+/**
+ * 몬스터의 감염 특성을 처리합니다 (몬스터가 공격 성공 시 호출).
+ * @param {Object} monster - 공격한 몬스터
+ */
+function processMonsterInfectionTrait(monster) {
+    const infectionTrait = getMonsterTrait(monster, 'infection_trait');
+    if (!infectionTrait.has) return;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.infection_trait : null;
+    if (!traitData) return;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(infectionTrait.level) : 1.0;
+    const statusId = traitData.effects.onHitStatusEffect || 'infection';
+    const duration = Math.floor((traitData.effects.statusDuration || 3) * levelMultiplier);
+    
+    if (!player.statusEffects) player.statusEffects = {};
+    const effectInfo = (typeof STATUS_EFFECTS !== 'undefined') ? STATUS_EFFECTS[statusId] : null;
+    if (effectInfo) {
+        player.statusEffects[statusId] = { duration: duration, damage: 0 };
+        addGameLog(`${effectInfo.icon} ${getMonsterNameWithColor(monster)}의 감염! ${effectInfo.name} 상태이상 부여! (${duration}턴)`);
+    }
+}
+
+/**
+ * 몬스터의 광견병 특성을 처리합니다 (몬스터가 공격 성공 시 호출).
+ * @param {Object} monster - 공격한 몬스터
+ */
+function processMonsterRabiesTrait(monster) {
+    const rabiesTrait = getMonsterTrait(monster, 'rabies');
+    if (!rabiesTrait.has) return;
+
+    const traitData = (typeof TRAITS !== 'undefined') ? TRAITS.rabies : null;
+    if (!traitData) return;
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function') 
+        ? getSkillLevelMultiplier(rabiesTrait.level) : 1.0;
+    const statusId = traitData.effects.onHitStatusEffect || 'madness';
+    const duration = Math.floor((traitData.effects.statusDuration || 2) * levelMultiplier);
+    
+    if (!player.statusEffects) player.statusEffects = {};
+    const effectInfo = (typeof STATUS_EFFECTS !== 'undefined') ? STATUS_EFFECTS[statusId] : null;
+    if (effectInfo) {
+        player.statusEffects[statusId] = { duration: duration, damage: 0 };
+        addGameLog(`${effectInfo.icon} ${getMonsterNameWithColor(monster)}의 광견병! ${effectInfo.name} 상태이상 부여! (${duration}턴)`);
     }
 }
 

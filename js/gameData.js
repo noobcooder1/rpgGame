@@ -3303,6 +3303,7 @@ const MONSTERS = {
         healEfficiency: 20,
         exp: 8000, gold: 2000,
         drops: [
+            { item: 'troll_tooth', chance: 1.0 },
             { item: 'troll_blood', chance: 1.0 },
             { item: 'bone_necklace', chance: 1.0 },
             { item: 'troll_greatsword', chance: 1.0 },

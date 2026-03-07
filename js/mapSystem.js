@@ -769,7 +769,7 @@ function guardianAcceptQuest() {
             <div class="boss-dialog-portrait">🗿</div>
             <div class="boss-dialog-box">
                 <div class="boss-dialog-name" style="color: #e74c3c; font-weight: bold;">고대 수호자</div>
-                <div class="boss-dialog-text">고맙군, ${playerName}. 이 동굴 심층부에 흉폭한 트롤이 살고 있다. 그 트롤이 이 유적까지 침범하려 하고 있어. 트롤을 처치하고 돌아와준다면, 내가 가진 보물 중 일부를 네게 주겠다.</div>
+                <div class="boss-dialog-text">고맙군, ${playerName}. 이 동굴 심층부에 흉폭한 트롤이 살고 있다. 그 트롤의 이빨을 가져와 주게. 트롤의 이빨은 고대 봉인을 유지하는 데 필요한 재료라네. 가져다주면 내가 가진 보물 중 일부를 네게 주겠다.</div>
             </div>
             <div class="boss-dialog-continue" onclick="guardianQuestAccepted()">
                 ▶ 퀘스트 수락!
@@ -793,9 +793,9 @@ function guardianQuestAccepted() {
     player.quests.ancient_guardian_quest = {
         id: 'ancient_guardian_quest',
         name: '고대 수호자의 부탁',
-        description: '동굴 심층부의 동굴트롤을 처치하고 고대 수호자에게 보고하라.',
+        description: '동굴트롤의 이빨을 구해 고대 수호자에게 가져다 주어라.',
         status: 'active',
-        objective: { type: 'kill', target: 'cave_troll', count: 1, current: 0 },
+        objective: { type: 'item_delivery', requiredItem: 'troll_tooth', count: 1, current: 0 },
         rewards: {
             exp: 5000,
             gold: 3000,
@@ -807,7 +807,10 @@ function guardianQuestAccepted() {
     player.ancientRuinsCleared = true;
 
     addGameLog('📜 퀘스트 수락: "고대 수호자의 부탁"');
-    addGameLog('💡 목표: 동굴 심층부의 동굴트롤을 처치하고 고대 수호자에게 보고하라.');
+    addGameLog('💡 목표: 동굴트롤의 이빨을 구해 고대 수호자에게 가져다주어라.');
+
+    // NPC 버튼 즉시 갱신
+    if (typeof updateLocationActions === 'function') updateLocationActions();
 
     // 퀘스트 알림 표시
     const questNotif = document.createElement('div');
@@ -818,7 +821,7 @@ function guardianQuestAccepted() {
             <div class="quest-notif-text">
                 <strong>퀘스트 수락!</strong><br>
                 고대 수호자의 부탁<br>
-                <small>동굴트롤을 처치하고 돌아오라</small>
+                <small>동굴트롤의 이빨을 구해 가져다주라</small>
             </div>
         </div>
     `;
@@ -934,6 +937,9 @@ function guardianLeaveQuietly() {
 
     document.body.appendChild(overlay);
     addGameLog('🗿 고대 수호자: "마음이 바뀌면 언제든 돌아오거라."');
+
+    // NPC 버튼 즉시 갱신
+    if (typeof updateLocationActions === 'function') updateLocationActions();
 }
 
 /**
@@ -942,6 +948,9 @@ function guardianLeaveQuietly() {
 function dismissGuardianDialogue() {
     const existing = document.querySelector('.boss-dialog-modal');
     if (existing) existing.remove();
+    
+    // NPC 버튼 즉시 갱신
+    if (typeof updateLocationActions === 'function') updateLocationActions();
 }
 
 // ============================================
