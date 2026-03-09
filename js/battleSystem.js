@@ -148,6 +148,19 @@ function startBattle(monsterTypes) {
         });
     }
 
+    // 플레이어 활성 버프 초기화 (전투 시작 시)
+    if (player) {
+        // 이전 버프의 공격력 보너스 제거
+        if (player.activeBuffs) {
+            Object.values(player.activeBuffs).forEach(buff => {
+                if (buff.pAtkFlat) {
+                    player.pAtk = Math.max(0, (player.pAtk || 0) - buff.pAtkFlat);
+                }
+            });
+        }
+        player.activeBuffs = {};
+    }
+
     // 특성 상태 초기화 (전투 시작)
     resetTraitStateForBattle();
 
@@ -1110,6 +1123,15 @@ function doBattleAttack() {
     const targetMonster = battleState.currentMonster;
     let damage = calculateDamage(player, targetMonster, false);
 
+    // 플레이어 활성 버프 공격력 퍼센트 보정 적용 (투지의 검 등)
+    if (player.activeBuffs) {
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.pAtkPercent) {
+                damage = Math.ceil(damage * (1 + buff.pAtkPercent / 100));
+            }
+        });
+    }
+
     // 몬스터 방어 특성 적용
     const atkDamageType = player.jobData?.damageType || 'physical';
     if (checkMonsterIronSkin(targetMonster, atkDamageType)) {
@@ -1124,6 +1146,23 @@ function doBattleAttack() {
 
     targetMonster.hp -= damage;
     addGameLog(`⚔️ ${player.name}의 공격! ${getMonsterNameWithColor(targetMonster)}에게 ${damage} 데미지!`);
+
+    // 플레이어 흡혈 효과 적용 (투지의 검 버프 등) - 적 생존 여부와 무관하게 적용
+    if (player.activeBuffs && damage > 0) {
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(damage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    const oldHp = player.hp;
+                    player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                    const actualHeal = player.hp - oldHp;
+                    if (actualHeal > 0) {
+                        addGameLog(`💚 ${buff.name} 효과로 HP +${actualHeal} 회복!`);
+                    }
+                }
+            }
+        });
+    }
 
     // 몬스터 반격 특성 처리
     if (targetMonster.hp > 0) {
@@ -1220,9 +1259,15 @@ function showSkillSelectionUI(skillIds) {
         if (!skill) return;
 
         const cooldown = player.skillCooldowns?.[skillId] || 0;
-        const canUse = player.mp >= skill.mpCost && cooldown <= 0;
+        const isBuffActive = player.activeBuffs && player.activeBuffs[skillId];
+        const canUse = player.mp >= skill.mpCost && cooldown <= 0 && !isBuffActive;
         const disabledClass = canUse ? '' : 'disabled';
-        const cooldownText = cooldown > 0 ? ` (쿨다운 ${cooldown}턴)` : '';
+        let statusText = '';
+        if (isBuffActive) {
+            statusText = ` (버프 활성 중 ${isBuffActive.duration}턴)`;
+        } else if (cooldown > 0) {
+            statusText = ` (쿨다운 ${cooldown}턴)`;
+        }
 
         skillsHtml += `
             <button class="skill-select-btn ${disabledClass}" 
@@ -1230,7 +1275,7 @@ function showSkillSelectionUI(skillIds) {
                     ${canUse ? '' : 'disabled'}>
                 <span class="skill-icon">${skill.icon}</span>
                 <div class="skill-info">
-                    <span class="skill-name">${skill.name}${cooldownText}</span>
+                    <span class="skill-name">${skill.name}${statusText}</span>
                     <span class="skill-cost">MP ${skill.mpCost}</span>
                 </div>
                 <p class="skill-desc">${skill.description}</p>
@@ -1284,6 +1329,71 @@ function useSelectedSkill(skillId) {
 
     // 쿨다운 설정
     if (!player.skillCooldowns) player.skillCooldowns = {};
+
+    // 버프형 스킬 처리
+    if (skill.damageType === 'buff') {
+        // 버프 적용 (쿨타임은 버프 종료 후 적용되므로 여기서는 설정하지 않음)
+        if (!player.activeBuffs) player.activeBuffs = {};
+
+        const skillLevel = player.skillLevels?.[skillId] || 1;
+        const levelMultiplier = typeof getSkillLevelMultiplier === 'function' ? getSkillLevelMultiplier(skillLevel) : 1.0;
+
+        // 투지의 검 지속시간/쿨타임 계산
+        let buffDuration = skill.effects?.buffDuration || 3;
+        let skillCooldown = skill.cooldown || 2;
+        if (typeof getSpiritSwordDuration === 'function' && skillId === 'spirit_sword') {
+            const spiritData = getSpiritSwordDuration(skillLevel);
+            buffDuration = spiritData.duration;
+            skillCooldown = spiritData.cooldown;
+        }
+
+        const pAtkFlat = Math.floor((skill.effects?.pAtkFlat || 0) * levelMultiplier);
+        const pAtkPercent = Math.floor((skill.effects?.pAtkPercent || 0) * levelMultiplier);
+        const lifestealPercent = Math.floor((skill.effects?.lifestealPercent || 0) * levelMultiplier);
+        const noTurnEndChance = Math.floor((skill.effects?.noTurnEndChance || 0) * levelMultiplier);
+
+        // 이미 같은 버프가 있으면 기존 공격력 보너스 제거 후 갱신
+        if (player.activeBuffs[skillId]) {
+            const oldBuff = player.activeBuffs[skillId];
+            player.pAtk = Math.max(0, (player.pAtk || 0) - (oldBuff.pAtkFlat || 0));
+        }
+
+        player.activeBuffs[skillId] = {
+            name: skill.name,
+            duration: buffDuration,
+            cooldownAfterExpire: skillCooldown,
+            pAtkFlat: pAtkFlat,
+            pAtkPercent: pAtkPercent,
+            lifestealPercent: lifestealPercent,
+            noTurnEndChance: noTurnEndChance
+        };
+
+        // pAtkFlat 즉시 적용
+        player.pAtk = (player.pAtk || 0) + pAtkFlat;
+
+        // 쿨타임은 0으로 유지 (버프 종료 후에 설정됨)
+        player.skillCooldowns[skillId] = 0;
+
+        addGameLog(`🗡️ ${player.name}의 ${skill.name} 발동! (${buffDuration}턴 지속)`);
+        if (pAtkFlat > 0 || pAtkPercent > 0) {
+            addGameLog(`⚔️ 물리공격력 ${pAtkPercent}% 증가 + ${pAtkFlat} 추가!`);
+        }
+        if (lifestealPercent > 0) {
+            addGameLog(`💚 공격 시 피해의 ${lifestealPercent}% HP 회복!`);
+        }
+        if (noTurnEndChance > 0) {
+            addGameLog(`⚡ ${noTurnEndChance}% 확률로 턴 미종료!`);
+        }
+
+        updateBattleUI();
+
+        // 버프형 스킬은 턴을 소비하지 않음 (noTurnEndChance 100% 처럼 추가 행동 가능)
+        // 버프 발동 후 즉시 다음 행동 선택 가능
+        enableBattleButtons(true);
+        return;
+    }
+
+    // 공격형 스킬 쿨타임 설정
     player.skillCooldowns[skillId] = skill.cooldown || 0;
 
     const monster = battleState.currentMonster;
@@ -1307,9 +1417,18 @@ function useSelectedSkill(skillId) {
 
     for (let i = 0; i < attackCount; i++) {
         // 기본 공격력 계산
-        const baseAtk = damageType === 'magical' ?
+        let baseAtk = damageType === 'magical' ?
             (player.mAtk || 0) + (player.bonusMAtk || 0) :
             (player.pAtk || 0) + (player.bonusPAtk || 0);
+
+        // 플레이어 활성 버프 공격력 퍼센트 보정 적용
+        if (player.activeBuffs) {
+            Object.values(player.activeBuffs).forEach(buff => {
+                if (buff.pAtkPercent) {
+                    baseAtk = Math.ceil(baseAtk * (1 + buff.pAtkPercent / 100));
+                }
+            });
+        }
 
         // 스킬 배율 적용 (0.7~2.3배)
         const multiplier = 0.7 + Math.random() * 1.6;
@@ -1336,6 +1455,23 @@ function useSelectedSkill(skillId) {
         addGameLog(`⚡ ${player.name}의 ${skill.name}! ${getMonsterNameWithColor(targetMonster)}에게 ${totalDamage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
     } else {
         addGameLog(`💥 총 ${totalDamage} 데미지!`);
+    }
+
+    // 플레이어 흡혈 효과 적용 (투지의 검 버프 등) - 적 생존 여부와 무관하게 적용
+    if (player.activeBuffs && totalDamage > 0) {
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(totalDamage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    const oldHp = player.hp;
+                    player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                    const actualHeal = player.hp - oldHp;
+                    if (actualHeal > 0) {
+                        addGameLog(`💚 ${buff.name} 효과로 HP +${actualHeal} 회복!`);
+                    }
+                }
+            }
+        });
     }
 
     // 상태이상 적용 (적이 살아있을 때만)
@@ -3051,12 +3187,60 @@ function endPlayerTurn() {
         return;
     }
 
+    // 플레이어 버프의 noTurnEndChance 체크 (투지의 검 등)
+    if (player.activeBuffs) {
+        let noTurnEnd = false;
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.noTurnEndChance && buff.noTurnEndChance > 0) {
+                const roll = Math.random() * 100;
+                if (roll < buff.noTurnEndChance) {
+                    noTurnEnd = true;
+                }
+            }
+        });
+        if (noTurnEnd) {
+            addGameLog(`⚡ ${player.name}의 턴이 종료되지 않았다! 추가 행동 가능!`);
+            enableBattleButtons(true);
+            updateBattleUI();
+            return;
+        }
+    }
+
     battleState.turn = 'monster';
 
-    // 스킬 쿨다운 감소
+    // 플레이어 버프 지속시간 감소
+    if (player.activeBuffs) {
+        const expiredBuffs = [];
+        Object.entries(player.activeBuffs).forEach(([buffId, buff]) => {
+            buff.duration--;
+            if (buff.duration <= 0) {
+                expiredBuffs.push(buffId);
+                // 버프 종료 시 공격력 보너스 제거
+                if (buff.pAtkFlat) {
+                    player.pAtk = Math.max(0, (player.pAtk || 0) - buff.pAtkFlat);
+                }
+                addGameLog(`💨 ${buff.name} 효과가 종료되었다!`);
+                // 버프 종료 후 쿨타임 적용
+                if (buff.cooldownAfterExpire && buff.cooldownAfterExpire > 0) {
+                    if (!player.skillCooldowns) player.skillCooldowns = {};
+                    player.skillCooldowns[buffId] = buff.cooldownAfterExpire;
+                }
+            }
+        });
+        // 만료된 버프 제거
+        expiredBuffs.forEach(buffId => {
+            delete player.activeBuffs[buffId];
+        });
+    }
+
+    // 스킬 쿨다운 감소 (활성 버프 중인 스킬은 쿨타임 감소 제외)
     if (player.skillCooldowns) {
         Object.keys(player.skillCooldowns).forEach(skillId => {
             if (player.skillCooldowns[skillId] > 0) {
+                // 현재 활성 버프 중인 스킬은 쿨타임 감소하지 않음
+                if (player.activeBuffs && player.activeBuffs[skillId]) {
+                    return;
+                }
                 player.skillCooldowns[skillId]--;
             }
         });

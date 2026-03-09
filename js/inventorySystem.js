@@ -9,9 +9,11 @@
 // 📦 인벤토리 데이터
 // ============================================
 
-// 인벤토리 슬롯 (최대 20개)
+// 인벤토리 슬롯 (최대 100개, 페이지당 20개)
 var inventoryItems = [];
-const MAX_INVENTORY_SIZE = 20;
+const MAX_INVENTORY_SIZE = 100;
+const INVENTORY_PAGE_SIZE = 20;
+let currentInventoryPage = 0; // 0부터 시작 (0~4 = 5페이지)
 
 // 장비 슬롯 (9개)
 var equipment = {
@@ -1002,7 +1004,7 @@ function renderEquipment() {
 }
 
 /**
- * 인벤토리 아이템들을 렌더링합니다.
+ * 인벤토리 아이템들을 렌더링합니다. (페이지네이션 지원)
  */
 function renderInventoryItems() {
     const container = document.getElementById('inventoryGrid');
@@ -1016,8 +1018,16 @@ function renderInventoryItems() {
         filteredItems = inventoryItems.filter(item => item.type === currentInventoryTab);
     }
 
-    // 아이템 슬롯 렌더링
-    for (let i = 0; i < MAX_INVENTORY_SIZE; i++) {
+    // 페이지 범위 계산
+    const totalPages = Math.ceil(MAX_INVENTORY_SIZE / INVENTORY_PAGE_SIZE);
+    if (currentInventoryPage >= totalPages) currentInventoryPage = totalPages - 1;
+    if (currentInventoryPage < 0) currentInventoryPage = 0;
+
+    const startIndex = currentInventoryPage * INVENTORY_PAGE_SIZE;
+    const endIndex = startIndex + INVENTORY_PAGE_SIZE;
+
+    // 현재 페이지에 해당하는 아이템 슬롯 렌더링
+    for (let i = startIndex; i < endIndex; i++) {
         const slot = document.createElement('div');
         slot.className = 'inventory-slot';
 
@@ -1040,6 +1050,61 @@ function renderInventoryItems() {
 
         container.appendChild(slot);
     }
+
+    // 페이지네이션 UI 렌더링
+    renderInventoryPagination(filteredItems.length, totalPages);
+
+    // 아이템 카운트 표시 업데이트
+    const invItemCountEl = document.getElementById('invItemCount');
+    if (invItemCountEl) {
+        invItemCountEl.textContent = inventoryItems.length;
+    }
+}
+
+/**
+ * 인벤토리 페이지네이션 UI를 렌더링합니다.
+ */
+function renderInventoryPagination(totalItems, totalPages) {
+    // 기존 페이지네이션 제거
+    let paginationEl = document.getElementById('inventoryPagination');
+    if (!paginationEl) {
+        const grid = document.getElementById('inventoryGrid');
+        if (!grid) return;
+        paginationEl = document.createElement('div');
+        paginationEl.id = 'inventoryPagination';
+        paginationEl.className = 'inventory-pagination';
+        grid.parentNode.insertBefore(paginationEl, grid.nextSibling);
+    }
+
+    let paginationHtml = '';
+    
+    // 이전 버튼
+    paginationHtml += `<button class="inv-page-btn ${currentInventoryPage <= 0 ? 'disabled' : ''}" 
+        onclick="changeInventoryPage(${currentInventoryPage - 1})" 
+        ${currentInventoryPage <= 0 ? 'disabled' : ''}>◀ 이전</button>`;
+    
+    // 페이지 번호들
+    for (let p = 0; p < totalPages; p++) {
+        paginationHtml += `<button class="inv-page-btn ${p === currentInventoryPage ? 'active' : ''}" 
+            onclick="changeInventoryPage(${p})">${p + 1}</button>`;
+    }
+    
+    // 다음 버튼
+    paginationHtml += `<button class="inv-page-btn ${currentInventoryPage >= totalPages - 1 ? 'disabled' : ''}" 
+        onclick="changeInventoryPage(${currentInventoryPage + 1})" 
+        ${currentInventoryPage >= totalPages - 1 ? 'disabled' : ''}>다음 ▶</button>`;
+
+    paginationEl.innerHTML = paginationHtml;
+}
+
+/**
+ * 인벤토리 페이지를 변경합니다.
+ */
+function changeInventoryPage(page) {
+    const totalPages = Math.ceil(MAX_INVENTORY_SIZE / INVENTORY_PAGE_SIZE);
+    if (page < 0 || page >= totalPages) return;
+    currentInventoryPage = page;
+    renderInventoryItems();
 }
 
 /**
@@ -1047,6 +1112,7 @@ function renderInventoryItems() {
  */
 function changeInventoryTab(tab) {
     currentInventoryTab = tab;
+    currentInventoryPage = 0; // 탭 변경 시 첫 페이지로 리셋
 
     // 탭 버튼 활성화 상태 변경
     document.querySelectorAll('.inv-tab-btn').forEach(btn => {
@@ -1267,7 +1333,7 @@ function contextMenuInfo(slotIndex, event) {
 }
 
 /**
- * 컨텍스트 메뉴 - 버리기
+ * 컨텍스트 메뉴 - 버리기 (수량 입력 지원)
  */
 function contextMenuDiscard(slotIndex) {
     hideItemContextMenu();
@@ -1275,18 +1341,134 @@ function contextMenuDiscard(slotIndex) {
     if (slotIndex < 0 || slotIndex >= inventoryItems.length) return;
 
     const item = inventoryItems[slotIndex];
+    const totalQuantity = item.quantity || 1;
     
-    // 확인 다이얼로그
-    const confirmed = confirm(`정말 "${item.name}"${item.stackable && item.quantity > 1 ? ` x${item.quantity}` : ''}을(를) 버리시겠습니까?\n\n⚠️ 버린 아이템은 되돌릴 수 없습니다!`);
+    // 스택 가능한 아이템이고 수량이 2개 이상이면 수량 입력 다이얼로그 표시
+    if (item.stackable && totalQuantity > 1) {
+        showDiscardQuantityDialog(slotIndex, item, totalQuantity);
+    } else {
+        // 1개짜리 아이템은 기존처럼 확인 다이얼로그
+        showDiscardConfirmDialog(slotIndex, item, 1);
+    }
+}
+
+/**
+ * 버릴 수량 입력 다이얼로그를 표시합니다.
+ */
+function showDiscardQuantityDialog(slotIndex, item, maxQuantity) {
+    // 기존 다이얼로그 제거
+    const existing = document.getElementById('discardQuantityDialog');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'discardQuantityDialog';
+    overlay.className = 'discard-quantity-overlay';
+    overlay.innerHTML = `
+        <div class="discard-quantity-content">
+            <div class="discard-quantity-header">
+                <span class="discard-item-icon">${item.icon}</span>
+                <span class="discard-item-name">${item.name}</span>
+                <span class="discard-item-total">(보유: ${maxQuantity}개)</span>
+            </div>
+            <div class="discard-quantity-body">
+                <label>버릴 수량:</label>
+                <div class="discard-quantity-controls">
+                    <button class="discard-qty-btn" onclick="adjustDiscardQuantity(-10)">-10</button>
+                    <button class="discard-qty-btn" onclick="adjustDiscardQuantity(-1)">-1</button>
+                    <input type="number" id="discardQuantityInput" class="discard-qty-input" 
+                        value="1" min="1" max="${maxQuantity}" 
+                        onchange="validateDiscardQuantity(${maxQuantity})">
+                    <button class="discard-qty-btn" onclick="adjustDiscardQuantity(1)">+1</button>
+                    <button class="discard-qty-btn" onclick="adjustDiscardQuantity(10)">+10</button>
+                </div>
+                <button class="discard-qty-all-btn" onclick="setDiscardQuantityAll(${maxQuantity})">전부 버리기 (${maxQuantity}개)</button>
+            </div>
+            <div class="discard-quantity-warning">⚠️ 버린 아이템은 되돌릴 수 없습니다!</div>
+            <div class="discard-quantity-buttons">
+                <button class="discard-cancel-btn" onclick="closeDiscardQuantityDialog()">취소</button>
+                <button class="discard-confirm-btn" onclick="confirmDiscardQuantity(${slotIndex}, ${maxQuantity})">확인</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 입력 필드에 포커스
+    const input = document.getElementById('discardQuantityInput');
+    if (input) input.focus();
+}
+
+/**
+ * 버리기 수량을 조절합니다.
+ */
+function adjustDiscardQuantity(delta) {
+    const input = document.getElementById('discardQuantityInput');
+    if (!input) return;
+    const max = parseInt(input.max) || 1;
+    let newVal = (parseInt(input.value) || 1) + delta;
+    newVal = Math.max(1, Math.min(max, newVal));
+    input.value = newVal;
+}
+
+/**
+ * 버리기 수량 입력값 검증
+ */
+function validateDiscardQuantity(maxQuantity) {
+    const input = document.getElementById('discardQuantityInput');
+    if (!input) return;
+    let val = parseInt(input.value) || 1;
+    val = Math.max(1, Math.min(maxQuantity, val));
+    input.value = val;
+}
+
+/**
+ * 전부 버리기 버튼
+ */
+function setDiscardQuantityAll(maxQuantity) {
+    const input = document.getElementById('discardQuantityInput');
+    if (input) input.value = maxQuantity;
+}
+
+/**
+ * 수량 입력 다이얼로그에서 확인 클릭
+ */
+function confirmDiscardQuantity(slotIndex, maxQuantity) {
+    const input = document.getElementById('discardQuantityInput');
+    if (!input) return;
+    
+    let quantity = parseInt(input.value) || 1;
+    quantity = Math.max(1, Math.min(maxQuantity, quantity));
+    
+    closeDiscardQuantityDialog();
+    
+    if (slotIndex < 0 || slotIndex >= inventoryItems.length) return;
+    const item = inventoryItems[slotIndex];
+    
+    showDiscardConfirmDialog(slotIndex, item, quantity);
+}
+
+/**
+ * 버리기 확인 다이얼로그
+ */
+function showDiscardConfirmDialog(slotIndex, item, quantity) {
+    const quantityText = quantity > 1 ? ` x${quantity}` : '';
+    const confirmed = confirm(`정말 "${item.name}"${quantityText}을(를) 버리시겠습니까?\n\n⚠️ 버린 아이템은 되돌릴 수 없습니다!`);
     
     if (confirmed) {
         const itemName = item.name;
-        const quantity = item.quantity || 1;
-        removeItemFromInventory(slotIndex);
+        removeItemFromInventory(slotIndex, quantity);
         addGameLog(`🗑️ ${itemName}${quantity > 1 ? ` x${quantity}` : ''}을(를) 버렸습니다.`);
         updatePlayerUI();
         renderInventory();
     }
+}
+
+/**
+ * 수량 입력 다이얼로그를 닫습니다.
+ */
+function closeDiscardQuantityDialog() {
+    const dialog = document.getElementById('discardQuantityDialog');
+    if (dialog) dialog.remove();
 }
 
 /**
@@ -1644,11 +1826,16 @@ function showSkillTraitModal() {
             if (skill) {
                 const skillLevel = player.skillLevels?.[skillId] || 1;
                 const cooldown = player.skillCooldowns?.[skillId] || 0;
+                const isBuffActive = player.activeBuffs && player.activeBuffs[skillId];
                 
-                // 전투 중일 때만 현재 쿨타임 표시
+                // 전투 중일 때만 현재 쿨타임/버프 상태 표시
                 let cooldownDisplay = '';
-                if (isInBattle && cooldown > 0) {
-                    cooldownDisplay = `<span style="color: #e74c3c;">현재 쿨타임: ${cooldown}턴</span>`;
+                if (isInBattle) {
+                    if (isBuffActive) {
+                        cooldownDisplay = `<span style="color: #2ecc71; font-weight: bold;">버프 활성 중 (${isBuffActive.duration}턴)</span>`;
+                    } else if (cooldown > 0) {
+                        cooldownDisplay = `<span style="color: #e74c3c;">현재 쿨타임: ${cooldown}턴</span>`;
+                    }
                 }
                 
                 skillsHtml += `

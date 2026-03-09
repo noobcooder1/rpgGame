@@ -3003,6 +3003,7 @@ const MONSTERS = {
         exp: 35, gold: 20,
         drops: [{ item: 'bat_wing', chance: 0.25 }],
         emoji: '🦇',
+        image: 'assets/monsters/cave_bat.jpg',
         description: '그닥 강하지는 않지만 수가많아서 거슬린다.'
     },
     giant_spider: {
@@ -3015,6 +3016,7 @@ const MONSTERS = {
         exp: 200, gold: 50,
         drops: [{ item: 'spider_silk', chance: 0.25 }],
         emoji: '🕷️',
+        image: 'assets/monsters/giant_spider.png',
         description: '생각보다 강함',
         skills: [{
             id: 'web_bind',
@@ -3039,6 +3041,7 @@ const MONSTERS = {
             { item: 'cursed_bone', chance: 0.2 }
         ],
         emoji: '💀',
+        image: 'assets/monsters/skeleton.png',
         description: '생각보다 강함'
     },
     ghoul: {
@@ -3051,6 +3054,7 @@ const MONSTERS = {
         exp: 220, gold: 70,
         drops: [{ item: 'rotten_flesh', chance: 0.25 }],
         emoji: '🧟',
+        image: 'assets/monsters/ghoul.jpg',
         description: '좀비보다 강력한 언데드다. 마법에 취약하다.',
         skills: [{
             id: 'flesh_explosion',
@@ -3078,6 +3082,7 @@ const MONSTERS = {
             { item: 'broken_axe_blade', chance: 0.1 }
         ],
         emoji: '👹',
+        image: 'assets/monsters/orc.jpg',
         description: '일반 몬스터입니다.'
     },
     wraith: {
@@ -3091,6 +3096,7 @@ const MONSTERS = {
         exp: 150, gold: 40,
         drops: [{ item: 'wraith_fragment', chance: 0.2 }],
         emoji: '👻',
+        image: 'assets/monsters/wraith.jpg',
         description: '회피율이 높고, 마법 공격으로 상대하는것이 좋다.',
         skills: [{
             id: 'confusion_curse',
@@ -3115,6 +3121,7 @@ const MONSTERS = {
         exp: 100, gold: 40,
         drops: [{ item: 'slime_gel', chance: 0.5 }],
         emoji: '🟢',
+        image: 'assets/monsters/slime.jpg',
         description: 'HP가 0이될시 두 마리의 작은 슬라임으로 분열한다.',
         possibleTraits: [
             { id: 'split', chance: 1.0, level: 1 }
@@ -3130,6 +3137,7 @@ const MONSTERS = {
         exp: 12, gold: 7,
         drops: [{ item: 'slime_gel', chance: 0.1 }],
         emoji: '🟢',
+        image: 'assets/monsters/small_slime.jpg',
         description: '강하지는 않지만 귀찮다.',
         isSpawned: true  // 슬라임 분열로만 출현
     },
@@ -3149,6 +3157,7 @@ const MONSTERS = {
             { item: 'shining_bone', chance: 0.15 }
         ],
         emoji: '💀',
+        image: 'assets/monsters/skeleton_warrior.jpg',
         description: '일반 스켈레톤보다 강함'
     },
     skeleton_mage: {
@@ -3165,7 +3174,7 @@ const MONSTERS = {
             { item: 'shining_bone', chance: 0.15 }
         ],
         emoji: '💀🔥',
-        description: '스켈레톤 메이지 딸로 스켈레톤 메이지는 파이어볼 또는 라이트닝볼트 중 랜덤 1개 보유합니다.',
+        image: 'assets/monsters/skeleton_mage_fire.jpg',
         description: '마법공격을 한다.',
         // 파이어볼 또는 라이트닝볼트 중 랜덤 1개 보유
         skillPool: [
@@ -3177,7 +3186,8 @@ const MONSTERS = {
                 cooldown: 3,
                 description: '마법 화염을 발사한다.',
                 damageType: 'magical',
-                effect: { type: 'damage', damagePercent: 200, statusEffect: 'burn', statusDuration: 2 }
+                effect: { type: 'damage', damagePercent: 200, statusEffect: 'burn', statusDuration: 2 },
+                image: 'assets/monsters/skeleton_mage_fire.jpg'
             },
             {
                 id: 'lightning_bolt',
@@ -3187,7 +3197,8 @@ const MONSTERS = {
                 cooldown: 3,
                 description: '번개를 소환하여 공격한다.',
                 damageType: 'magical',
-                effect: { type: 'damage', damagePercent: 270, statusEffect: 'shock', statusDuration: 2 }
+                effect: { type: 'damage', damagePercent: 270, statusEffect: 'shock', statusDuration: 2 },
+                image: 'assets/monsters/skeleton_mage_lightning.jpg'
             }
         ],
         randomSkillCount: 1  // skillPool에서 랜덤 1개 선택
@@ -3211,6 +3222,7 @@ const MONSTERS = {
             { item: 'bone_greatsword', chance: 0.2 }
         ],
         emoji: '⚔️💀',
+        image: 'assets/monsters/skeleton_knight.jpg',
         isMiniBoss: true,
         description: '고대의 유적을 지키고있는 신비한 몬스터입니다.',
         skills: [
@@ -3257,6 +3269,7 @@ const MONSTERS = {
             { item: 'swift_boots', chance: 0.7 }
         ],
         emoji: '🗿',
+        image: 'assets/monsters/ancient_guardian.jpg',
         isBoss: true,
         description: '고대의 유적을 지키고있는 신비한 몬스터입니다.',
         skills: [
@@ -3312,6 +3325,7 @@ const MONSTERS = {
             { item: 'strength_elixir', chance: 0.6 }
         ],
         emoji: '👾',
+        image: 'assets/monsters/cave_troll.jpg',
         isBoss: true,
         description: '부족에서 추방당해 동굴에서 살고있는 흉폭한 트롤전사입니다.',
         skills: [
