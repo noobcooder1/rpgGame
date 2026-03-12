@@ -300,7 +300,7 @@ function createBattleMonster(monsterType) {
     if (!template) {
         template = {
             name: '알 수 없는 몬스터',
-            hp: 50, atk: 10, def: 5, exp: 200000000000, gold: 10, emoji: '👹'
+            hp: 50, atk: 10, def: 5, exp: 20000000000000, gold: 10, emoji: '👹'
         };
     }
 
@@ -496,6 +496,47 @@ function endBattle(result) {
 
             // 레벨업 체크
             checkLevelUp();
+
+            // ★ 마왕 처치 시 특별 보상 및 신과의 대화
+            const hasDemonKing = monsters.some(m => m.id === 'demon_king');
+            if (hasDemonKing) {
+                // 마왕 처치 특별 보상
+                const demonKingBonusExp = 60000;
+                const demonKingBonusGold = 60000;
+                player.exp = (player.exp || 0) + demonKingBonusExp;
+                gold += demonKingBonusGold;
+                addGameLog(`🏆 마왕 처치 특별 보상! ${demonKingBonusExp} EXP, ${demonKingBonusGold} Gold 추가 획득!`);
+
+                // Soul Of Darkness 확정 드롭
+                if (typeof addItemToInventory === 'function') {
+                    if (typeof ITEMS_DATABASE !== 'undefined' && !ITEMS_DATABASE['soul_of_darkness']) {
+                        ITEMS_DATABASE['soul_of_darkness'] = {
+                            id: 'soul_of_darkness', name: 'Soul Of Darkness', type: 'special',
+                            rarity: 'legendary', description: '마왕의 영혼에서 떨어져 나온 어둠의 결정. 엄청난 힘이 느껴진다.',
+                            icon: '🔮', sellPrice: 50000, stackable: false
+                        };
+                    }
+                    addItemToInventory('soul_of_darkness');
+                    addGameLog(`🔮 Soul Of Darkness 획득!`);
+                }
+
+                checkLevelUp();
+                
+                // 전투 상태 초기화 (대화 표시 전)
+                battleState = {
+                    inBattle: false, turn: 'player', currentMonster: null,
+                    monsters: [], currentMonsterIndex: 0, isDefending: false,
+                    canEscape: true, turnCount: 0
+                };
+                hideBattleUI();
+                updatePlayerUI();
+
+                // 신과의 대화 시작
+                setTimeout(() => {
+                    showDemonKingVictoryDialogue();
+                }, 1500);
+                return;
+            }
 
             // 고대유적 특수 조우 - 전투 승리 후 고대 수호자 대화 시작
             if (window._ancientRuinsPostBattle) {
@@ -1324,6 +1365,18 @@ function useSelectedSkill(skillId) {
         return;
     }
 
+    // 멀티샷: 다중 타겟 선택 UI 표시 (MP 소모 전)
+    if (skill.targetType === 'multi' && skill.effects?.freeTargetDistribution) {
+        showMultiTargetSelectionUI(skillId);
+        return;
+    }
+
+    // 차지샷: 즉시/차지 선택 UI 표시 (MP 소모 전)
+    if (skillId === 'charge_shot') {
+        showChargeOptionUI(skillId);
+        return;
+    }
+
     // MP 소모
     player.mp -= skill.mpCost;
 
@@ -1387,8 +1440,7 @@ function useSelectedSkill(skillId) {
 
         updateBattleUI();
 
-        // 버프형 스킬은 턴을 소비하지 않음 (noTurnEndChance 100% 처럼 추가 행동 가능)
-        // 버프 발동 후 즉시 다음 행동 선택 가능
+        // 버프형 스킬은 턴을 소비하지 않음
         enableBattleButtons(true);
         return;
     }
@@ -1416,32 +1468,7 @@ function useSelectedSkill(skillId) {
     let totalDamage = 0;
 
     for (let i = 0; i < attackCount; i++) {
-        // 기본 공격력 계산
-        let baseAtk = damageType === 'magical' ?
-            (player.mAtk || 0) + (player.bonusMAtk || 0) :
-            (player.pAtk || 0) + (player.bonusPAtk || 0);
-
-        // 플레이어 활성 버프 공격력 퍼센트 보정 적용
-        if (player.activeBuffs) {
-            Object.values(player.activeBuffs).forEach(buff => {
-                if (buff.pAtkPercent) {
-                    baseAtk = Math.ceil(baseAtk * (1 + buff.pAtkPercent / 100));
-                }
-            });
-        }
-
-        // 스킬 배율 적용 (0.7~2.3배)
-        const multiplier = 0.7 + Math.random() * 1.6;
-        let damage = Math.round(baseAtk * (damagePercent / 100) * multiplier);
-
-        // 방어력 적용
-        const defStat = damageType === 'magical' ? (targetMonster.mDef || 0) : (targetMonster.pDef || targetMonster.def || 0);
-        damage = Math.max(1, damage - Math.floor(defStat * 0.3));
-
-        // 몬스터 방어 특성 적용
-        damage = applyMonsterToughBodyModifier(targetMonster, damage);
-        damage = applyMonsterSpiritBodyModifier(targetMonster, damage, damageType);
-        damage = applyMonsterUnyieldingModifier(targetMonster, damage, false);
+        let damage = calculateSkillDamage(damageType, damagePercent, targetMonster);
 
         totalDamage += damage;
         targetMonster.hp -= damage;
@@ -1457,26 +1484,17 @@ function useSelectedSkill(skillId) {
         addGameLog(`💥 총 ${totalDamage} 데미지!`);
     }
 
-    // 플레이어 흡혈 효과 적용 (투지의 검 버프 등) - 적 생존 여부와 무관하게 적용
-    if (player.activeBuffs && totalDamage > 0) {
-        Object.values(player.activeBuffs).forEach(buff => {
-            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
-                const healAmount = Math.floor(totalDamage * buff.lifestealPercent / 100);
-                if (healAmount > 0) {
-                    const oldHp = player.hp;
-                    player.hp = Math.min(player.maxHp, player.hp + healAmount);
-                    const actualHeal = player.hp - oldHp;
-                    if (actualHeal > 0) {
-                        addGameLog(`💚 ${buff.name} 효과로 HP +${actualHeal} 회복!`);
-                    }
-                }
-            }
-        });
-    }
+    // 플레이어 흡혈 효과 적용 (투지의 검 버프 등)
+    applyPlayerLifesteal(totalDamage);
 
-    // 상태이상 적용 (적이 살아있을 때만)
+    // 주 대상 상태이상 적용 (적이 살아있을 때만)
     if (skill.effects?.statusEffect && targetMonster.hp > 0) {
         applyStatusEffect(targetMonster, skill.effects.statusEffect, skill.effects.statusDuration, totalDamage);
+    }
+
+    // ★ AoE/스플래시 처리 (파이어볼, 라이트닝볼트, 대지강타 등)
+    if (skill.targetType === 'single_splash' || skill.targetType === 'single_chain') {
+        applySkillSplashDamage(skill, skillId, targetMonster, totalDamage, damageType);
     }
 
     // 몬스터 반격 특성 처리
@@ -1498,24 +1516,563 @@ function useSelectedSkill(skillId) {
         return;
     }
 
-    if (targetMonster.hp <= 0) {
-        targetMonster.hp = 0;
-        addGameLog(`💀 ${getMonsterNameWithColor(targetMonster)}을(를) 처치했습니다!`);
-        
-        // 모든 몬스터 처치 확인
-        const aliveMonsters = battleState.monsters.filter(m => m.hp > 0);
-        if (aliveMonsters.length === 0) {
-            updateBattleUI();
-            setTimeout(() => endBattle('victory'), 500);
-            return;
-        }
-        
-        // 다음 생존 몬스터로 자동 타겟 변경
-        selectNextAliveMonster();
-    }
+    // 처치 확인 (주 대상 + 스플래시로 죽은 몬스터 모두)
+    checkAndHandleDeadMonsters();
 
     updateBattleUI();
     endPlayerTurn();
+}
+
+/**
+ * 스킬 데미지를 계산합니다 (공통 로직).
+ * @param {string} damageType - 피해 타입 ('physical', 'magical')
+ * @param {number} damagePercent - 피해 배율(%)
+ * @param {Object} target - 대상 몬스터
+ * @returns {number} - 최종 피해량
+ */
+function calculateSkillDamage(damageType, damagePercent, target) {
+    let baseAtk = damageType === 'magical' ?
+        (player.mAtk || 0) + (player.bonusMAtk || 0) :
+        (player.pAtk || 0) + (player.bonusPAtk || 0);
+
+    // 플레이어 활성 버프 공격력 퍼센트 보정 적용
+    if (player.activeBuffs) {
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.pAtkPercent) {
+                baseAtk = Math.ceil(baseAtk * (1 + buff.pAtkPercent / 100));
+            }
+        });
+    }
+
+    // 스킬 배율 적용 (0.7~2.3배)
+    const multiplier = 0.7 + Math.random() * 1.6;
+    let damage = Math.round(baseAtk * (damagePercent / 100) * multiplier);
+
+    // 방어력 적용
+    const defStat = damageType === 'magical' ? (target.mDef || 0) : (target.pDef || target.def || 0);
+    damage = Math.max(1, damage - Math.floor(defStat * 0.3));
+
+    // 몬스터 방어 특성 적용
+    damage = applyMonsterToughBodyModifier(target, damage);
+    damage = applyMonsterSpiritBodyModifier(target, damage, damageType);
+    damage = applyMonsterUnyieldingModifier(target, damage, false);
+
+    return damage;
+}
+
+/**
+ * 플레이어 흡혈 효과를 적용합니다.
+ * @param {number} totalDamage - 가한 총 피해량
+ */
+function applyPlayerLifesteal(totalDamage) {
+    if (player.activeBuffs && totalDamage > 0) {
+        Object.values(player.activeBuffs).forEach(buff => {
+            if (buff.lifestealPercent && buff.lifestealPercent > 0) {
+                const healAmount = Math.floor(totalDamage * buff.lifestealPercent / 100);
+                if (healAmount > 0) {
+                    const oldHp = player.hp;
+                    player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                    const actualHeal = player.hp - oldHp;
+                    if (actualHeal > 0) {
+                        addGameLog(`💚 ${buff.name} 효과로 HP +${actualHeal} 회복!`);
+                    }
+                }
+            }
+        });
+    }
+}
+
+/**
+ * 처치된 몬스터를 확인하고 전투 종료 여부를 판단합니다.
+ * @returns {boolean} - 전투 종료 시 true
+ */
+function checkAndHandleDeadMonsters() {
+    // 모든 죽은 몬스터에 대해 처치 메시지
+    battleState.monsters.forEach(m => {
+        if (m.hp <= 0 && !m._deathLogged) {
+            m.hp = 0;
+            m._deathLogged = true;
+            addGameLog(`💀 ${getMonsterNameWithColor(m)}을(를) 처치했습니다!`);
+        }
+    });
+
+    // 모든 몬스터 처치 확인
+    const aliveMonsters = battleState.monsters.filter(m => m.hp > 0);
+    if (aliveMonsters.length === 0) {
+        updateBattleUI();
+        setTimeout(() => endBattle('victory'), 500);
+        return true;
+    }
+
+    // 현재 타겟이 죽었으면 다음 생존 몬스터로 자동 변경
+    if (battleState.currentMonster && battleState.currentMonster.hp <= 0) {
+        selectNextAliveMonster();
+    }
+    return false;
+}
+
+/**
+ * AoE/스플래시 피해를 적용합니다 (파이어볼, 라이트닝볼트, 대지강타 등).
+ * @param {Object} skill - 스킬 데이터
+ * @param {string} skillId - 스킬 ID
+ * @param {Object} primaryTarget - 주 대상 몬스터
+ * @param {number} primaryDamage - 주 대상에게 가한 총 피해
+ * @param {string} damageType - 피해 타입
+ */
+function applySkillSplashDamage(skill, skillId, primaryTarget, primaryDamage, damageType) {
+    const monsters = battleState.monsters || [];
+    const targetIndex = monsters.indexOf(primaryTarget);
+    if (targetIndex === -1) return;
+
+    // 인접 대상 인덱스 계산 (주 타겟 양옆)
+    const adjacentIndices = [];
+    if (targetIndex - 1 >= 0) adjacentIndices.push(targetIndex - 1);
+    if (targetIndex + 1 < monsters.length) adjacentIndices.push(targetIndex + 1);
+    
+    const adjacentTargets = adjacentIndices
+        .map(i => monsters[i])
+        .filter(m => m && m.hp > 0);
+
+    // ===== single_splash 타입 (파이어볼, 대지강타 등) =====
+    if (skill.targetType === 'single_splash') {
+        adjacentTargets.forEach(adjTarget => {
+            let splashDamage;
+            if (skill.effects?.splashSameDamage) {
+                // 파이어볼: 인접 대상도 동일 피해
+                splashDamage = calculateSkillDamage(damageType, skill.effects.damagePercent || 100, adjTarget);
+            } else {
+                // 대지강타 등: 피해의 일정 비율
+                const splashPercent = skill.effects?.splashPercent || 40;
+                splashDamage = Math.max(1, Math.floor(primaryDamage * splashPercent / 100));
+            }
+
+            adjTarget.hp -= splashDamage;
+            if (adjTarget.hp < 0) adjTarget.hp = 0;
+            addGameLog(`${skill.icon} 스플래시! ${getMonsterNameWithColor(adjTarget)}에게 ${splashDamage} ${damageType === 'magical' ? '마법' : '물리'} 데미지!`);
+
+            // 스플래시 대상에게도 상태이상 적용
+            if (skill.effects?.statusEffect && adjTarget.hp > 0) {
+                const splashStatusDuration = skill.effects.splashStatusDuration || skill.effects.statusDuration || 1;
+                applyStatusEffect(adjTarget, skill.effects.statusEffect, splashStatusDuration, splashDamage);
+            }
+        });
+    }
+
+    // ===== single_chain 타입 (라이트닝볼트) =====
+    if (skill.targetType === 'single_chain') {
+        const splashPercent = skill.effects?.splashPercent || 40;
+        const secondaryShockStacks = skill.effects?.secondaryShockStacks || 1;
+
+        // 1단계: 인접 대상에게 스플래시 (40% 피해 + 감전 1중첩)
+        adjacentTargets.forEach(adjTarget => {
+            let splashDamage = Math.max(1, Math.floor(primaryDamage * splashPercent / 100));
+            adjTarget.hp -= splashDamage;
+            if (adjTarget.hp < 0) adjTarget.hp = 0;
+            addGameLog(`⚡ 체인! ${getMonsterNameWithColor(adjTarget)}에게 ${splashDamage} 마법 데미지!`);
+
+            // 감전 상태이상 적용
+            if (adjTarget.hp > 0 && skill.effects?.statusEffect) {
+                for (let s = 0; s < secondaryShockStacks; s++) {
+                    applyStatusEffect(adjTarget, skill.effects.statusEffect, skill.effects.statusDuration || 2, splashDamage);
+                }
+            }
+        });
+
+        // 2단계: 레벨에 따른 추가 랜덤 타격
+        const skillLevel = player.skillLevels?.[skillId] || 1;
+        const bounces = typeof getLightningBoltBounces === 'function' ? getLightningBoltBounces(skillLevel) : 0;
+        const randomBouncePercent = skill.effects?.randomBouncePercent || 40;
+
+        if (bounces > 0) {
+            // 주 타겟과 이미 맞은 인접 타겟을 제외한 대상 중에서 랜덤 선택
+            const alreadyHit = [primaryTarget, ...adjacentTargets];
+            let remainingTargets = monsters.filter(m => m.hp > 0 && !alreadyHit.includes(m));
+            
+            // 남은 대상이 없으면 이미 맞은 대상 중에서 다시 선택 (주 타겟 제외)
+            if (remainingTargets.length === 0) {
+                remainingTargets = monsters.filter(m => m.hp > 0 && m !== primaryTarget);
+            }
+
+            for (let b = 0; b < bounces && remainingTargets.length > 0; b++) {
+                const randomIdx = Math.floor(Math.random() * remainingTargets.length);
+                const bounceTarget = remainingTargets[randomIdx];
+                let bounceDamage = Math.max(1, Math.floor(primaryDamage * randomBouncePercent / 100));
+                bounceTarget.hp -= bounceDamage;
+                if (bounceTarget.hp < 0) bounceTarget.hp = 0;
+                addGameLog(`⚡ 연쇄 번개! ${getMonsterNameWithColor(bounceTarget)}에게 ${bounceDamage} 마법 데미지!`);
+
+                if (bounceTarget.hp > 0 && skill.effects?.statusEffect) {
+                    applyStatusEffect(bounceTarget, skill.effects.statusEffect, skill.effects.statusDuration || 2, bounceDamage);
+                }
+                
+                // 같은 대상에 두번 않도록 제거
+                remainingTargets.splice(randomIdx, 1);
+                if (remainingTargets.length === 0) {
+                    remainingTargets = monsters.filter(m => m.hp > 0 && m !== primaryTarget);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 멀티샷 다중 타겟 선택 UI를 표시합니다.
+ * 플레이어가 클릭으로 생존 몬스터를 선택하고, 최대 횟수만큼 일반공격합니다.
+ * @param {string} skillId - 스킬 ID
+ */
+function showMultiTargetSelectionUI(skillId) {
+    const skill = SKILLS[skillId];
+    const skillLevel = player.skillLevels?.[skillId] || 1;
+    const maxTargets = typeof getMultishotMaxTargets === 'function' 
+        ? getMultishotMaxTargets(skillLevel) 
+        : (skill.maxTargets || 2);
+
+    const aliveMonsters = battleState.monsters.filter(m => m.hp > 0);
+    
+    // 생존 몬스터가 1마리 이하면 해당 몬스터에 전부 공격
+    if (aliveMonsters.length <= 1) {
+        // MP 소모 & 쿨다운 설정
+        player.mp -= skill.mpCost;
+        if (!player.skillCooldowns) player.skillCooldowns = {};
+        player.skillCooldowns[skillId] = skill.cooldown || 0;
+        executeMultishot(skillId, aliveMonsters.map(m => ({ target: m, count: maxTargets })));
+        return;
+    }
+
+    // 선택 상태 저장
+    const selectionState = {
+        targets: [], // { target, count } 배열
+        remaining: maxTargets,
+        skillId: skillId
+    };
+
+    // 안내 오버레이 생성
+    const overlay = document.createElement('div');
+    overlay.id = 'multishotSelectionOverlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); z-index: 9000; display: flex;
+        flex-direction: column; justify-content: center; align-items: center;
+    `;
+
+    function updateOverlayUI() {
+        const selectedInfo = selectionState.targets.map(t => 
+            `${t.target.name} x${t.count}`
+        ).join(', ') || '없음';
+
+        overlay.innerHTML = `
+            <div style="background: rgba(0,0,0,0.9); border: 2px solid #f1c40f; border-radius: 12px; padding: 20px 30px; color: white; text-align: center; max-width: 600px;">
+                <h3 style="color: #f1c40f; margin-bottom: 10px;">🎯 멀티샷 - 대상 선택</h3>
+                <p>남은 공격 횟수: <strong style="color: #e74c3c;">${selectionState.remaining}</strong> / ${maxTargets}</p>
+                <p style="font-size: 14px; color: #aaa; margin: 5px 0;">선택: ${selectedInfo}</p>
+                <p style="font-size: 13px; color: #888; margin: 5px 0;">몬스터를 클릭하여 공격 대상으로 지정하세요. 같은 대상을 여러 번 클릭하면 수적됩니다.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
+                    ${aliveMonsters.map((m, i) => {
+                        const existing = selectionState.targets.find(t => t.target === m);
+                        const count = existing ? existing.count : 0;
+                        return `<button onclick="multishotSelectTarget(${battleState.monsters.indexOf(m)})" 
+                            style="padding: 10px 16px; border: 2px solid ${count > 0 ? '#f1c40f' : '#555'}; 
+                            border-radius: 8px; background: ${count > 0 ? 'rgba(241,196,15,0.2)' : 'rgba(50,50,50,0.8)'}; 
+                            color: white; cursor: pointer; font-size: 14px; min-width: 100px;">
+                            ${m.emoji || '👹'} ${m.name}${count > 0 ? ` (x${count})` : ''}
+                        </button>`;
+                    }).join('')}
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                    <button onclick="confirmMultishotSelection()" 
+                        style="padding: 8px 20px; border: 2px solid #27ae60; border-radius: 8px; background: #27ae60; color: white; cursor: pointer; font-size: 14px;"
+                        ${selectionState.remaining === maxTargets ? 'disabled style="opacity:0.5; padding: 8px 20px; border: 2px solid #555; border-radius: 8px; background: #555; color: #888; cursor: not-allowed; font-size: 14px;"' : ''}>
+                        ✔ 발사! (${maxTargets - selectionState.remaining}발)
+                    </button>
+                    <button onclick="cancelMultishotSelection()" 
+                        style="padding: 8px 20px; border: 2px solid #e74c3c; border-radius: 8px; background: #e74c3c; color: white; cursor: pointer; font-size: 14px;">
+                        ❌ 취소
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    updateOverlayUI();
+    document.body.appendChild(overlay);
+
+    // 전역 함수: 타겟 선택
+    window.multishotSelectTarget = function(monsterIndex) {
+        if (selectionState.remaining <= 0) return;
+        
+        const target = battleState.monsters[monsterIndex];
+        if (!target || target.hp <= 0) return;
+
+        const existing = selectionState.targets.find(t => t.target === target);
+        if (existing) {
+            existing.count++;
+        } else {
+            selectionState.targets.push({ target: target, count: 1 });
+        }
+        selectionState.remaining--;
+        updateOverlayUI();
+    };
+
+    // 전역 함수: 선택 확인
+    window.confirmMultishotSelection = function() {
+        if (selectionState.targets.length === 0) return;
+        const overlay = document.getElementById('multishotSelectionOverlay');
+        if (overlay) overlay.remove();
+
+        // MP 소모 & 쿨다운 설정
+        player.mp -= skill.mpCost;
+        if (!player.skillCooldowns) player.skillCooldowns = {};
+        player.skillCooldowns[skillId] = skill.cooldown || 0;
+
+        executeMultishot(skillId, selectionState.targets);
+    };
+
+    // 전역 함수: 선택 취소
+    window.cancelMultishotSelection = function() {
+        const overlay = document.getElementById('multishotSelectionOverlay');
+        if (overlay) overlay.remove();
+    };
+}
+
+/**
+ * 멀티샷을 실행합니다 (선택한 대상별로 일반공격).
+ * @param {string} skillId - 스킬 ID
+ * @param {Array} targets - [{target, count}] 배열
+ */
+function executeMultishot(skillId, targets) {
+    const skill = SKILLS[skillId];
+    const damageType = 'physical';
+    const damagePercent = skill.effects?.damagePercent || 100;
+    let totalDamage = 0;
+    let shotNumber = 0;
+
+    targets.forEach(({ target, count }) => {
+        for (let i = 0; i < count; i++) {
+            if (target.hp <= 0) break;
+            shotNumber++;
+            let damage = calculateSkillDamage(damageType, damagePercent, target);
+            totalDamage += damage;
+            target.hp -= damage;
+            if (target.hp < 0) target.hp = 0;
+            addGameLog(`⚡ 멀티샷 ${shotNumber}타! ${getMonsterNameWithColor(target)}에게 ${damage} 물리 데미지!`);
+        }
+    });
+
+    addGameLog(`💥 총 ${totalDamage} 데미지!`);
+
+    // 흡혈 효과
+    applyPlayerLifesteal(totalDamage);
+
+    // 처치 확인
+    if (checkAndHandleDeadMonsters()) return;
+
+    updateBattleUI();
+    endPlayerTurn();
+}
+
+/**
+ * 차지샷 선택 UI를 표시합니다 (즉시 발동 / 1턴 차지).
+ * @param {string} skillId - 스킬 ID
+ */
+function showChargeOptionUI(skillId) {
+    const skill = SKILLS[skillId];
+    const skillLevel = player.skillLevels?.[skillId] || 1;
+    const chargeValues = typeof getChargeShotValues === 'function' 
+        ? getChargeShotValues(skillLevel) 
+        : { instantPercent: 200, chargedPercent: 400, splashPercent: 40 };
+
+    const overlay = document.createElement('div');
+    overlay.id = 'chargeShotOptionOverlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); z-index: 9000; display: flex;
+        justify-content: center; align-items: center;
+    `;
+
+    overlay.innerHTML = `
+        <div style="background: rgba(0,0,0,0.95); border: 2px solid #f39c12; border-radius: 12px; padding: 25px 35px; color: white; text-align: center; max-width: 500px;">
+            <h3 style="color: #f39c12; margin-bottom: 15px;">🎯 차지샷 - 발동 방식 선택</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button onclick="executeChargeShot('instant')" 
+                    style="padding: 15px 20px; border: 2px solid #3498db; border-radius: 10px; background: rgba(52,152,219,0.2); color: white; cursor: pointer; font-size: 15px; text-align: left;">
+                    <div style="font-weight: bold; color: #3498db; margin-bottom: 5px;">⚡ 즉시 발동</div>
+                    <div style="font-size: 13px; color: #aaa;">물리공격력의 ${chargeValues.instantPercent}% 피해</div>
+                </button>
+                <button onclick="executeChargeShot('charged')" 
+                    style="padding: 15px 20px; border: 2px solid #e74c3c; border-radius: 10px; background: rgba(231,76,60,0.2); color: white; cursor: pointer; font-size: 15px; text-align: left;">
+                    <div style="font-weight: bold; color: #e74c3c; margin-bottom: 5px;">🔥 1턴 차지 후 발동</div>
+                    <div style="font-size: 13px; color: #aaa;">물리공격력의 ${chargeValues.chargedPercent}% 피해 + 기절 부여 + 인접 2명에게 ${chargeValues.splashPercent}% 피해</div>
+                    <div style="font-size: 12px; color: #e67e22; margin-top: 3px;">⚠️ 차지 중 누적 피해가 최대HP ${skill.effects?.cancelThreshold || 40}% 초과 또는 행동불능 시 취소</div>
+                </button>
+                <button onclick="cancelChargeShot()" 
+                    style="padding: 8px 20px; border: 2px solid #555; border-radius: 8px; background: #333; color: #aaa; cursor: pointer; font-size: 13px; margin-top: 5px;">
+                    ❌ 취소
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 전역 함수: 차지 옵션 실행
+    window.executeChargeShot = function(mode) {
+        const overlay = document.getElementById('chargeShotOptionOverlay');
+        if (overlay) overlay.remove();
+
+        if (mode === 'instant') {
+            executeChargeShotInstant(skillId);
+        } else {
+            startChargeShotCharge(skillId);
+        }
+    };
+
+    // 전역 함수: 취소
+    window.cancelChargeShot = function() {
+        const overlay = document.getElementById('chargeShotOptionOverlay');
+        if (overlay) overlay.remove();
+    };
+}
+
+/**
+ * 차지샷 즉시 발동합니다.
+ * @param {string} skillId - 스킬 ID
+ */
+function executeChargeShotInstant(skillId) {
+    const skill = SKILLS[skillId];
+    const skillLevel = player.skillLevels?.[skillId] || 1;
+    const chargeValues = typeof getChargeShotValues === 'function'
+        ? getChargeShotValues(skillLevel) 
+        : { instantPercent: 200, chargedPercent: 400, splashPercent: 40 };
+
+    // MP 소모 & 쿨타임
+    player.mp -= skill.mpCost;
+    if (!player.skillCooldowns) player.skillCooldowns = {};
+    player.skillCooldowns[skillId] = skill.cooldown || 0;
+
+    const targetMonster = battleState.currentMonster;
+    if (!targetMonster || targetMonster.hp <= 0) {
+        if (!selectNextAliveMonster()) {
+            endBattle('victory');
+            return;
+        }
+    }
+
+    const target = battleState.currentMonster;
+    const damageType = 'physical';
+    let damage = calculateSkillDamage(damageType, chargeValues.instantPercent, target);
+
+    target.hp -= damage;
+    if (target.hp < 0) target.hp = 0;
+    addGameLog(`⚡ ${player.name}의 차지샷! ${getMonsterNameWithColor(target)}에게 ${damage} 물리 데미지!`);
+
+    applyPlayerLifesteal(damage);
+
+    // 처치 확인
+    if (checkAndHandleDeadMonsters()) return;
+
+    updateBattleUI();
+    endPlayerTurn();
+}
+
+/**
+ * 차지샷 차징을 시작합니다 (1턴 대기 후 다음 턴 시작 시 자동 발동).
+ * @param {string} skillId - 스킬 ID
+ */
+function startChargeShotCharge(skillId) {
+    const skill = SKILLS[skillId];
+    const skillLevel = player.skillLevels?.[skillId] || 1;
+    const chargeValues = typeof getChargeShotValues === 'function'
+        ? getChargeShotValues(skillLevel) 
+        : { instantPercent: 200, chargedPercent: 400, splashPercent: 40 };
+
+    // MP 소모 & 쿨타임
+    player.mp -= skill.mpCost;
+    if (!player.skillCooldowns) player.skillCooldowns = {};
+    player.skillCooldowns[skillId] = skill.cooldown || 0;
+
+    // 차지 상태 설정
+    battleState.chargingShot = {
+        skillId: skillId,
+        chargeValues: chargeValues,
+        accumulatedDamage: 0,
+        cancelThreshold: (skill.effects?.cancelThreshold || 40) / 100 * player.maxHp,
+        target: battleState.currentMonster
+    };
+
+    addGameLog(`🎯 ${player.name}이(가) 차지샷을 충전 중...! (다음 턴에 강력한 공격 발동)`);
+    updateBattleUI();
+    endPlayerTurn();
+}
+
+/**
+ * 차지샷 차지 완료 후 발동합니다 (몬스터 턴 종료 후 자동 호출).
+ */
+function executeChargeShotCharged() {
+    const chargeData = battleState.chargingShot;
+    if (!chargeData) return;
+
+    const skillId = chargeData.skillId;
+    const chargeValues = chargeData.chargeValues;
+    const cancelThreshold = chargeData.cancelThreshold;
+    const accDamage = chargeData.accumulatedDamage;
+
+    // 차지 상태 해제
+    battleState.chargingShot = null;
+
+    // 취소 조건 확인: 누적 피해가 최대HP의 cancelThreshold% 초과
+    if (accDamage > cancelThreshold) {
+        addGameLog(`❌ 차지샷이 취소되었습니다! (받은 피해 ${accDamage}이(가) 한계치 ${Math.floor(cancelThreshold)} 초과)`);
+        return false;
+    }
+
+    // 대상 확인
+    let target = chargeData.target;
+    if (!target || target.hp <= 0) {
+        if (!selectNextAliveMonster()) {
+            endBattle('victory');
+            return true;
+        }
+        target = battleState.currentMonster;
+    }
+
+    const damageType = 'physical';
+    let damage = calculateSkillDamage(damageType, chargeValues.chargedPercent, target);
+
+    target.hp -= damage;
+    if (target.hp < 0) target.hp = 0;
+    addGameLog(`🔥 ${player.name}의 차지샷 풀차지!! ${getMonsterNameWithColor(target)}에게 ${damage} 물리 데미지!`);
+
+    // 기절 상태이상 부여
+    if (target.hp > 0) {
+        applyStatusEffect(target, 'stun', 1, damage);
+    }
+
+    // 인접 2명에게 스플래시 피해
+    const monsters = battleState.monsters || [];
+    const targetIndex = monsters.indexOf(target);
+    if (targetIndex !== -1) {
+        const adjacentIndices = [];
+        if (targetIndex - 1 >= 0) adjacentIndices.push(targetIndex - 1);
+        if (targetIndex + 1 < monsters.length) adjacentIndices.push(targetIndex + 1);
+        
+        adjacentIndices.forEach(adjIdx => {
+            const adjTarget = monsters[adjIdx];
+            if (adjTarget && adjTarget.hp > 0) {
+                const splashDamage = Math.max(1, Math.floor(damage * chargeValues.splashPercent / 100));
+                adjTarget.hp -= splashDamage;
+                if (adjTarget.hp < 0) adjTarget.hp = 0;
+                addGameLog(`🎯 차지샷 스플래시! ${getMonsterNameWithColor(adjTarget)}에게 ${splashDamage} 물리 데미지!`);
+            }
+        });
+    }
+
+    applyPlayerLifesteal(damage);
+
+    // 처치 확인
+    if (checkAndHandleDeadMonsters()) return true;
+
+    updateBattleUI();
+    return true;
 }
 
 /**
@@ -1886,6 +2443,9 @@ function doMonsterTurn() {
         return;
     }
 
+    // ★ 차지샷 피해 추적을 위해 몬스터 턴 시작 전 HP 저장
+    battleState._playerHpBeforeMonsterTurn = player.hp;
+
     const monsters = battleState.monsters || [];
     const aliveMonsters = monsters.filter(m => m.hp > 0);
     
@@ -1920,6 +2480,19 @@ function doMonsterTurn() {
                 return;
             }
             // 다음 몬스터 공격으로 진행
+            attackIndex++;
+            if (attackIndex < aliveMonsters.length) {
+                setTimeout(nextMonsterAttack, 500);
+            } else {
+                finishMonsterTurn();
+            }
+            return;
+        }
+        
+        // ★ 기절/속박 상태이면 행동 불가 → 다음 몬스터로 진행
+        if (monster._stunned) {
+            monster._stunned = false; // 플래그 초기화
+            updateBattleUI();
             attackIndex++;
             if (attackIndex < aliveMonsters.length) {
                 setTimeout(nextMonsterAttack, 500);
@@ -2198,6 +2771,14 @@ function finishMonsterTurn() {
     // 방어 해제
     battleState.isDefending = false;
 
+    // 차지샷 누적 피해 추적: 몬스터 턴 동안 받은 피해 계산
+    // (player.hp 변화량으로 추적 — finishMonsterTurn 호출전 이전 HP와 현재 HP 차이)
+    if (battleState.chargingShot) {
+        const hpBefore = battleState._playerHpBeforeMonsterTurn || player.hp;
+        const damageTaken = Math.max(0, hpBefore - player.hp);
+        battleState.chargingShot.accumulatedDamage += damageTaken;
+    }
+
     // 대련 몬스터 버프 지속시간 감소 처리
     const monsters = battleState.monsters || [];
     monsters.forEach(monster => {
@@ -2236,6 +2817,16 @@ function finishMonsterTurn() {
     // 다음 턴 - 자연회복 적용
     battleState.turn = 'player';
     battleState.turnCount++;
+
+    // ★ 차지샷 발동 처리 (차징 중이었다면 강력한 공격 발동)
+    if (battleState.chargingShot) {
+        const chargeResult = executeChargeShotCharged();
+        if (chargeResult === true) {
+            // 차지샷으로 전투 종료 가능
+            const aliveMonsters = (battleState.monsters || []).filter(m => m.hp > 0);
+            if (aliveMonsters.length === 0) return;
+        }
+    }
 
     // 턴 시작 시 HP/MP 자연회복
     applyNaturalRegen();
@@ -3947,7 +4538,369 @@ function updateMonsterImage(imagePath) {
 }
 
 // ============================================
-// 🔊 콘솔 로그
+// � 마왕 처치 후 신과의 대화 시스템
+// ============================================
+
+/**
+ * 마왕 처치 후 신과의 대화를 시작합니다.
+ * 두 가지 선택지: 1) 엔딩 보기  2) 모험 계속하기
+ */
+function showDemonKingVictoryDialogue() {
+    const playerName = player ? player.name : '용사';
+
+    const dialogueLines = [
+        `${playerName}이여, 마왕을 무찌르는 데 성공했구나.`,
+        '참으로 대단한 위업이다. 네 용기와 강인함은 그 누구도 따라올 수 없을 것이야.',
+        '이 세계를 구한 네게 두 가지 길을 제시하마.',
+    ];
+
+    let currentLine = 0;
+
+    function showNextGodLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+
+        if (currentLine >= dialogueLines.length) {
+            // 대화 종료 → 선택지 표시
+            showDemonKingChoices();
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                <div class="boss-dialog-portrait" style="font-size: 60px;">✨</div>
+                <div class="boss-dialog-box" style="border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.4);">
+                    <div class="boss-dialog-name" style="color: #ffd700;">신</div>
+                    <div class="boss-dialog-text">${dialogueLines[currentLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" style="background: linear-gradient(#b8860b, #8b6914); border-color: #ffd700;" onclick="continueGodDialog()">
+                    ▶ 다음
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        currentLine++;
+
+        window.continueGodDialog = function() {
+            showNextGodLine();
+        };
+    }
+
+    showNextGodLine();
+}
+
+/**
+ * 마왕 처치 후 두 가지 선택지를 표시합니다.
+ */
+function showDemonKingChoices() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait" style="font-size: 60px;">✨</div>
+            <div class="boss-dialog-box" style="border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.4);">
+                <div class="boss-dialog-name" style="color: #ffd700;">신</div>
+                <div class="boss-dialog-text">자, 선택하거라. 네가 바라는 길을 걸어가도록 하여라.</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px; width: 100%; max-width: 600px; padding: 0 20px;">
+                <button onclick="chooseDemonKingEnding()" style="
+                    padding: 15px 25px; border: 2px solid #ffd700; border-radius: 10px;
+                    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05));
+                    color: #ffd700; cursor: pointer; font-size: 16px; font-weight: bold;
+                    transition: all 0.3s ease; text-align: center;">
+                    🌅 이 세계에 평화를 가져왔으니, 이제 쉬겠습니다. (엔딩 보기)
+                </button>
+                <button onclick="chooseDemonKingContinue()" style="
+                    padding: 15px 25px; border: 2px solid #8e44ad; border-radius: 10px;
+                    background: linear-gradient(135deg, rgba(142,68,173,0.15), rgba(142,68,173,0.05));
+                    color: #bb86fc; cursor: pointer; font-size: 16px; font-weight: bold;
+                    transition: all 0.3s ease; text-align: center;">
+                    🔮 이 세계의 모든 진실을 알고 싶습니다. 모험을 계속하겠습니다.
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 전역 함수: 엔딩 선택
+    window.chooseDemonKingEnding = function() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+        showDemonKingEndingDialogue();
+    };
+
+    // 전역 함수: 모험 계속 선택
+    window.chooseDemonKingContinue = function() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+        showDemonKingContinueDialogue();
+    };
+}
+
+/**
+ * 엔딩 선택 시 대화 후 gameclear.html로 이동합니다.
+ */
+function showDemonKingEndingDialogue() {
+    const playerName = player ? player.name : '용사';
+    const endingLines = [
+        `${playerName}이여, 너는 이 세계를 구한 영웅이다.`,
+        '네 이름은 영원히 역사에 기록될 것이며, 모든 이들이 너의 업적을 기억할 것이다.',
+        '편히 쉬거라, 진정한 영웅이여. 네가 가져온 평화는 영원할 것이다.'
+    ];
+
+    let currentLine = 0;
+
+    function showNextEndingLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+
+        if (currentLine >= endingLines.length) {
+            // 엔딩 대화 종료 → gameclear.html로 이동
+            // 게임 클리어 데이터 저장
+            const playTimeStr = (typeof getPlayTime === 'function') ? getPlayTime().formatted : '00:00:00';
+            const gameClearData = {
+                playerName: player ? player.name : '모험가',
+                level: player ? player.level : 1,
+                job: player?.jobData?.name || '모험가',
+                playTime: playTimeStr,
+                gold: gold || 0
+            };
+            sessionStorage.setItem('gameClearData', JSON.stringify(gameClearData));
+
+            // 페이드 아웃 후 이동
+            const fadeOverlay = document.createElement('div');
+            fadeOverlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: #fff; opacity: 0; z-index: 99999; transition: opacity 1.5s ease;
+            `;
+            document.body.appendChild(fadeOverlay);
+            setTimeout(() => { fadeOverlay.style.opacity = '1'; }, 100);
+            setTimeout(() => { window.location.href = 'gameresult/gameclear.html'; }, 2000);
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                <div class="boss-dialog-portrait" style="font-size: 60px;">✨</div>
+                <div class="boss-dialog-box" style="border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.4);">
+                    <div class="boss-dialog-name" style="color: #ffd700;">신</div>
+                    <div class="boss-dialog-text">${endingLines[currentLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" style="background: linear-gradient(#b8860b, #8b6914); border-color: #ffd700;" onclick="continueEndingDialog()">
+                    ${currentLine < endingLines.length - 1 ? '▶ 다음' : '🌅 엔딩 보기'}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        currentLine++;
+
+        window.continueEndingDialog = function() {
+            showNextEndingLine();
+        };
+    }
+
+    showNextEndingLine();
+}
+
+/**
+ * 모험 계속 선택 시 세계의 진실 대화 + 보상 + 악마의 성 입구로 이동합니다.
+ */
+function showDemonKingContinueDialogue() {
+    const playerName = player ? player.name : '용사';
+    const truthLines = [
+        `${playerName}이여, 네가 진실을 원한다면 들려주마.`,
+        '이 세계는 수천 년 전, 고대의 신들이 만들어낸 하나의 시험장이었다.',
+        '마왕이라 불리는 존재도, 용사라 불리는 너도, 모두 이 시험의 일부였지.',
+        '하지만 네가 보여준 의지와 용기는 시험의 틀을 넘어섰다.',
+        '네가 알아야 할 진실은 이것이다 — 마왕은 다시 부활할 수 있고, 이 세계에는 아직 알려지지 않은 더 깊은 어둠이 도사리고 있다.',
+        '그 어둠에 맞설 자는 오직 너뿐이다.',
+        '나의 선물을 받아라. 이것이 네 모험을 계속하는 데 도움이 될 것이다.'
+    ];
+
+    let currentLine = 0;
+
+    function showNextTruthLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+
+        if (currentLine >= truthLines.length) {
+            // 대화 종료 → 특별 보상 지급 + 악마의 성 입구로 이동
+            grantDemonKingContinueRewards();
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                <div class="boss-dialog-portrait" style="font-size: 60px;">✨</div>
+                <div class="boss-dialog-box" style="border-color: #8e44ad; box-shadow: 0 0 30px rgba(142,68,173,0.4);">
+                    <div class="boss-dialog-name" style="color: #bb86fc;">신</div>
+                    <div class="boss-dialog-text">${truthLines[currentLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" style="background: linear-gradient(#6c3483, #4a235a); border-color: #8e44ad;" onclick="continueTruthDialog()">
+                    ${currentLine < truthLines.length - 1 ? '▶ 다음' : '🔮 선물 받기'}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        currentLine++;
+
+        window.continueTruthDialog = function() {
+            showNextTruthLine();
+        };
+    }
+
+    showNextTruthLine();
+}
+
+/**
+ * 모험 계속 선택 시 특별 보상을 지급합니다.
+ */
+function grantDemonKingContinueRewards() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 큰 보상 지급
+    const bonusExp = 200000;
+    const bonusGold = 100000;
+    player.exp = (player.exp || 0) + bonusExp;
+    gold += bonusGold;
+
+    // HP/MP 완전 회복 + 최대치 증가
+    const hpBonus = Math.floor(player.maxHp * 0.1);
+    const mpBonus = Math.floor(player.maxMp * 0.1);
+    player.maxHp += hpBonus;
+    player.maxMp += mpBonus;
+    player.hp = player.maxHp;
+    player.mp = player.maxMp;
+
+    // 공격력 보너스
+    const pAtkBonus = Math.floor((player.pAtk || 0) * 0.05) + 10;
+    const mAtkBonus = Math.floor((player.mAtk || 0) * 0.05) + 10;
+    player.pAtk = (player.pAtk || 0) + pAtkBonus;
+    player.mAtk = (player.mAtk || 0) + mAtkBonus;
+
+    // 상태이상 모두 제거
+    player.statusEffects = {};
+
+    addGameLog(`✨ 신의 축복! ${bonusExp} EXP, ${bonusGold} Gold 획득!`);
+    addGameLog(`✨ 최대 HP +${hpBonus}, 최대 MP +${mpBonus}!`);
+    addGameLog(`✨ 물리공격력 +${pAtkBonus}, 마법공격력 +${mAtkBonus}!`);
+    addGameLog(`✨ HP/MP 완전 회복 및 모든 상태이상 제거!`);
+
+    // 특별 아이템 지급: 신의 축복
+    if (typeof ITEMS_DATABASE !== 'undefined') {
+        if (!ITEMS_DATABASE['gods_blessing']) {
+            ITEMS_DATABASE['gods_blessing'] = {
+                id: 'gods_blessing', name: '신의 축복', type: 'special',
+                rarity: 'mythic', description: '마왕을 처치하고 신으로부터 받은 축복. 엄청난 힘이 깃들어 있다.',
+                icon: '✨', sellPrice: 0, stackable: false
+            };
+        }
+        if (typeof addItemToInventory === 'function') {
+            addItemToInventory('gods_blessing');
+            addGameLog(`✨ '신의 축복' 아이템 획득!`);
+        }
+    }
+
+    checkLevelUp();
+
+    // 보상 안내 대화
+    const rewardLines = [
+        '네 몸에 신의 힘을 불어넣었다. 더욱 강해진 것을 느낄 수 있을 것이다.',
+        '가거라, 용사여. 이 세계에는 네가 아직 발견하지 못한 많은 비밀이 남아있다.',
+        '우리는 다시 만날 것이다...'
+    ];
+
+    let rewardLine = 0;
+
+    function showNextRewardLine() {
+        const existing = document.querySelector('.boss-dialog-modal');
+        if (existing) existing.remove();
+
+        if (rewardLine >= rewardLines.length) {
+            // 악마의 성 입구로 이동
+            teleportToDemonCastleEntrance();
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'boss-dialog-modal';
+        overlay.innerHTML = `
+            <div class="boss-dialog-content">
+                <div class="boss-dialog-portrait" style="font-size: 60px;">✨</div>
+                <div class="boss-dialog-box" style="border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.4);">
+                    <div class="boss-dialog-name" style="color: #ffd700;">신</div>
+                    <div class="boss-dialog-text">${rewardLines[rewardLine]}</div>
+                </div>
+                <div class="boss-dialog-continue" style="background: linear-gradient(#b8860b, #8b6914); border-color: #ffd700;" onclick="continueRewardDialog()">
+                    ${rewardLine < rewardLines.length - 1 ? '▶ 다음' : '🌟 모험 계속하기'}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        rewardLine++;
+
+        window.continueRewardDialog = function() {
+            showNextRewardLine();
+        };
+    }
+
+    showNextRewardLine();
+}
+
+/**
+ * 악마의 성 입구로 텔레포트합니다 (모험 계속).
+ */
+function teleportToDemonCastleEntrance() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 깜깜해지는 연출
+    const fadeOverlay = document.createElement('div');
+    fadeOverlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; opacity: 0; z-index: 99999; transition: opacity 1s ease;
+    `;
+    document.body.appendChild(fadeOverlay);
+
+    setTimeout(() => { fadeOverlay.style.opacity = '1'; }, 100);
+
+    setTimeout(() => {
+        // 악마의 성 입구로 이동
+        if (typeof currentMapId !== 'undefined') currentMapId = 'demon_castle';
+        if (typeof currentLocationId !== 'undefined') currentLocationId = 'entrance';
+
+        // "깨어났다" 메시지
+        addGameLog(`✨ 눈을 떠보니 악마의 성 입구에 있었다...`);
+        addGameLog(`✨ 몸에서 이전에는 느낄 수 없었던 강대한 힘이 느껴진다.`);
+
+        // UI 업데이트
+        updatePlayerUI();
+        if (typeof updateLocationUI === 'function') updateLocationUI();
+
+        // 페이드 아웃
+        setTimeout(() => {
+            fadeOverlay.style.opacity = '0';
+            setTimeout(() => fadeOverlay.remove(), 1000);
+        }, 1500);
+    }, 1500);
+}
+
+// ============================================
+// �🔊 콘솔 로그
 // ============================================
 
 console.log('⚔️ battleSystem.js v2 로드 완료!');

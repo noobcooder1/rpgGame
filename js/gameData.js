@@ -4092,11 +4092,11 @@ const MONSTERS = {
         name: '마왕',
         type: 'boss', tier: 11,
         hp: 5000, atk: 150, pDef: 40, mDef: 40,
-        exp: 15000, gold: 15000,
+        exp: 75000, gold: 75000,
         drops: [
-            { item: 'demon_king_crown', chance: 0.2 },
-            { item: 'demon_king_sword', chance: 0.15 },
-            { item: 'soul_of_darkness', chance: 0.1 }
+            { item: 'demon_king_crown', chance: 1.0 },
+            { item: 'demon_king_sword', chance: 0.5 },
+            { item: 'soul_of_darkness', chance: 1.0 }
         ],
         emoji: '👿',
         isBoss: true,
