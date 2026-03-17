@@ -1181,6 +1181,8 @@ const saveLoadStyles = `
 
     .save-load-content {
         padding: 25px;
+        overflow-y: auto;
+        max-height: 60vh;
     }
 
     .save-slot {
@@ -1388,6 +1390,94 @@ const saveLoadStyles = `
         color: rgba(255, 255, 255, 0.6);
         font-size: 12px;
         text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .save-load-modal {
+            width: 95%;
+            max-width: 100%;
+            border-radius: 16px;
+        }
+
+        .save-load-header {
+            padding: 14px 16px;
+        }
+
+        .save-load-header h2 {
+            font-size: 18px;
+        }
+
+        .save-load-content {
+            padding: 14px;
+        }
+
+        .save-slot {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 14px;
+            gap: 10px;
+        }
+
+        .save-slot-title {
+            font-size: 15px;
+        }
+
+        .save-slot-details {
+            font-size: 12px;
+            gap: 8px;
+        }
+
+        .save-slot-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .slot-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .file-backup-section {
+            margin: 14px;
+            padding: 14px;
+        }
+
+        .file-backup-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-backup-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .save-load-modal {
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            max-height: 90vh;
+        }
+
+        .save-load-overlay {
+            align-items: flex-end;
+        }
+
+        .save-slot-details {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .save-slot-actions {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .slot-btn {
+            padding: 7px 12px;
+            font-size: 12px;
+        }
     }
 `;
 

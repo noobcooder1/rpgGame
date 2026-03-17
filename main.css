@@ -1031,20 +1031,9 @@ body {
         display: none;
     }
 
-    .game-header {
-        flex-direction: column;
-        gap: 15px;
-    }
-
     .player-bars {
         flex-direction: column;
         gap: 10px;
-    }
-
-    .game-actions,
-    .explore-actions,
-    .battle-actions {
-        grid-template-columns: 1fr;
     }
 }
 
@@ -5003,6 +4992,8 @@ body {
     .game-menu-btn {
         font-size: 1.1rem;
         padding: 6px 8px;
+        width: auto;
+        height: auto;
         min-width: 36px;
         min-height: 36px;
     }
@@ -5218,7 +5209,7 @@ body {
 
     .inv-left {
         flex: 0 0 auto;
-        max-height: 180px;
+        max-height: 35vh;
         overflow-y: auto;
     }
 
@@ -5227,12 +5218,12 @@ body {
         overflow-y: auto;
     }
 
-    .inv-grid {
+    .inventory-grid {
         grid-template-columns: repeat(5, 1fr);
         gap: 4px;
     }
 
-    .inv-slot {
+    .inventory-slot {
         min-width: 44px;
         min-height: 44px;
     }
@@ -5268,13 +5259,72 @@ body {
     }
 
     /* 저장/불러오기 */
-    .save-slot-list {
+    .save-load-modal {
+        width: 95%;
+        max-width: 100%;
+        border-radius: 16px;
+    }
+
+    .save-load-header {
+        padding: 14px 16px;
+    }
+
+    .save-load-header h2 {
+        font-size: 18px;
+    }
+
+    .save-load-content {
+        padding: 14px;
+    }
+
+    .save-slot {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 14px;
+        gap: 10px;
+    }
+
+    .save-slot-title {
+        font-size: 15px;
+    }
+
+    .save-slot-details {
+        font-size: 12px;
         gap: 8px;
     }
 
-    .save-slot-btn {
-        padding: 12px;
-        font-size: 0.85rem;
+    .save-slot-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .slot-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .file-backup-section {
+        margin: 14px;
+        padding: 14px;
+    }
+
+    .file-backup-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .file-backup-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* 배경 오버레이 모바일 밝기 조정 */
+    .game-overlay {
+        background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.5) 0%,
+            rgba(0, 0, 0, 0.15) 30%,
+            rgba(0, 0, 0, 0.15) 70%,
+            rgba(0, 0, 0, 0.5) 100%);
     }
 }
 
@@ -5318,7 +5368,7 @@ body {
     }
 
     /* 인벤토리 그리드 */
-    .inv-grid {
+    .inventory-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 
@@ -5334,5 +5384,53 @@ body {
 
     .game-log {
         font-size: 0.72rem;
+    }
+
+    /* 저장/불러오기 480px */
+    .save-load-modal {
+        width: 100%;
+        border-radius: 16px 16px 0 0;
+        max-height: 90vh;
+    }
+
+    .save-slot-details {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .save-slot-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .slot-btn {
+        padding: 7px 12px;
+        font-size: 12px;
+    }
+
+    /* 인벤토리 480px 추가 */
+    .inv-left {
+        max-height: 140px;
+    }
+
+    .character-card {
+        padding: 10px;
+    }
+
+    .char-avatar {
+        font-size: 36px;
+        margin-bottom: 4px;
+    }
+
+    .char-name {
+        font-size: 16px;
+    }
+
+    .stats-panel {
+        padding: 8px;
+    }
+
+    .stat-row {
+        padding: 4px 6px;
     }
 }
