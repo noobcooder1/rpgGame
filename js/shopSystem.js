@@ -480,13 +480,28 @@ function showNPCConversation(npc) {
         `;
     }
 
-    // 퀘스트 가능한 경우
+    // 퀘스트 가능한 경우: 진행 중/완료 가능 퀘스트 확인
     if (npc.canGiveQuest) {
-        optionsHtml += `
-            <button class="dialog-option-btn" onclick="showNPCQuest('${npc.id}')">
-                📜 의뢰가 있나요?
-            </button>
-        `;
+        const activeQuest = getNpcActiveQuest(npc.id);
+        if (activeQuest) {
+            // 퀘스트 진행 중: 완료 버튼 강조
+            optionsHtml += `
+                <button class="dialog-option-btn quest-complete-btn" onclick="showQuestHandoverUI('${npc.id}')">
+                    ✅ 퀘스트를 완료했어요
+                </button>
+            `;
+            optionsHtml += `
+                <button class="dialog-option-btn" onclick="showNPCQuestStatus('${npc.id}')">
+                    📋 퀘스트 진행 상황
+                </button>
+            `;
+        } else {
+            optionsHtml += `
+                <button class="dialog-option-btn" onclick="showNPCQuest('${npc.id}')">
+                    📜 의뢰가 있나요?
+                </button>
+            `;
+        }
     }
 
     // 힌트/정보 옵션
@@ -578,6 +593,243 @@ function showNPCInfo(npcId) {
 }
 
 /**
+ * NPC에게 배정된 활성 퀘스트를 반환합니다.
+ * @param {string} npcId - NPC ID
+ * @returns {Object|null} 활성 퀘스트 객체 또는 null
+ */
+function getNpcActiveQuest(npcId) {
+    if (!player || !player.quests) return null;
+    // NPC ID 기반으로 관련 퀘스트 검색
+    for (const questKey in player.quests) {
+        const quest = player.quests[questKey];
+        if (quest.status === 'active' && quest.npcId === npcId) {
+            return quest;
+        }
+    }
+    // 고대 수호자 NPC 전용 처리
+    if (npcId === 'ancient_guardian_npc' && player.quests.ancient_guardian_quest) {
+        const aq = player.quests.ancient_guardian_quest;
+        if (aq.status === 'active') return aq;
+    }
+    return null;
+}
+
+/**
+ * 퀘스트 진행 상황을 NPC 대화창에서 표시합니다.
+ */
+function showNPCQuestStatus(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc) return;
+    const quest = getNpcActiveQuest(npcId);
+    if (!quest) return;
+
+    let progressText = '';
+    if (quest.objective.type === 'item_delivery') {
+        const requiredItem = quest.objective.requiredItem;
+        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
+        const itemName = itemData ? itemData.name : requiredItem;
+        const inventoryItem = (typeof inventoryItems !== 'undefined')
+            ? inventoryItems.find(item => item.id === requiredItem)
+            : null;
+        const currentCount = inventoryItem ? (inventoryItem.quantity || 1) : 0;
+        progressText = `필요 아이템: ${itemName} (${currentCount}/${quest.objective.count})`;
+    } else {
+        progressText = `진행: (${quest.objective.current || 0}/${quest.objective.count})`;
+    }
+
+    const bubble = document.querySelector('.npc-dialog-bubble p');
+    if (bubble) {
+        bubble.textContent = npc.dialogues.quest_in_progress;
+        bubble.innerHTML += `<br><small style="color:#aaa;">${progressText}</small>`;
+    }
+}
+
+/**
+ * 아이템 직접 전달 UI를 표시합니다.
+ * 플레이어가 인벤토리에서 직접 아이템을 선택하여 NPC에게 전달합니다.
+ */
+function showQuestHandoverUI(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc) return;
+    const quest = getNpcActiveQuest(npcId);
+    if (!quest) return;
+
+    // 기존 모달 제거
+    const existingModals = document.querySelectorAll('.npc-modal-overlay, .quest-handover-overlay');
+    existingModals.forEach(m => m.remove());
+    currentNpcDialogOpen = false;
+
+    const itemId = quest.objective.type === 'item_delivery' ? quest.objective.requiredItem : null;
+    const requiredCount = quest.objective.count || 1;
+
+    // 인벤토리 아이템 목록 렌더링 (퀘스트 필요 아이템 강조)
+    let itemsHtml = '';
+    const inv = (typeof inventoryItems !== 'undefined') ? inventoryItems : [];
+
+    if (inv.length === 0) {
+        itemsHtml = `<p class="handover-empty">인벤토리가 비어 있습니다.</p>`;
+    } else {
+        inv.forEach((item, idx) => {
+            const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+            const name = itemData ? itemData.name : item.name || item.id;
+            const icon = itemData ? (itemData.icon || '📦') : '📦';
+            const qty = item.quantity || 1;
+            const isRequired = itemId && item.id === itemId;
+            const hasEnough = isRequired && qty >= requiredCount;
+            const highlightClass = isRequired ? (hasEnough ? 'required-item has-enough' : 'required-item not-enough') : '';
+
+            itemsHtml += `
+                <button class="handover-item-btn ${highlightClass}" 
+                        onclick="tryHandoverItem(${idx}, '${npcId}')"
+                        title="${name} x${qty}">
+                    <span class="handover-item-icon">${icon}</span>
+                    <span class="handover-item-name">${name}</span>
+                    <span class="handover-item-qty">x${qty}</span>
+                    ${isRequired ? `<span class="handover-item-badge">${hasEnough ? '✅ 필요' : '⚠️ 부족'}</span>` : ''}
+                </button>
+            `;
+        });
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'quest-handover-overlay';
+    overlay.innerHTML = `
+        <div class="quest-handover-dialog">
+            <div class="quest-handover-header">
+                <span class="quest-handover-npc">${npc.emoji} ${npc.name}</span>
+                <button class="quest-handover-close-btn" onclick="closeQuestHandoverUI()">✕</button>
+            </div>
+            <div class="quest-handover-desc">
+                <p>전달할 아이템을 인벤토리에서 선택하세요.</p>
+                <p class="quest-target-hint">필요 아이템: <strong>${
+                    itemId ? ((typeof ITEMS_DATABASE !== 'undefined' && ITEMS_DATABASE[itemId]) 
+                        ? ITEMS_DATABASE[itemId].name : itemId) : '없음'
+                } x${requiredCount}</strong></p>
+            </div>
+            <div class="quest-handover-items">
+                ${itemsHtml}
+            </div>
+            <button class="dialog-option-btn dialog-exit" onclick="closeQuestHandoverUI()">
+                🔙 돌아가기
+            </button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+/**
+ * 선택한 아이템을 NPC에게 전달하려고 시도합니다.
+ * @param {number} invIndex - 인벤토리 슬롯 인덱스
+ * @param {string} npcId - NPC ID
+ */
+function tryHandoverItem(invIndex, npcId) {
+    const npc = NPCS[npcId];
+    if (!npc) return;
+    const quest = getNpcActiveQuest(npcId);
+    if (!quest) return;
+
+    const inv = (typeof inventoryItems !== 'undefined') ? inventoryItems : [];
+    const item = inv[invIndex];
+    if (!item) return;
+
+    const requiredItemId = quest.objective.type === 'item_delivery' ? quest.objective.requiredItem : null;
+    const requiredCount = quest.objective.count || 1;
+
+    // 전달하려는 아이템이 맞는지 확인
+    if (!requiredItemId || item.id !== requiredItemId) {
+        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+        const itemName = itemData ? itemData.name : item.id;
+        showHandoverResultDialog(npc, false, `이건 필요한 게 아니네... ${itemName}이(가) 아니야. 다시 생각해보게.`);
+        return;
+    }
+
+    const currentQty = item.quantity || 1;
+    if (currentQty < requiredCount) {
+        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+        const itemName = itemData ? itemData.name : item.id;
+        showHandoverResultDialog(npc, false, `아직 부족하군. ${itemName}이 ${requiredCount}개 필요한데, 현재 ${currentQty}개밖에 없어.`);
+        return;
+    }
+
+    // 아이템 제거
+    if (typeof removeItemFromInventory === 'function') {
+        removeItemFromInventory(invIndex, requiredCount);
+    } else {
+        inv[invIndex].quantity = (inv[invIndex].quantity || 1) - requiredCount;
+        if (inv[invIndex].quantity <= 0) inv.splice(invIndex, 1);
+    }
+
+    // 퀘스트 완료 처리
+    quest.status = 'completed';
+    const itemData2 = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItemId] : null;
+    addGameLog(`📦 ${itemData2 ? itemData2.name : requiredItemId}을(를) ${npc.name}에게 전달했습니다!`);
+
+    // 보상 지급
+    if (quest.rewards) {
+        if (quest.rewards.exp) {
+            player.exp += quest.rewards.exp;
+            addGameLog(`✨ ${quest.rewards.exp} EXP 획득!`);
+            if (typeof checkLevelUp === 'function') checkLevelUp();
+        }
+        if (quest.rewards.gold) {
+            if (typeof gold !== 'undefined') gold += quest.rewards.gold;
+            addGameLog(`💰 ${quest.rewards.gold} Gold 획득!`);
+        }
+        if (quest.rewards.items && Array.isArray(quest.rewards.items)) {
+            quest.rewards.items.forEach(rewardItemId => {
+                if (typeof addItemToInventory === 'function') addItemToInventory(rewardItemId);
+            });
+            addGameLog('📦 보상 아이템을 획득했습니다!');
+        }
+    }
+
+    if (typeof updatePlayerUI === 'function') updatePlayerUI();
+
+    // 성공 다이얼로그 표시
+    showHandoverResultDialog(npc, true, npc.dialogues.quest_complete || '잘 해냈군! 약속대로 보물을 주겠다.');
+}
+
+/**
+ * 아이템 전달 결과 다이얼로그를 표시합니다.
+ */
+function showHandoverResultDialog(npc, success, message) {
+    const existingOverlay = document.querySelector('.quest-handover-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'npc-modal-overlay';
+    overlay.innerHTML = `
+        <div class="npc-modal">
+            <div class="npc-dialog-header">
+                <span class="npc-dialog-emoji">${npc.emoji}</span>
+                <span class="npc-dialog-name">${npc.name}</span>
+            </div>
+            <div class="npc-dialog-bubble" style="border-color:${success ? '#27ae60' : '#e74c3c'};">
+                <p>${message}</p>
+            </div>
+            <button class="dialog-option-btn" onclick="closeNPCModal()">${success ? '🎉 감사합니다!' : '😅 알겠습니다.'}</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    addGameLog(`🗿 ${npc.name}: "${message}"`);
+    currentNpcDialogOpen = true;
+}
+
+/**
+ * 아이템 전달 UI를 닫습니다.
+ */
+function closeQuestHandoverUI() {
+    const overlay = document.querySelector('.quest-handover-overlay');
+    if (overlay) overlay.remove();
+    // 대화창 다시 열기
+    if (currentNpc) {
+        showNPCConversation(currentNpc);
+    }
+}
+
+
+
+/**
  * NPC 퀘스트를 표시합니다.
  */
 function showNPCQuest(npcId) {
@@ -607,133 +859,26 @@ function showAncientGuardianNPCQuest() {
 
     const quest = player.quests ? player.quests.ancient_guardian_quest : null;
 
-    // 퀘스트 완료 후 보상 수령
+    // 퀘스트 완료 후 보상 수령 완료 상태
     if (quest && quest.status === 'completed') {
         const overlay = document.createElement('div');
         overlay.className = 'npc-modal-overlay';
         overlay.innerHTML = `
             <div class="npc-modal">
                 <div class="npc-dialog-bubble">
-                    <p>${npc.dialogues.quest_complete}</p>
+                    <p>이미 퀘스트를 완료했군. 덕분에 유적이 평화를 되찾았어. 감사하네.</p>
                 </div>
                 <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
             </div>
         `;
         document.body.appendChild(overlay);
-        addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_complete}"`);
         return;
     }
 
-    // 퀘스트 진행 중
+    // 퀘스트 진행 중: 아이템 전달 UI로 이동
     if (quest && quest.status === 'active') {
-        // 아이템 전달 퀘스트: 인벤토리에 필요 아이템이 있는지 확인
-        let questComplete = false;
-        if (quest.objective.type === 'item_delivery') {
-            const requiredItem = quest.objective.requiredItem;
-            const requiredCount = quest.objective.count || 1;
-            const inventoryItem = (typeof inventoryItems !== 'undefined') 
-                ? inventoryItems.find(item => item.id === requiredItem)
-                : null;
-            const hasEnough = inventoryItem && (inventoryItem.quantity || 1) >= requiredCount;
-            questComplete = hasEnough;
-        } else {
-            // 기존 킬 타입 퀘스트
-            questComplete = quest.objective.current >= quest.objective.count;
-        }
-
-        if (questComplete) {
-            // 아이템 전달 퀘스트인 경우 아이템 소비
-            if (quest.objective.type === 'item_delivery') {
-                const requiredItem = quest.objective.requiredItem;
-                const requiredCount = quest.objective.count || 1;
-                // slotIndex로 아이템 제거
-                const idx = (typeof inventoryItems !== 'undefined') 
-                    ? inventoryItems.findIndex(item => item.id === requiredItem)
-                    : -1;
-                if (idx !== -1) {
-                    if (typeof removeItemFromInventory === 'function') {
-                        removeItemFromInventory(idx, requiredCount);
-                    } else {
-                        inventoryItems[idx].quantity = (inventoryItems[idx].quantity || 1) - requiredCount;
-                        if (inventoryItems[idx].quantity <= 0) {
-                            inventoryItems.splice(idx, 1);
-                        }
-                    }
-                }
-                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
-                const itemName = itemData ? itemData.name : requiredItem;
-                addGameLog(`📦 ${itemName}을(를) 전달했습니다!`);
-            }
-
-            // 퀘스트 완료 처리
-            quest.status = 'completed';
-            
-            // 보상 지급
-            if (quest.rewards) {
-                if (quest.rewards.exp) {
-                    player.exp += quest.rewards.exp;
-                    addGameLog(`✨ ${quest.rewards.exp} EXP 획득!`);
-                    if (typeof checkLevelUp === 'function') checkLevelUp();
-                }
-                if (quest.rewards.gold) {
-                    if (typeof gold !== 'undefined') {
-                        gold += quest.rewards.gold;
-                    }
-                    addGameLog(`💰 ${quest.rewards.gold} Gold 획득!`);
-                }
-                if (quest.rewards.items && Array.isArray(quest.rewards.items)) {
-                    quest.rewards.items.forEach(itemId => {
-                        if (typeof addItemToInventory === 'function') {
-                            addItemToInventory(itemId);
-                        }
-                    });
-                    addGameLog('📦 보상 아이템을 획득했습니다!');
-                }
-            }
-
-            const overlay = document.createElement('div');
-            overlay.className = 'npc-modal-overlay';
-            overlay.innerHTML = `
-                <div class="npc-modal">
-                    <div class="npc-dialog-bubble">
-                        <p>${npc.dialogues.quest_complete}</p>
-                    </div>
-                    <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_complete}"`);
-            
-            if (typeof updatePlayerUI === 'function') updatePlayerUI();
-        } else {
-            // 아이템 전달 퀘스트일 경우 현재 보유 상황 표시
-            let progressText = '';
-            if (quest.objective.type === 'item_delivery') {
-                const requiredItem = quest.objective.requiredItem;
-                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
-                const itemName = itemData ? itemData.name : requiredItem;
-                const inventoryItem = (typeof inventoryItems !== 'undefined') 
-                    ? inventoryItems.find(item => item.id === requiredItem)
-                    : null;
-                const currentCount = inventoryItem ? (inventoryItem.quantity || 1) : 0;
-                progressText = `필요 아이템: ${itemName} (${currentCount}/${quest.objective.count})`;
-            } else {
-                progressText = `(${quest.objective.current}/${quest.objective.count})`;
-            }
-
-            const overlay = document.createElement('div');
-            overlay.className = 'npc-modal-overlay';
-            overlay.innerHTML = `
-                <div class="npc-modal">
-                    <div class="npc-dialog-bubble">
-                        <p>${npc.dialogues.quest_in_progress}<br><small>${progressText}</small></p>
-                    </div>
-                    <button class="dialog-option-btn" onclick="closeNPCModal()">확인</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            addGameLog(`🗿 ${npc.name}: "${npc.dialogues.quest_in_progress}"`);
-        }
+        closeNPCModal();
+        showQuestHandoverUI('ancient_guardian_npc');
         return;
     }
 

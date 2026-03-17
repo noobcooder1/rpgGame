@@ -442,6 +442,12 @@ function endBattle(result) {
             gold += totalGold;
             player.exp = (player.exp || 0) + totalExp;
 
+            // 처치 횟수 및 총 점수 추적
+            if (!player.totalKills) player.totalKills = 0;
+            if (!player.totalScore) player.totalScore = 0;
+            player.totalKills += monsters.filter(m => m).length;
+            player.totalScore += totalExp + totalGold;
+
             if (monsters.length > 1) {
                 addGameLog(`🎉 승리! ${monsters.length}마리 처치! ${totalExp} EXP, ${totalGold} Gold 획득!`);
             } else {
@@ -1355,6 +1361,13 @@ function useSelectedSkill(skillId) {
     // MP 확인
     if (player.mp < skill.mpCost) {
         addGameLog('💙 MP가 부족합니다!');
+        return;
+    }
+
+    // 버프가 이미 활성 중인 경우 재발동 불가
+    if (skill.damageType === 'buff' && player.activeBuffs && player.activeBuffs[skillId]) {
+        const activeBuff = player.activeBuffs[skillId];
+        addGameLog(`⚠️ ${skill.name} 버프가 이미 활성 중입니다! (${activeBuff.duration}턴 남음)`);
         return;
     }
 
@@ -2921,6 +2934,9 @@ function tryUseSparSkill(monster) {
         // 쿨타임 체크
         if (monster.cooldowns && monster.cooldowns[skillId] > 0) return;
         
+        // 버프형 스킬이 이미 활성 중이면 재발동 불가
+        if (skill.damageType === 'buff' && monster.activeBuffs && monster.activeBuffs[skillId]) return;
+        
         // MP 체크
         const mpCost = skill.mpCost || 0;
         if ((monster.currentMp || 0) < mpCost) return;
@@ -3085,6 +3101,11 @@ function tryUseMonsterSkill(monster, forcedSkillId) {
         // 쿨타임 체크
         if (!monster.cooldowns) monster.cooldowns = {};
         if (monster.cooldowns[skillId] > 0) return;
+        
+        // 버프형 스킬이 이미 활성 중이면 재발동 불가
+        const effectData_check = skillData.effects || (typeof skillEntry === 'object' ? skillEntry.effect : null) || {};
+        if ((skillData.damageType === 'buff' || effectData_check.type === 'buff') 
+            && monster.activeBuffs && monster.activeBuffs[skillId]) return;
         
         // MP 체크
         const mpCost = skillData.mpCost || skillEntry.mpCost || 0;
@@ -3800,12 +3821,12 @@ function endPlayerTurn() {
     battleState.turn = 'monster';
 
     // 플레이어 버프 지속시간 감소
+    const expiredBuffIds = [];
     if (player.activeBuffs) {
-        const expiredBuffs = [];
         Object.entries(player.activeBuffs).forEach(([buffId, buff]) => {
             buff.duration--;
             if (buff.duration <= 0) {
-                expiredBuffs.push(buffId);
+                expiredBuffIds.push(buffId);
                 // 버프 종료 시 공격력 보너스 제거
                 if (buff.pAtkFlat) {
                     player.pAtk = Math.max(0, (player.pAtk || 0) - buff.pAtkFlat);
@@ -3819,17 +3840,17 @@ function endPlayerTurn() {
             }
         });
         // 만료된 버프 제거
-        expiredBuffs.forEach(buffId => {
+        expiredBuffIds.forEach(buffId => {
             delete player.activeBuffs[buffId];
         });
     }
 
-    // 스킬 쿨다운 감소 (활성 버프 중인 스킬은 쿨타임 감소 제외)
+    // 스킬 쿨다운 감소 (활성 버프 중인 스킬 및 이번 턴 만료 스킬은 쿨타임 감소 제외)
     if (player.skillCooldowns) {
         Object.keys(player.skillCooldowns).forEach(skillId => {
             if (player.skillCooldowns[skillId] > 0) {
-                // 현재 활성 버프 중인 스킬은 쿨타임 감소하지 않음
-                if (player.activeBuffs && player.activeBuffs[skillId]) {
+                // 현재 활성 버프 중인 스킬이거나, 이번 턴에 막 만료된 스킬은 감소하지 않음
+                if ((player.activeBuffs && player.activeBuffs[skillId]) || expiredBuffIds.includes(skillId)) {
                     return;
                 }
                 player.skillCooldowns[skillId]--;
@@ -4672,7 +4693,10 @@ function showDemonKingEndingDialogue() {
                 level: player ? player.level : 1,
                 job: player?.jobData?.name || '모험가',
                 playTime: playTimeStr,
-                gold: gold || 0
+                gold: gold || 0,
+                totalKills: player ? (player.totalKills || 0) : 0,
+                totalScore: player ? (player.totalScore || 0) : 0,
+                totalExp: player ? (player.exp || 0) : 0
             };
             sessionStorage.setItem('gameClearData', JSON.stringify(gameClearData));
 

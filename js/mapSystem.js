@@ -795,6 +795,7 @@ function guardianQuestAccepted() {
         name: '고대 수호자의 부탁',
         description: '동굴트롤의 이빨을 구해 고대 수호자에게 가져다 주어라.',
         status: 'active',
+        npcId: 'ancient_guardian_npc',
         objective: { type: 'item_delivery', requiredItem: 'troll_tooth', count: 1, current: 0 },
         rewards: {
             exp: 5000,

@@ -374,8 +374,8 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px 50px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px 30px;
         }
 
         .stat-item {
@@ -516,6 +516,19 @@
             box-shadow:
                 0 8px 30px rgba(255, 215, 0, 0.7),
                 0 0 60px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn-credits {
+            background: transparent;
+            color: #bb86fc;
+            border: 2px solid rgba(187, 134, 252, 0.5);
+        }
+
+        .btn-credits:hover {
+            background: rgba(187, 134, 252, 0.1);
+            border-color: #bb86fc;
+            color: #fff;
+            transform: translateY(-5px);
         }
 
         .btn-menu {
@@ -670,7 +683,13 @@
             }
 
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stats-box {
+                padding: 20px 15px;
+                width: 90%;
             }
 
             .button-group {
@@ -679,11 +698,37 @@
             }
 
             .btn {
-                width: 220px;
+                width: 240px;
+                font-size: 14px;
+                padding: 14px 20px;
             }
 
             .intro-text {
                 font-size: 20px;
+            }
+
+            .credits-title {
+                font-size: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .victory-text {
+                font-size: 36px;
+                letter-spacing: 6px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .stat-value {
+                font-size: 20px;
+            }
+
+            .rank {
+                font-size: 48px;
             }
         }
     </style>
@@ -725,20 +770,28 @@
             <div class="stats-title">🎖️ 최종 전적</div>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <span class="stat-value" id="totalTime">12:34</span>
+                    <span class="stat-value" id="playerNameDisplay">모험가</span>
+                    <span class="stat-label">이름</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="playerLevel">Lv.1</span>
+                    <span class="stat-label">레벨 · 직업</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalTime">00:00:00</span>
                     <span class="stat-label">총 플레이 시간</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="enemiesDefeated">127</span>
+                    <span class="stat-value" id="enemiesDefeated">0</span>
                     <span class="stat-label">처치한 적</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="totalScore">98,500</span>
-                    <span class="stat-label">획득 점수</span>
+                    <span class="stat-value" id="goldCollected">0</span>
+                    <span class="stat-label">보유 골드</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-value" id="goldCollected">5,420</span>
-                    <span class="stat-label">획득 골드</span>
+                    <span class="stat-value" id="totalScore">0</span>
+                    <span class="stat-label">총 획득 점수</span>
                 </div>
             </div>
         </div>
@@ -746,22 +799,17 @@
         <!-- 등급 -->
         <div class="rank-container">
             <span class="rank-label">최종 등급</span>
-            <div class="rank">S</div>
+            <div class="rank" id="playerRank">S</div>
         </div>
 
         <!-- 버튼 -->
         <div class="button-group">
-            <button class="btn btn-continue" onclick="continueGame()">
-                🎮 다음 챕터
-            </button>
             <button class="btn btn-menu" onclick="goToMenu()">
-                🏠 메인 메뉴
+                🏠 메인 메뉴로 돌아가기
             </button>
-        </div>
-
-        <!-- 크레딧 트리거 -->
-        <div class="credits-trigger" onclick="showCredits()">
-            ▶ 엔딩 크레딧 보기
+            <button class="btn btn-credits" onclick="showCredits()">
+                🎬 엔딩 크레딧 보기
+            </button>
         </div>
     </div>
 
@@ -817,6 +865,13 @@
                         © 2026 RPG Adventure
                     </p>
                 </div>
+
+                <!-- 크레딧 하단 메인메뉴 버튼 -->
+                <div style="margin-top: 60px;">
+                    <button class="btn btn-menu" onclick="goToMenu()" style="margin: 0 auto;">
+                        🏠 메인 메뉴로 돌아가기
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -869,7 +924,7 @@
             overlay.classList.add('active');
             container.style.animation = 'none';
             container.offsetHeight; // reflow
-            container.style.animation = 'creditsScroll 30s linear forwards';
+            container.style.animation = 'creditsScroll 40s linear forwards';
         }
 
         // 크레딧 숨기기
@@ -885,22 +940,74 @@
             }
         });
 
-        // 다음 챕터
-        function continueGame() {
-            alert('다음 챕터가 시작됩니다!');
-            // window.location.href = '../rpg.html';
+        // 메인 메뉴로 돌아가기 (데이터 삭제 후 새 게임 가능)
+        function goToMenu() {
+            if (!confirm('메인 메뉴로 돌아가면 현재 게임 데이터가 삭제되고 새 게임을 시작할 수 있습니다.\n정말 돌아가시겠습니까?')) return;
+            // 게임 저장 데이터 삭제
+            localStorage.removeItem('rpgSaveData');
+            localStorage.removeItem('rpgSaveSlot1');
+            localStorage.removeItem('rpgSaveSlot2');
+            localStorage.removeItem('rpgSaveSlot3');
+            sessionStorage.removeItem('gameClearData');
+            // 메인 페이지로 이동
+            window.location.href = '../rpgmain.html';
         }
 
-        // 메인 메뉴
-        function goToMenu() {
-            alert('메인 메뉴로 이동합니다!');
-            // window.location.href = '../index.html';
+        // 등급 계산
+        function calculateRank(score, kills, level) {
+            if (level >= 90 && kills >= 500) return 'SSS';
+            if (level >= 70 && kills >= 300) return 'SS';
+            if (level >= 50 && kills >= 150) return 'S';
+            if (level >= 35 && kills >= 80) return 'A';
+            if (level >= 20 && kills >= 40) return 'B';
+            if (level >= 10) return 'C';
+            return 'D';
+        }
+
+        // 게임 클리어 데이터 로드 및 표시
+        function loadGameClearData() {
+            const raw = sessionStorage.getItem('gameClearData');
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                if (data.playerName) {
+                    const el = document.getElementById('playerNameDisplay');
+                    if (el) el.textContent = data.playerName;
+                }
+                if (data.level !== undefined) {
+                    const el = document.getElementById('playerLevel');
+                    if (el) el.textContent = `Lv.${data.level} ${data.job || ''}`;
+                }
+                if (data.playTime) {
+                    const el = document.getElementById('totalTime');
+                    if (el) el.textContent = data.playTime;
+                }
+                if (data.totalKills !== undefined) {
+                    const el = document.getElementById('enemiesDefeated');
+                    if (el) el.textContent = data.totalKills.toLocaleString();
+                }
+                if (data.gold !== undefined) {
+                    const el = document.getElementById('goldCollected');
+                    if (el) el.textContent = data.gold.toLocaleString() + 'G';
+                }
+                if (data.totalScore !== undefined) {
+                    const el = document.getElementById('totalScore');
+                    if (el) el.textContent = data.totalScore.toLocaleString();
+                }
+                // 등급 계산
+                const rank = calculateRank(data.totalScore || 0, data.totalKills || 0, data.level || 1);
+                const rankEl = document.getElementById('playerRank');
+                if (rankEl) rankEl.textContent = rank;
+            } catch (e) {
+                console.error('게임 클리어 데이터 로드 실패:', e);
+            }
         }
 
         // 초기화
         window.onload = function () {
             createStars();
             createConfetti();
+            loadGameClearData();
         };
     </script>
 </body>

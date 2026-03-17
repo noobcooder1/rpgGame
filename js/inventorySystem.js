@@ -1018,8 +1018,10 @@ function renderInventoryItems() {
         filteredItems = inventoryItems.filter(item => item.type === currentInventoryTab);
     }
 
-    // 페이지 범위 계산
-    const totalPages = Math.ceil(MAX_INVENTORY_SIZE / INVENTORY_PAGE_SIZE);
+    // 페이지 범위 계산 (전체탭은 항상 100칸기준 5페이지, 필터탭은 실제 아이템 수 기준)
+    const totalPages = currentInventoryTab === 'all'
+        ? Math.ceil(MAX_INVENTORY_SIZE / INVENTORY_PAGE_SIZE)
+        : Math.max(1, Math.ceil(filteredItems.length / INVENTORY_PAGE_SIZE));
     if (currentInventoryPage >= totalPages) currentInventoryPage = totalPages - 1;
     if (currentInventoryPage < 0) currentInventoryPage = 0;
 
