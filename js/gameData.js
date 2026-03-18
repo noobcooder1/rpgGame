@@ -1453,9 +1453,16 @@ const ACTION_TYPES = {
 // ============================================
 
 function getRequiredExp(level) {
-    // 다항식 성장: 지수함수(1.5^n)에서 변경 — 고레벨에서도 달성 가능한 경험치량
-    // Lv1→2: 80, Lv10→11: ~16K, Lv20→21: ~79K, Lv40→41: ~395K, Lv99→100: ~3.1M
-    return Math.floor(80 * Math.pow(level, 2.3));
+    if (level <= 20) {
+        // 초반 (1 ~ 20레벨)
+        return Math.floor(50 * Math.pow(level, 1.9));
+    } else if (level <= 99) {
+        // 중반 (21 ~ 99레벨)
+        return Math.floor(500 * Math.pow(level, 2.1));
+    } else {
+        // 후반 (100레벨 이상)
+        return Math.floor(3000 * Math.pow(level, 2.15));
+    }
 }
 
 // 레벨업 시 스탯 증가량
