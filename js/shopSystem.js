@@ -672,7 +672,7 @@ function showQuestHandoverUI(npcId) {
         inv.forEach((item, idx) => {
             const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
             const name = itemData ? itemData.name : item.name || item.id;
-            const icon = itemData ? (itemData.icon || '📦') : '📦';
+            const icon = (itemData && itemData.image) ? `<img src="${itemData.image}" class="item-img">` : (itemData ? (itemData.icon || '📦') : '📦');
             const qty = item.quantity || 1;
             const isRequired = itemId && item.id === itemId;
             const hasEnough = isRequired && qty >= requiredCount;
@@ -1178,7 +1178,7 @@ function createShopItemElement(item) {
     const isStackable = (item.type === 'consumable' || item.type === 'material');
 
     div.innerHTML = `
-        <div class="shop-item-icon">${item.icon}</div>
+        <div class="shop-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</div>
         <div class="shop-item-info">
             <div class="shop-item-name">${item.name}</div>
             <div class="shop-item-desc">${item.description}</div>
@@ -1304,7 +1304,7 @@ function showSellItems() {
         div.className = `shop-item ${item.rarity || 'common'}`;
 
         div.innerHTML = `
-            <div class="shop-item-icon">${item.icon || '📦'}</div>
+            <div class="shop-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : (item.icon || '📦')}</div>
             <div class="shop-item-info">
                 <div class="shop-item-name">${item.name}${maxQty > 1 ? ` x${maxQty}` : ''}</div>
                 <div class="shop-item-desc">${item.description || ''}</div>

@@ -5434,3 +5434,21 @@ body {
         padding: 4px 6px;
     }
 }
+
+/* 아이템 이미지 렌더링을 위한 클래스 */
+.item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: screen; /* AI 생성 이미지의 검은색 배경을 투명하게 만들어줌 */
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+    display: inline-block;
+}
+
+.equip-icon .item-img, .item-icon .item-img, .tooltip-icon .item-img, 
+.context-menu-icon .item-img, .discard-item-icon .item-img, 
+.shop-item-icon .item-img, .handover-item-icon .item-img {
+    max-width: 100%;
+    max-height: 100%;
+    vertical-align: middle;
+}

@@ -177,6 +177,7 @@ const ITEMS_DATABASE = {
         effect: { hp: 50 },
         description: 'HP를 50 회복합니다.',
         icon: '🧪',
+        image: 'assets/items/hp_potion.png',
         sellPrice: 15,
         stackable: true
     },
@@ -188,6 +189,7 @@ const ITEMS_DATABASE = {
         effect: { mp: 30 },
         description: 'MP를 30 회복합니다.',
         icon: '💙',
+        image: 'assets/items/mp_potion.png',
         sellPrice: 20,
         stackable: true
     },
@@ -985,7 +987,7 @@ function renderEquipment() {
 
             slotElement.innerHTML = `
                 <div class="equip-item" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" onclick="unequipItem('${slot}')">
-                    <span class="equip-icon">${item.icon}</span>
+                    <span class="equip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
                     <span class="equip-name">${item.name}</span>
                     ${statsStr ? `<span class="equip-stats">${statsStr}</span>` : ''}
                 </div>
@@ -1041,7 +1043,7 @@ function renderInventoryItems() {
                 <div class="item-content" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" 
                      onclick="showItemContextMenu(${originalIndex}, event)"
                      oncontextmenu="event.preventDefault(); showItemContextMenu(${originalIndex}, event);">
-                    <span class="item-icon">${item.icon}</span>
+                    <span class="item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
                     ${item.stackable && item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                 </div>
             `;
@@ -1162,7 +1164,7 @@ function showItemTooltip(slotIndex, event) {
 
     tooltip.innerHTML = `
         <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="tooltip-icon">${item.icon}</span>
+            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
             <span class="tooltip-name">${item.name}</span>
         </div>
         <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>
@@ -1226,7 +1228,7 @@ function showItemContextMenu(slotIndex, event) {
     // 아이템 이름 헤더
     menuOptions += `
         <div class="context-menu-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="context-menu-icon">${item.icon}</span>
+            <span class="context-menu-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
             <span class="context-menu-name">${item.name}</span>
         </div>
     `;
@@ -1368,7 +1370,7 @@ function showDiscardQuantityDialog(slotIndex, item, maxQuantity) {
     overlay.innerHTML = `
         <div class="discard-quantity-content">
             <div class="discard-quantity-header">
-                <span class="discard-item-icon">${item.icon}</span>
+                <span class="discard-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
                 <span class="discard-item-name">${item.name}</span>
                 <span class="discard-item-total">(보유: ${maxQuantity}개)</span>
             </div>
@@ -1506,7 +1508,7 @@ function showItemTooltipAtPosition(slotIndex, x, y) {
 
     tooltip.innerHTML = `
         <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="tooltip-icon">${item.icon}</span>
+            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
             <span class="tooltip-name">${item.name}</span>
         </div>
         <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>
