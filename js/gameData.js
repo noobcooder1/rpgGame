@@ -27,7 +27,7 @@ const MAPS = {
         unlockCondition: null,
 
         // 등장 NPC
-        npcs: ['instructor1', 'instructor2', 'instructor3', 'instructor4', 'shopkeeper', 'doctor', 'trainee1', 'trainee2', 'trainee3', 'trainee4', 'senior_instructor'],
+        npcs: ['instructor1', 'instructor2', 'instructor3', 'instructor4', 'shopkeeper', 'doctor', 'trainee1', 'trainee2', 'trainee3', 'trainee4', 'senior_instructor', 'mechanist'],
 
         // (휴식처X) 탐사로 획득 가능한 아이템
         exploreItems: [
@@ -65,8 +65,8 @@ const MAPS = {
                 canExplore: false,
                 canBattle: false,
                 npcs: ['instructor1'],
-                // 훈련장입구에서 이동가능한 지역: 초급훈련장, 중급훈련장, 상급훈련장, 휴식처, 상점, 상급교관의집, 다른맵(버려진마을, 이상한숲 등)
-                connections: ['beginner_field', 'intermediate_field', 'advanced_field', 'rest_area', 'shop', 'senior_instructor_house'],
+                // 훈련장입구에서 이동가능한 지역: 초급훈련장, 중급훈련장, 상급훈련장, 휴식처, 상점, 상급교관의집, 수련의방, 다른맵(버려진마을, 이상한숲 등)
+                connections: ['beginner_field', 'intermediate_field', 'advanced_field', 'rest_area', 'shop', 'senior_instructor_house', 'training_room'],
                 worldConnections: ['village', 'forest']  // 다른 맵으로 이동 가능
             },
 
@@ -156,6 +156,26 @@ const MAPS = {
                 connections: ['entrance'],
                 hasSpecialQuests: true,
                 hasSpecialEvents: true
+            },
+
+            // 8. 수련의 방
+            training_room: {
+                id: 'training_room',
+                name: '수련의 방',
+                hiddenName: '???',  // 잠금 상태일 때 표시할 이름
+                description: '기계공이라는 NPC가 한 명 존재하는 특별한 방입니다. 임의로 전투 불가, 탐사 불가합니다.',
+                actions: ['move', 'talk'],
+                canExplore: false,
+                canBattle: false,
+                npcs: ['mechanist'],
+                connections: ['entrance'],
+                // 수련의 방 특수 설정
+                isTrainingRoom: true,
+                // 상급교관의 두 번째 퀘스트를 받아야 접근 가능
+                unlockCondition: 'senior_quest_2',
+                // 첫 입장 시 강제전투 (훈련용 마법골렘)
+                forcedBattleOnFirstEntry: true,
+                forcedBattleMonster: 'training_magic_golem'
             }
         },
         defaultLocation: 'entrance'
@@ -2622,6 +2642,34 @@ const MONSTERS = {
         // 5% 확률로 자가수복 특성 보유
         possibleTraits: [{ id: 'self_repair', chance: 0.05, level: 1 }]
     },
+    // 수련의 방 - 훈련용 마법골렘
+    training_magic_golem: {
+        id: 'training_magic_golem',
+        name: '훈련용 마법골렘',
+        type: 'normal',
+        tier: 5,
+        hp: 350, mp: 80,
+        pAtk: 15, mAtk: 25, pDef: 15, mDef: 12,
+        damageType: 'magical',
+        exp: 200, gold: 150,
+        drops: [
+            { item: 'metal_piece', chance: 0.80 },
+            { item: 'golem_essence', chance: 0.05 }
+        ],
+        emoji: '🔮',
+        image: 'assets/monsters/training_magic_golem.png',
+        skills: [
+            { skillRef: 'fireball', level: 3 },
+            { skillRef: 'lightning_bolt', level: 2 }
+        ],
+        aiPattern: {
+            attack: 40,
+            skill: 45,
+            defend: 15,
+            mpRegenPercent: 5
+        },
+        possibleTraits: [{ id: 'meditation', chance: 0.1, level: 2 }]
+    },
 
     // ===== 대련 교관 몬스터 (레거시 - 아래 SPAR 섹션의 정의가 이 정의를 덮어씁니다) =====
     // 초급훈련장 - 훈련교관2 (궁수)
@@ -4293,6 +4341,242 @@ const MONSTERS = {
             victory: '아직 나를 이기기엔 역부족이군.',
             defeat: '놀랍군... 네가 이겼다.'
         }
+    },
+
+    // ===== 수련생 대련 몬스터 =====
+    // 수련생1 (초급훈련장)
+    spar_trainee1: {
+        id: 'spar_trainee1',
+        name: '수련생1',
+        type: 'spar',
+        tier: 2,
+        hp: 120, maxHp: 120,
+        mp: 20, maxMp: 20,
+        pAtk: 12, mAtk: 0,
+        pDef: 5, mDef: 3,
+        efficiency: 2, evasion: 2,
+        exp: 0, gold: 0,
+        drops: [],
+        emoji: '👦',
+        image: 'assets/monsters/spar_trainee1.jpg',
+        isSpar: true,
+        sparClass: 'trainee',
+        aiPattern: { attack: 70, skill: 10, defend: 20, mpRegenPercent: 2 },
+        dialogues: {
+            start: '저도 열심히 훈련했어요! 한번 해봐요!',
+            victory: '이번엔 제가 이겼네요! 더 노력해요!',
+            defeat: '우와, 정말 강하시네요! 많이 배웠어요!'
+        }
+    },
+    // 수련생2 (중급훈련장)
+    spar_trainee2: {
+        id: 'spar_trainee2',
+        name: '수련생2',
+        type: 'spar',
+        tier: 3,
+        hp: 180, maxHp: 180,
+        mp: 30, maxMp: 30,
+        pAtk: 18, mAtk: 5,
+        pDef: 8, mDef: 6,
+        efficiency: 3, evasion: 3,
+        exp: 0, gold: 0,
+        drops: [],
+        emoji: '👧',
+        image: 'assets/monsters/spar_trainee2.jpg',
+        isSpar: true,
+        sparClass: 'trainee',
+        aiPattern: { attack: 65, skill: 15, defend: 20, mpRegenPercent: 2 },
+        dialogues: {
+            start: '준비됐어요? 봐주지 않을 거예요!',
+            victory: '아직 한참 멀었네요. 더 훈련하세요!',
+            defeat: '인정해요... 당신이 더 강하네요.'
+        }
+    },
+    // 수련생3 (상급훈련장)
+    spar_trainee3: {
+        id: 'spar_trainee3',
+        name: '수련생3',
+        type: 'spar',
+        tier: 4,
+        hp: 250, maxHp: 250,
+        mp: 40, maxMp: 40,
+        pAtk: 22, mAtk: 0,
+        pDef: 12, mDef: 8,
+        efficiency: 5, evasion: 4,
+        exp: 0, gold: 0,
+        drops: [],
+        emoji: '🧒',
+        image: 'assets/monsters/spar_trainee3.jpg',
+        isSpar: true,
+        sparClass: 'trainee',
+        aiPattern: { attack: 60, skill: 20, defend: 20, mpRegenPercent: 3 },
+        dialogues: {
+            start: '상급훈련장까지 올라오다니, 실력을 보여줘요!',
+            victory: '아직은 내가 위인가 봐요.',
+            defeat: '대단하네요... 실력을 인정합니다.'
+        }
+    },
+    // 수련생4 (상급훈련장)
+    spar_trainee4: {
+        id: 'spar_trainee4',
+        name: '수련생4',
+        type: 'spar',
+        tier: 4,
+        hp: 280, maxHp: 280,
+        mp: 40, maxMp: 40,
+        pAtk: 24, mAtk: 0,
+        pDef: 14, mDef: 10,
+        efficiency: 5, evasion: 5,
+        exp: 0, gold: 0,
+        drops: [],
+        emoji: '👱',
+        image: 'assets/monsters/spar_trainee4.jpg',
+        isSpar: true,
+        sparClass: 'trainee',
+        aiPattern: { attack: 55, skill: 25, defend: 20, mpRegenPercent: 3 },
+        dialogues: {
+            start: '고참 수련생의 실력을 보여주지!',
+            victory: '아직 부족하군. 더 수련하게나.',
+            defeat: '이런... 다른 지역으로 떠나기 전에 좋은 경험이었어.'
+        }
+    }
+};
+
+// ============================================
+// 📜 퀘스트 정의
+// ============================================
+
+const QUESTS = {
+    // ===== 훈련교관2 퀘스트 (궁수 계열) =====
+    inst2_quest1: {
+        id: 'inst2_quest1',
+        name: '낡은 허수아비 10기 처치하기',
+        description: '초급훈련장의 낡은 허수아비 10마리를 처치하세요.',
+        npcId: 'instructor2',
+        objective: { type: 'kill', target: 'old_scarecrow', count: 10, current: 0 },
+        rewards: { exp: 120, gold: 75, items: [] },
+        order: 1
+    },
+    inst2_quest2: {
+        id: 'inst2_quest2',
+        name: '일반 허수아비 5기 처치하기',
+        description: '초급훈련장의 일반 허수아비 5마리를 처치하세요.',
+        npcId: 'instructor2',
+        objective: { type: 'kill', target: 'scarecrow', count: 5, current: 0 },
+        rewards: { exp: 160, gold: 100, items: [{ id: 'hp_potion', quantity: 3 }] },
+        order: 2,
+        prerequisite: 'inst2_quest1'  // 1번 퀘스트 완료 후 수주 가능
+    },
+    inst2_quest3: {
+        id: 'inst2_quest3',
+        name: '수련생1과의 대련에서 승리하기',
+        description: '초급훈련장의 수련생1과 대련하여 승리하세요.',
+        npcId: 'instructor2',
+        objective: { type: 'spar', target: 'spar_trainee1', count: 1, current: 0 },
+        rewards: { exp: 200, gold: 125, items: [{ id: 'hp_potion', quantity: 3 }, { id: 'mp_potion', quantity: 3 }] },
+        order: 3,
+        prerequisite: 'inst2_quest2'
+    },
+
+    // ===== 훈련교관3 퀘스트 (마법사 계열) =====
+    inst3_quest1: {
+        id: 'inst3_quest1',
+        name: '튼튼한 허수아비 5기 처치하기',
+        description: '중급훈련장의 튼튼한 허수아비 5마리를 처치하세요.',
+        npcId: 'instructor3',
+        objective: { type: 'kill', target: 'strong_scarecrow', count: 5, current: 0 },
+        rewards: { exp: 240, gold: 120, items: [] },
+        order: 1
+    },
+    inst3_quest2: {
+        id: 'inst3_quest2',
+        name: '거대 허수아비 1기 처치하기',
+        description: '중급훈련장의 거대 허수아비 1마리를 처치하세요.',
+        npcId: 'instructor3',
+        objective: { type: 'kill', target: 'giant_scarecrow', count: 1, current: 0 },
+        rewards: { exp: 400, gold: 170, items: [{ id: 'hp_potion', quantity: 3 }] },
+        order: 2,
+        prerequisite: 'inst3_quest1'
+    },
+    inst3_quest3: {
+        id: 'inst3_quest3',
+        name: '수련생2와의 대련에서 승리하기',
+        description: '중급훈련장의 수련생2와 대련하여 승리하세요.',
+        npcId: 'instructor3',
+        objective: { type: 'spar', target: 'spar_trainee2', count: 1, current: 0 },
+        rewards: { exp: 500, gold: 225, items: [{ id: 'hp_potion', quantity: 3 }, { id: 'mp_potion', quantity: 3 }] },
+        order: 3,
+        prerequisite: 'inst3_quest2'
+    },
+
+    // ===== 훈련교관4 퀘스트 (도적 계열) =====
+    inst4_quest1: {
+        id: 'inst4_quest1',
+        name: '훈련용 로봇 5기 처치하기',
+        description: '상급훈련장의 훈련용 로봇 5기를 처치하세요.',
+        npcId: 'instructor4',
+        objective: { type: 'kill', target: 'training_robot', count: 5, current: 0 },
+        rewards: { exp: 500, gold: 250, items: [] },
+        order: 1
+    },
+    inst4_quest2: {
+        id: 'inst4_quest2',
+        name: '훈련용골렘 1기 처치하기',
+        description: '상급훈련장의 훈련용 골렘 1기를 처치하세요.',
+        npcId: 'instructor4',
+        objective: { type: 'kill', target: 'training_golem', count: 1, current: 0 },
+        rewards: { exp: 600, gold: 285, items: [] },
+        order: 2,
+        prerequisite: 'inst4_quest1'
+    },
+    inst4_quest3: {
+        id: 'inst4_quest3',
+        name: '수련생3, 4와의 대련에서 승리하기',
+        description: '상급훈련장의 수련생3과 수련생4를 각각 대련하여 승리하세요.',
+        npcId: 'instructor4',
+        objective: { type: 'spar_multi', targets: ['spar_trainee3', 'spar_trainee4'], completed: {}, count: 2, current: 0 },
+        rewards: { exp: 700, gold: 305, items: [{ id: 'hp_potion', quantity: 3 }, { id: 'mp_potion', quantity: 3 }] },
+        order: 3,
+        prerequisite: 'inst4_quest2'
+    },
+
+    // ===== 상급교관 퀘스트 (전사 계열) =====
+    senior_quest1: {
+        id: 'senior_quest1',
+        name: '훈련용 골렘 10기 처치하기',
+        description: '훈련용 골렘을 10기 처치하세요.',
+        npcId: 'senior_instructor',
+        objective: { type: 'kill', target: 'training_golem', count: 10, current: 0 },
+        rewards: { exp: 1100, gold: 500, items: [] },
+        order: 1
+    },
+    senior_quest2: {
+        id: 'senior_quest2',
+        name: '훈련용 마법골렘 1기 처치하기',
+        description: '수련의 방에서 훈련용 마법골렘 1기를 처치하세요.',
+        npcId: 'senior_instructor',
+        objective: { type: 'kill', target: 'training_magic_golem', count: 1, current: 0 },
+        rewards: { exp: 1500, gold: 600, items: [{ id: 'power_elixir', quantity: 1 }] },
+        order: 2,
+        prerequisite: 'senior_quest1'
+    },
+
+    // ===== 기계공 퀘스트 =====
+    mechanist_golem_research: {
+        id: 'mechanist_golem_research',
+        name: '훈련용 마도골렘 연구지원',
+        description: '기계공에게 3000골드와 금속조각 20개, 나뭇조각 20개를 전달하세요.',
+        npcId: 'mechanist',
+        objective: {
+            type: 'multi_delivery',
+            requirements: [
+                { type: 'gold', amount: 3000 },
+                { type: 'item', itemId: 'metal_piece', count: 20 },
+                { type: 'item', itemId: 'wood_piece', count: 20 }
+            ]
+        },
+        rewards: { exp: 2500, gold: 0, items: [{ id: 'golem_essence', quantity: 1 }] },
+        order: 1
     }
 };
 
@@ -4350,34 +4634,51 @@ const NPCS = {
         name: '훈련교관1',
         location: 'training.entrance',
         emoji: '🧑‍🏫',
-        description: '훈련장 입구를 지키는 교관입니다.',
+        description: '훈련장 입구를 지키는 교관입니다. 처음 방문하는 모험가에게 선물을 줍니다.',
         dialogues: {
             greeting: '어서 오게, 신입이군. 이곳은 훈련장이야. 기초를 다지기에 좋은 곳이지.',
+            first_greeting: '오호 자네 훈련장에는 처음이로군? 훈련장에 처음왔으니 힘내라는 의미로 주는 선물일세. 열심히 훈련해서 대단한 모험가가 되길바라네!',
             info: '훈련장 곳곳을 돌아다니며 훈련하게. 초급, 중급, 상급 훈련장이 있고, 휴식처와 상점도 있어.',
             quest: '아직 자네에게 줄 임무는 없네. 더 강해지고 오게.'
         },
         canGiveQuest: false,
-        canTrade: false
+        canTrade: false,
+        // 첫 대화 시 선물 지급
+        firstMeetGift: {
+            items: [
+                { id: 'hp_potion', quantity: 3 },
+                { id: 'mp_potion', quantity: 3 },
+                { id: 'bread', quantity: 5 },
+                { id: 'green_tea', quantity: 5 }
+            ]
+        }
     },
 
-    // 초급훈련장 - 훈련교관2
+    // 초급훈련장 - 훈련교관2 (궁수 계열)
     instructor2: {
         id: 'instructor2',
         name: '훈련교관2',
         location: 'training.beginner_field',
         emoji: '🏹',
         description: '초급훈련장을 담당하는 궁수 교관입니다. 활을 주무기로 다룹니다.',
+        job: 'archer',
         dialogues: {
             greeting: '초급훈련장에 온 것을 환영한다! 활을 다루는 법을 잘 익혀두게.',
             info: '여기서는 낡은 허수아비와 일반 허수아비를 상대할 수 있어. 기초를 다지기 좋지.',
-            quest: '허수아비 5마리를 처치해 보게. 그러면 내가 보상을 주겠네.',
-            spar: '내 실력을 시험해보고 싶은가? 좋아, 덤벼라!'
+            quest: '내가 줄 수 있는 퀘스트가 있지. 어떤 것을 해보겠나?',
+            quest_in_progress: '퀘스트를 잘 진행하고 있나? 화이팅이야!',
+            spar: '내 실력을 시험해보고 싶은가? 좋아, 덤벼라!',
+            spar_reject: '아직 나와 대련하기엔 너무 일러보이는군. 그 전에 나와 대련해도 문제없다는것을 증명해보게나.',
+            spar_victory_match: '이건 내가 모험할때 사용했던 활이라네, 자네라면 이 활을 더 유용하게 쓸 수 있을테지. 부디 잘 사용해주게.',
+            spar_victory_mismatch: '자네가 활을 다뤘더라면 좋았을텐데... 정말 아쉽군.'
         },
         canGiveQuest: true,
         canTrade: false,
         canSpar: true,
         sparMonster: 'spar_instructor2',
-        quests: ['defeat_scarecrows_5']
+        // 대련 조건: 모든 퀘스트 완료 필요
+        sparCondition: { allQuestsComplete: true },
+        quests: ['inst2_quest1', 'inst2_quest2', 'inst2_quest3']
     },
 
     // 초급훈련장 - 수련생1
@@ -4390,30 +4691,40 @@ const NPCS = {
         dialogues: {
             greeting: '안녕하세요! 저도 여기서 훈련 중이에요.',
             info: '허수아비가 생각보다 튼튼해요... 계속 연습해야겠어요!',
-            hint: '휴식처에서 쉬면 체력이 회복된다는 거 알고 계세요?'
+            hint: '휴식처에서 쉬면 체력이 회복된다는 거 알고 계세요?',
+            spar: '대련이요? 좋아요, 한번 해봐요!'
         },
         canGiveQuest: false,
-        canTrade: false
+        canTrade: false,
+        canSpar: true,
+        sparMonster: 'spar_trainee1',
+        isSparTrainee: true  // 수련생 대련은 퀘스트용 (보상 없음)
     },
 
-    // 중급훈련장 - 훈련교관3
+    // 중급훈련장 - 훈련교관3 (마법사 계열)
     instructor3: {
         id: 'instructor3',
         name: '훈련교관3',
         location: 'training.intermediate_field',
         emoji: '🔮',
         description: '중급훈련장을 담당하는 마법사 교관입니다. 마법공격을 합니다.',
+        job: 'mage',
         dialogues: {
             greeting: '중급훈련장에 온 것을 환영한다. 마법의 힘을 보여주겠다.',
             info: '튼튼한 허수아비와 거대 허수아비를 상대해야 해. 준비는 됐나?',
-            quest: '거대 허수아비를 3마리 처치해 보게.',
-            spar: '나와 겨뤄보겠다고? 마법의 위력을 보여주지.'
+            quest: '내가 줄 수 있는 퀘스트가 있지. 어떤 것을 해보겠나?',
+            quest_in_progress: '퀘스트를 잘 진행하고 있나? 마법의 힘을 믿게!',
+            spar: '나와 겨뤄보겠다고? 마법의 위력을 보여주지.',
+            spar_reject: '아직 나와 대련하기엔 너무 일러보이는군. 그 전에 나와 대련해도 문제없다는것을 증명해보게나.',
+            spar_victory_match: '이건 내가 모험할때 사용했던 지팡이라네, 자네라면 이 지팡이를 나보다도 유용하게 쓸 수 있을테지. 부디 잘 사용해주게.',
+            spar_victory_mismatch: '자네가 마법을 사용했으면 좋았을텐데... 정말 아쉽군.'
         },
         canGiveQuest: true,
         canTrade: false,
         canSpar: true,
         sparMonster: 'spar_instructor3',
-        quests: ['defeat_giant_scarecrows_3']
+        sparCondition: { allQuestsComplete: true },
+        quests: ['inst3_quest1', 'inst3_quest2', 'inst3_quest3']
     },
 
     // 중급훈련장 - 수련생2
@@ -4426,30 +4737,40 @@ const NPCS = {
         dialogues: {
             greeting: '아, 새로운 얼굴이네요! 저도 여기서 훈련 중이에요.',
             info: '거대 허수아비는 정말 강해요. 방어도 중요하다는 걸 배웠어요.',
-            hint: '상점에서 물약을 사두면 좋아요!'
+            hint: '상점에서 물약을 사두면 좋아요!',
+            spar: '대련? 좋아요, 준비됐어요!'
         },
         canGiveQuest: false,
-        canTrade: false
+        canTrade: false,
+        canSpar: true,
+        sparMonster: 'spar_trainee2',
+        isSparTrainee: true
     },
 
-    // 상급훈련장 - 훈련교관4
+    // 상급훈련장 - 훈련교관4 (도적 계열)
     instructor4: {
         id: 'instructor4',
         name: '훈련교관4',
         location: 'training.advanced_field',
         emoji: '🗡️',
         description: '상급훈련장을 총괄하는 도적 교관입니다. 재빠르고, 물리공격을 합니다.',
+        job: 'skirmisher',
         dialogues: {
             greeting: '상급훈련장이다. 빠르고 정확한 공격이 필요하지.',
             info: '훈련용 로봇과 훈련용 골렘을 상대해야 한다. 골렘은 보스급이니 각오해라.',
-            quest: '훈련용 골렘을 1마리 처치해 보게. 그러면 특별한 보상을 주겠다.',
-            spar: '내 속도를 따라올 수 있겠나? 한번 해보자.'
+            quest: '내가 줄 수 있는 퀘스트가 있지. 어떤 것을 해보겠나?',
+            quest_in_progress: '퀘스트를 잘 진행하고 있나? 빠르게 처리하게!',
+            spar: '내 속도를 따라올 수 있겠나? 한번 해보자.',
+            spar_reject: '아직 나와 대련하기엔 너무 일러보이는군. 그 전에 나와 대련해도 문제없다는것을 증명해보게나.',
+            spar_victory_match: '이건 내가 모험할때 사용했던 단검이라네, 자네라면 이 단검을 나보다도 유용하게 쓸 수 있을테지. 부디 잘 사용해주게.',
+            spar_victory_mismatch: '자네가 단검을 다뤘더라면 좋았을텐데... 정말 아쉽군.'
         },
         canGiveQuest: true,
         canTrade: false,
         canSpar: true,
         sparMonster: 'spar_instructor4',
-        quests: ['defeat_training_golem']
+        sparCondition: { allQuestsComplete: true },
+        quests: ['inst4_quest1', 'inst4_quest2', 'inst4_quest3']
     },
 
     // 상급훈련장 - 수련생3
@@ -4462,10 +4783,14 @@ const NPCS = {
         dialogues: {
             greeting: '여기까지 온 거 보니 실력이 좀 되시나 봐요.',
             info: '훈련용 로봇은 공격이 빠르고, 골렘은 방어가 단단해요.',
-            hint: '스킬을 적절히 사용하면 훨씬 수월해요!'
+            hint: '스킬을 적절히 사용하면 훨씬 수월해요!',
+            spar: '상급훈련장의 실력을 보여드릴게요!'
         },
         canGiveQuest: false,
-        canTrade: false
+        canTrade: false,
+        canSpar: true,
+        sparMonster: 'spar_trainee3',
+        isSparTrainee: true
     },
 
     // 상급훈련장 - 수련생4
@@ -4478,10 +4803,14 @@ const NPCS = {
         dialogues: {
             greeting: '골렘... 정말 강하더라고요. 저도 아직 이기기 힘들어요.',
             info: '저도 곧 다른 지역으로 떠날 거예요. 버려진 마을이 다음 목적지래요.',
-            hint: '상급교관님께 가면 특별한 퀘스트를 받을 수 있대요.'
+            hint: '상급교관님께 가면 특별한 퀘스트를 받을 수 있대요.',
+            spar: '고참의 실력을 보여주지!'
         },
         canGiveQuest: false,
-        canTrade: false
+        canTrade: false,
+        canSpar: true,
+        sparMonster: 'spar_trainee4',
+        isSparTrainee: true
     },
 
     // 휴식처 - 의사
@@ -4521,26 +4850,64 @@ const NPCS = {
         shopItems: ['plain_armor_warrior', 'strong_leather_item', 'hp_potion', 'mp_potion', 'herb']
     },
 
-    // 상급교관의 집 - 상급교관
+    // 상급교관의 집 - 상급교관 (전사 계열)
     senior_instructor: {
         id: 'senior_instructor',
         name: '상급교관',
         location: 'training.senior_instructor_house',
         emoji: '⚔️',
         description: '훈련장의 최고 전사 교관입니다. 물리공격을 합니다. 체력이 30% 미만으로 떨어지면 대화를 합니다.',
+        job: 'warrior',
         dialogues: {
             greeting: '여기까지 왔다니 대단하군. 나는 상급교관이다.',
             info: '나는 특별한 임무를 줄 수 있네. 준비가 되면 말해주게.',
-            quest: '훈련장을 졸업하고 싶다면 내 시험을 통과해야 하네. 어떤가, 도전해볼 텐가?',
+            quest: '내가 줄 수 있는 퀘스트가 있지. 어떤 것을 해보겠나?',
+            quest_in_progress: '퀘스트를 잘 진행하고 있나? 기대하고 있겠네.',
             spar: '한 수 가르쳐주지. 준비됐나?',
+            spar_reject: '아직 나와 대련하기엔 너무 일러보이는군. 그 전에 충분한 훈련을 하고 오게.',
             special_event: '오늘은 특별한 날이군. 너에게 특별한 선물을 주겠네.'
         },
         canGiveQuest: true,
         canTrade: false,
         canSpar: true,
         sparMonster: 'spar_senior_instructor',
-        quests: ['training_graduation_exam'],
+        // 대련 조건: 훈련교관 2,3,4 대련 승리 + 상급교관 퀘스트 모두 완료
+        sparCondition: {
+            allQuestsComplete: true,
+            requiredSpars: ['spar_instructor2', 'spar_instructor3', 'spar_instructor4']
+        },
+        quests: ['senior_quest1', 'senior_quest2'],
         hasSpecialEvents: true
+    },
+
+    // 수련의 방 - 기계공
+    mechanist: {
+        id: 'mechanist',
+        name: '기계공',
+        location: 'training.training_room',
+        emoji: '🔧',
+        description: '수련의 방에서 골렘을 연구하는 기계공입니다. 간단한 마법재료를 판매합니다.',
+        dialogues: {
+            // 강제전투 패배 후 재방문 시
+            greeting_after_defeat: '어서오게. 저번에는 미안했네. 내가 만들고있는 골렘에 오류가 생겨서 말이야...',
+            // 강제전투 승리 시
+            greeting_after_victory: '잠깐 멈추게. 내가 미안하네. 내가 만들고있는 골렘에 문제가 생겼나보네.. 제발 부수지 말아주게...',
+            // 일반 인사 (이후 방문)
+            greeting: '어서오게. 골렘 연구가 한창이라네. 무엇이 필요한가?',
+            info: '나는 훈련용 마도골렘을 만들고 있다네. 재료가 좀 필요한데... 혹시 도와줄 수 있겠나?',
+            quest: '훈련용 마도골렘 연구를 돕고 싶다면, 3000골드와 금속조각 20개, 나뭇조각 20개를 가져다주게.',
+            quest_in_progress: '재료는 모았나? 3000골드와 금속조각 20개, 나뭇조각 20개가 필요하다네.',
+            quest_complete: '오오! 이 재료들이면 충분하겠군! 감사하네, 이건 내가 만든 골렘의 정수일세. 자네에게 도움이 될 걸세.',
+            farewell: '골렘 연구에 다시 들어가야겠군. 또 오게나.'
+        },
+        canGiveQuest: true,
+        canTrade: true,
+        quests: ['mechanist_golem_research'],
+        shopItems: [
+            { id: 'hp_potion', price: 15 },
+            { id: 'mp_potion', price: 20 },
+            { id: 'herb', price: 5 }
+        ]
     },
 
     // 휴식처 - 의사
@@ -4596,7 +4963,8 @@ const LOCATION_BACKGROUNDS = {
         advanced_field: 'assets/backgrounds/training/advanced_field.png',
         rest_area: 'assets/backgrounds/training/rest_area.png',
         shop: 'assets/backgrounds/training/shop.jpg',
-        senior_instructor_house: 'assets/backgrounds/training/senior_instructor_house.png'
+        senior_instructor_house: 'assets/backgrounds/training/senior_instructor_house.png',
+        training_room: 'assets/backgrounds/training/training_room.png'
     },
 
     // 버려진 마을 배경

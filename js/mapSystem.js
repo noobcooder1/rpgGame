@@ -15,6 +15,15 @@ var currentMapId = 'training';
 // 현재 맵 내 위치
 var currentLocationId = 'entrance';
 
+// 배경 이미지 로딩 상태 캐시
+const backgroundLoadCache = {
+    loaded: new Set(),
+    failed: new Set()
+};
+
+// 비동기 배경 로딩 경합 방지용 시퀀스
+let backgroundRequestSeq = 0;
+
 // 맵별 클리어 상태
 let mapClearStatus = {
     training: false,
@@ -287,8 +296,20 @@ function moveToLocation(locationId) {
         return false;
     }
 
-    // 보스방 진입 경고 체크 (고대유적은 정식 보스가 아니므로 경고 제외)
+    // 수련의 방 접근 제한 체크
     const targetLoc = map.locations[resolvedLocationId];
+    if (targetLoc && targetLoc.isTrainingRoom && targetLoc.unlockCondition === 'senior_quest_2') {
+        const hasQuest = player && player.quests && (
+            player.quests.senior_quest2 ||
+            (player.completedQuests && player.completedQuests.senior_quest2)
+        );
+        if (!hasQuest) {
+            addGameLog('🔒 아직 이 지역에 접근할 수 없습니다. 상급교관의 퀘스트를 먼저 진행하세요.');
+            return false;
+        }
+    }
+
+    // 보스방 진입 경고 체크 (고대유적은 정식 보스가 아니므로 경고 제외)
     if (targetLoc && targetLoc.isBossArea && !targetLoc.isAncientRuinsEncounter) {
         // 첫 진입 여부 확인
         const bossKey = `${map.id}_${resolvedLocationId}_boss_warned`;
@@ -327,15 +348,23 @@ function executeLocationMove(resolvedLocationId) {
     updateLocationUI();
     addGameLog(`🚶 ${newLoc.name}(으)로 이동했습니다.`);
 
-    // 고대유적 특수 조우 시스템 (스켈레톤 나이트 + 워리어 + 메이지 전투 → 고대 수호자 대화)
-    if (newLoc && newLoc.isAncientRuinsEncounter) {
-        // 고대유적 클리어 여부 확인
-        if (!player.ancientRuinsCleared) {
+    // 수련의 방 첫 진입 시 강제전투 (훈련용 마법골렘)
+    if (newLoc && newLoc.isTrainingRoom && newLoc.forcedBattleOnFirstEntry) {
+        if (!player.trainingRoomVisited) {
             setTimeout(() => {
-                showAncientRuinsEncounter();
+                showTrainingRoomEncounter();
             }, 500);
             return true;
         }
+    }
+
+    // 고대유적 특수 조우 시스템 (스켈레톤 나이트 + 워리어 + 메이지 전투 → 고대 수호자 대화)
+    // 고대유적 클리어 여부 확인
+    if (newLoc && newLoc.isAncientRuinsEncounter && !player.ancientRuinsCleared) {
+        setTimeout(() => {
+            showAncientRuinsEncounter();
+        }, 500);
+        return true;
     }
 
     // 보스방 진입 시 보스 대화 및 전투 시작
@@ -967,15 +996,73 @@ function updateMapUI() {
 
     if (bgElement && map.background) {
         const bgPath = `assets/backgrounds/${map.background}`;
-        bgElement.style.backgroundImage = `url('${bgPath}')`;
-        bgElement.style.backgroundSize = 'cover';
-        bgElement.style.backgroundPosition = 'center';
+        setElementBackgroundImageSafe(bgElement, bgPath, '맵 기본 배경');
     }
 
     const mapNameDisplay = document.getElementById('currentMapName');
     if (mapNameDisplay) {
         mapNameDisplay.textContent = map.name;
     }
+}
+
+/**
+ * 배경 이미지 로딩을 안전하게 적용합니다.
+ * 이미지가 없거나 로딩 실패 시 그라데이션 폴백을 적용합니다.
+ * @param {HTMLElement} element - 배경을 적용할 요소
+ * @param {string} imagePath - 배경 이미지 경로
+ * @param {string} contextLabel - 로그 구분용 컨텍스트
+ */
+function setElementBackgroundImageSafe(element, imagePath, contextLabel) {
+    if (!element) return;
+
+    const fallbackBackground = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+    const requestId = String(++backgroundRequestSeq);
+    element.dataset.bgRequestId = requestId;
+
+    // 공통 배경 스타일은 항상 유지
+    element.style.backgroundSize = 'cover';
+    element.style.backgroundPosition = 'center';
+    element.style.backgroundRepeat = 'no-repeat';
+
+    if (!imagePath) {
+        element.style.backgroundImage = fallbackBackground;
+        return;
+    }
+
+    if (backgroundLoadCache.failed.has(imagePath)) {
+        element.style.backgroundImage = fallbackBackground;
+        return;
+    }
+
+    if (backgroundLoadCache.loaded.has(imagePath)) {
+        element.style.backgroundImage = `url('${imagePath}')`;
+        return;
+    }
+
+    const image = new Image();
+    image.onload = () => {
+        backgroundLoadCache.loaded.add(imagePath);
+        backgroundLoadCache.failed.delete(imagePath);
+
+        // 가장 최근 요청만 반영
+        if (element.dataset.bgRequestId !== requestId) return;
+
+        element.style.backgroundImage = `url('${imagePath}')`;
+        console.log(`🖼️ 배경 적용: ${imagePath} (${contextLabel})`);
+    };
+
+    image.onerror = () => {
+        backgroundLoadCache.failed.add(imagePath);
+        backgroundLoadCache.loaded.delete(imagePath);
+
+        // 가장 최근 요청만 반영
+        if (element.dataset.bgRequestId !== requestId) return;
+
+        element.style.backgroundImage = fallbackBackground;
+        console.warn(`⚠️ 배경 로딩 실패: ${imagePath} (${contextLabel})`);
+    };
+
+    image.src = imagePath;
 }
 
 /**
@@ -1030,17 +1117,7 @@ function updateLocationBackground(map, location) {
         backgroundImage = `assets/backgrounds/${map.background}`;
     }
 
-    // 배경 적용
-    if (backgroundImage) {
-        gameBackground.style.backgroundImage = `url('${backgroundImage}')`;
-        gameBackground.style.backgroundSize = 'cover';
-        gameBackground.style.backgroundPosition = 'center';
-        gameBackground.style.backgroundRepeat = 'no-repeat';
-        console.log(`🖼️ 배경 적용: ${backgroundImage}`);
-    } else {
-        // 기본 배경 (그라데이션)
-        gameBackground.style.backgroundImage = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
-    }
+    setElementBackgroundImageSafe(gameBackground, backgroundImage, `${map.id}/${location.id}`);
 }
 
 /**
@@ -1230,9 +1307,24 @@ function showMapSelection() {
                 if (loc) {
                     const btn = document.createElement('button');
                     btn.className = 'map-btn';
+
+                    // 수련의 방: 잠금 상태이면 ??? 표시
+                    let displayName = loc.name;
+                    let isLocked = false;
+                    if (loc.isTrainingRoom && loc.unlockCondition === 'senior_quest_2') {
+                        const hasQuest = player && player.quests && (
+                            player.quests.senior_quest2 ||
+                            (player.completedQuests && player.completedQuests.senior_quest2)
+                        );
+                        if (!hasQuest) {
+                            displayName = loc.hiddenName || '???';
+                            isLocked = true;
+                        }
+                    }
+
                     btn.innerHTML = `
-                        <span class="map-icon">📍</span>
-                        <span class="map-name">${loc.name}</span>
+                        <span class="map-icon">${isLocked ? '🔒' : '📍'}</span>
+                        <span class="map-name">${displayName}</span>
                     `;
                     btn.onclick = () => {
                         moveToLocation(locId);
@@ -2054,4 +2146,115 @@ function addItemToInventory(item) {
 function canMineHere() {
     const location = getCurrentLocation();
     return location && MINING_ORES[location.id];
+}
+
+// ============================================
+// 🏠 수련의 방 시스템
+// ============================================
+
+/**
+ * 수련의 방 첫 진입 연출을 표시합니다.
+ */
+function showTrainingRoomEncounter() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🔮</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name">???</div>
+                <div class="boss-dialog-text">수련의 방은 꽤나 어둡다. 어둠이 슬슬 익숙해지자 주변의 모습이 눈에 들어온다. 끼기긱 끼기긱 불길한 기계 소리가 들려온다. 소리의 방향을 확인하니, 거대한 빛나는 골렘 하나가 나에게 달려든다!</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="startTrainingRoomForcedBattle()">
+                ⚔️ 전투 시작!
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    addGameLog('🔮 수련의 방에 진입하자 거대한 훈련용 마법골렘이 다가옵니다!');
+}
+
+/**
+ * 수련의 방 강제전투를 시작합니다.
+ */
+function startTrainingRoomForcedBattle() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    // 전투 승리/패배 후 처리를 위한 플래그
+    window._trainingRoomPostBattle = true;
+
+    addGameLog('⚔️ 훈련용 마법골렘과의 강제전투!');
+    if (typeof startBattle === 'function') {
+        startBattle(['training_magic_golem']);
+        // 도주 불가
+        if (typeof battleState !== 'undefined') {
+            battleState.canEscape = false;
+        }
+    }
+}
+
+/**
+ * 수련의 방 전투 후 처리 (승리/패배 모두)
+ * endBattle에서 호출됩니다.
+ * @param {string} result - 'victory' or 'defeat'
+ */
+function handleTrainingRoomPostBattle(result) {
+    window._trainingRoomPostBattle = false;
+    player.trainingRoomVisited = true;
+
+    if (result === 'victory') {
+        player.trainingRoomVictory = true;
+        // 승리 시 기계공의 대사 표시
+        setTimeout(() => {
+            showTrainingRoomMechanistDialogue('victory');
+        }, 1000);
+    }
+    // 패배 시에는 noDeathZone 규칙에 따라 휴식처로 이동됨
+    // trainingRoomVisited가 true로 설정되었으므로 다음 방문 시 강제전투 없음
+}
+
+/**
+ * 수련의 방 전투 후 기계공 대사를 표시합니다.
+ */
+function showTrainingRoomMechanistDialogue(result) {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+
+    const npc = typeof NPCS !== 'undefined' ? NPCS['mechanist'] : null;
+    const dialogue = result === 'victory'
+        ? (npc ? npc.dialogues.greeting_after_victory : '잠깐 멈추게. 내가 미안하네. 내가 만들고있는 골렘에 문제가 생겼나보네.. 제발 부수지 말아주게...')
+        : (npc ? npc.dialogues.greeting_after_defeat : '어서오게. 저번에는 미안했네. 내가 만들고있는 골렘에 오류가 생겨서 말이야...');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'boss-dialog-modal';
+
+    overlay.innerHTML = `
+        <div class="boss-dialog-content">
+            <div class="boss-dialog-portrait">🔧</div>
+            <div class="boss-dialog-box">
+                <div class="boss-dialog-name">기계공</div>
+                <div class="boss-dialog-text">${dialogue}</div>
+            </div>
+            <div class="boss-dialog-continue" onclick="closeTrainingRoomDialogue()">
+                확인
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+}
+
+/**
+ * 수련의 방 대화를 닫습니다.
+ */
+function closeTrainingRoomDialogue() {
+    const existing = document.querySelector('.boss-dialog-modal');
+    if (existing) existing.remove();
+    updateLocationUI();
 }

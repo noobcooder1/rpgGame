@@ -65,6 +65,9 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    image-rendering: auto;
+    transform: translateZ(0);
+    will-change: background-image;
     transition: background-image 0.5s ease-in-out;
 }
 
@@ -3849,9 +3852,26 @@ body {
     width: 80px;
     height: 80px;
     object-fit: cover;
+    object-position: center center;
     border-radius: 8px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    image-rendering: auto;
+    backface-visibility: hidden;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.monster-card .monster-sprite.sprite-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    font-size: 44px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
 }
 
 .monster-card .monster-info {
@@ -5445,10 +5465,110 @@ body {
     display: inline-block;
 }
 
-.equip-icon .item-img, .item-icon .item-img, .tooltip-icon .item-img, 
-.context-menu-icon .item-img, .discard-item-icon .item-img, 
+.equip-icon .item-img, .item-icon .item-img, .tooltip-icon .item-img,
+.context-menu-icon .item-img, .discard-item-icon .item-img,
 .shop-item-icon .item-img, .handover-item-icon .item-img {
     max-width: 100%;
     max-height: 100%;
     vertical-align: middle;
+}
+
+/* ========== 퀘스트 목록 UI ========== */
+.quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quest-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
+}
+
+.quest-item .quest-status {
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.quest-item .quest-name {
+    flex: 1;
+    font-size: 0.95em;
+    color: #e0e0e0;
+}
+
+.quest-item .quest-label {
+    font-size: 0.8em;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.quest-item.quest-available {
+    cursor: pointer;
+    border-color: rgba(76, 175, 80, 0.4);
+    background: rgba(76, 175, 80, 0.08);
+}
+
+.quest-item.quest-available:hover {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.6);
+    transform: translateY(-1px);
+}
+
+.quest-item.quest-active {
+    border-color: rgba(255, 193, 7, 0.4);
+    background: rgba(255, 193, 7, 0.08);
+}
+
+.quest-item.quest-completed {
+    opacity: 0.6;
+    border-color: rgba(76, 175, 80, 0.2);
+}
+
+.quest-item.quest-locked {
+    opacity: 0.4;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 아이템 이미지 일반 속성 */
+.item-img {
+    object-fit: contain;
+    mix-blend-mode: screen;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+    display: block;
+    margin: 0 auto;
+}
+
+/* 인벤토리 슬롯 및 주요 칸 (기본 크게 나오는 영역) */
+.equip-icon .item-img, .item-icon .item-img, .shop-item-icon .item-img {
+    width: 80%;
+    height: 80%;
+    max-width: 48px;
+    max-height: 48px;
+}
+
+/* 작은 크기로 나와야 하는 툴팁, 아이템 버리기 창 등 */
+.tooltip-icon .item-img, .discard-item-icon .item-img {
+    width: 28px;
+    height: 28px;
+}
+
+/* 가장 작게 나와야 하는 메뉴 항목(컨텍스트 메뉴), 퀘스트 전달 창 등 */
+.context-menu-icon .item-img, .handover-item-icon .item-img {
+    width: 20px;
+    height: 20px;
+}
+
+/* 부모 컨테이너 기본값 (플렉스 레이아웃 유지, 폭주 방지) */
+.equip-icon, .item-icon, .tooltip-icon, 
+.context-menu-icon, .discard-item-icon, 
+.shop-item-icon, .handover-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

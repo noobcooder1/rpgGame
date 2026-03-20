@@ -468,6 +468,33 @@ function showNPCConversation(npc) {
     const overlay = document.createElement('div');
     overlay.className = 'npc-modal-overlay';
 
+    // 훈련교관1 첫 대화 선물 처리
+    let greetingText = npc.dialogues.greeting;
+    if (npc.id === 'instructor1' && npc.firstMeetGift && !player.instructor1GiftReceived) {
+        greetingText = npc.dialogues.first_greeting || greetingText;
+        player.instructor1GiftReceived = true;
+        // 선물 지급
+        if (npc.firstMeetGift.items && typeof addItemToInventory === 'function') {
+            npc.firstMeetGift.items.forEach(gift => {
+                addItemToInventory(gift.id, gift.quantity || 1);
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[gift.id] : null;
+                const itemName = itemData ? itemData.name : gift.id;
+                addGameLog(`🎁 ${itemName} x${gift.quantity || 1}을(를) 받았습니다!`);
+            });
+        }
+    }
+
+    // 기계공 첫 방문 시 특수 인사
+    if (npc.id === 'mechanist') {
+        if (player.trainingRoomVictory && !player.mechanistGreeted) {
+            greetingText = npc.dialogues.greeting_after_victory;
+            player.mechanistGreeted = true;
+        } else if (player.trainingRoomVisited && !player.trainingRoomVictory && !player.mechanistGreeted) {
+            greetingText = npc.dialogues.greeting_after_defeat;
+            player.mechanistGreeted = true;
+        }
+    }
+
     // 대화 옵션 생성
     let optionsHtml = '';
 
@@ -484,18 +511,42 @@ function showNPCConversation(npc) {
     if (npc.canGiveQuest) {
         const activeQuest = getNpcActiveQuest(npc.id);
         if (activeQuest) {
-            // 퀘스트 진행 중: 완료 버튼 강조
-            optionsHtml += `
-                <button class="dialog-option-btn quest-complete-btn" onclick="showQuestHandoverUI('${npc.id}')">
-                    ✅ 퀘스트를 완료했어요
-                </button>
-            `;
+            // kill/spar 타입 퀘스트 자동 완료 체크
+            if (activeQuest.objective && (activeQuest.objective.type === 'kill' || activeQuest.objective.type === 'spar' || activeQuest.objective.type === 'spar_multi')) {
+                const isComplete = (activeQuest.objective.current || 0) >= (activeQuest.objective.count || 1);
+                if (isComplete) {
+                    optionsHtml += `
+                        <button class="dialog-option-btn quest-complete-btn" onclick="turnInKillQuest('${npc.id}')">
+                            ✅ 퀘스트를 완료했어요
+                        </button>
+                    `;
+                }
+            }
+            // item_delivery 타입 퀘스트: 아이템 전달 UI
+            else if (activeQuest.objective && activeQuest.objective.type === 'item_delivery') {
+                optionsHtml += `
+                    <button class="dialog-option-btn quest-complete-btn" onclick="showQuestHandoverUI('${npc.id}')">
+                        ✅ 퀘스트를 완료했어요
+                    </button>
+                `;
+            }
+            // multi_delivery 타입 (기계공)
+            else if (activeQuest.objective && activeQuest.objective.type === 'multi_delivery') {
+                optionsHtml += `
+                    <button class="dialog-option-btn quest-complete-btn" onclick="tryMultiDelivery('${npc.id}')">
+                        ✅ 퀘스트를 완료했어요
+                    </button>
+                `;
+            }
             optionsHtml += `
                 <button class="dialog-option-btn" onclick="showNPCQuestStatus('${npc.id}')">
                     📋 퀘스트 진행 상황
                 </button>
             `;
-        } else {
+        }
+        // 아직 수주할 퀘스트가 남아있는 경우
+        const hasAvailableQuest = checkHasAvailableQuest(npc.id);
+        if (hasAvailableQuest) {
             optionsHtml += `
                 <button class="dialog-option-btn" onclick="showNPCQuest('${npc.id}')">
                     📜 의뢰가 있나요?
@@ -546,7 +597,7 @@ function showNPCConversation(npc) {
             </div>
             <div class="npc-dialog-content">
                 <div class="npc-dialog-bubble">
-                    <p>${npc.dialogues.greeting}</p>
+                    <p>${greetingText}</p>
                 </div>
                 <div class="dialog-options">
                     ${optionsHtml}
@@ -620,27 +671,61 @@ function getNpcActiveQuest(npcId) {
 function showNPCQuestStatus(npcId) {
     const npc = NPCS[npcId];
     if (!npc) return;
-    const quest = getNpcActiveQuest(npcId);
-    if (!quest) return;
 
-    let progressText = '';
-    if (quest.objective.type === 'item_delivery') {
-        const requiredItem = quest.objective.requiredItem;
-        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
-        const itemName = itemData ? itemData.name : requiredItem;
-        const inventoryItem = (typeof inventoryItems !== 'undefined')
-            ? inventoryItems.find(item => item.id === requiredItem)
-            : null;
-        const currentCount = inventoryItem ? (inventoryItem.quantity || 1) : 0;
-        progressText = `필요 아이템: ${itemName} (${currentCount}/${quest.objective.count})`;
-    } else {
-        progressText = `진행: (${quest.objective.current || 0}/${quest.objective.count})`;
+    // 해당 NPC의 모든 활성 퀘스트 표시
+    let allProgressText = '';
+    let questCount = 0;
+
+    if (player.quests) {
+        for (const questKey in player.quests) {
+            const quest = player.quests[questKey];
+            if (quest.npcId === npcId && quest.status === 'active') {
+                questCount++;
+                let progressText = '';
+
+                if (quest.objective.type === 'item_delivery') {
+                    const requiredItem = quest.objective.requiredItem;
+                    const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[requiredItem] : null;
+                    const itemName = itemData ? itemData.name : requiredItem;
+                    const inventoryItem = (typeof inventoryItems !== 'undefined')
+                        ? inventoryItems.find(item => item.id === requiredItem)
+                        : null;
+                    const currentCount = inventoryItem ? (inventoryItem.quantity || 1) : 0;
+                    progressText = `${quest.name}: ${itemName} (${currentCount}/${quest.objective.count})`;
+                } else if (quest.objective.type === 'multi_delivery') {
+                    let reqTexts = [];
+                    for (const req of quest.objective.requirements) {
+                        if (req.type === 'gold') {
+                            reqTexts.push(`골드 (${Math.min(gold, req.amount)}/${req.amount})`);
+                        } else if (req.type === 'item') {
+                            const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[req.itemId] : null;
+                            const itemName = itemData ? itemData.name : req.itemId;
+                            const inv = (typeof inventoryItems !== 'undefined') ? inventoryItems : [];
+                            const invItem = inv.find(i => i.id === req.itemId);
+                            const qty = invItem ? (invItem.quantity || 1) : 0;
+                            reqTexts.push(`${itemName} (${qty}/${req.count})`);
+                        }
+                    }
+                    progressText = `${quest.name}: ${reqTexts.join(', ')}`;
+                } else if (quest.objective.type === 'spar_multi') {
+                    progressText = `${quest.name}: (${quest.objective.current || 0}/${quest.objective.count})`;
+                } else {
+                    progressText = `${quest.name}: (${quest.objective.current || 0}/${quest.objective.count})`;
+                }
+
+                allProgressText += (allProgressText ? '<br>' : '') + progressText;
+            }
+        }
+    }
+
+    if (questCount === 0) {
+        allProgressText = '현재 진행 중인 퀘스트가 없습니다.';
     }
 
     const bubble = document.querySelector('.npc-dialog-bubble p');
     if (bubble) {
-        bubble.textContent = npc.dialogues.quest_in_progress;
-        bubble.innerHTML += `<br><small style="color:#aaa;">${progressText}</small>`;
+        bubble.textContent = npc.dialogues.quest_in_progress || '퀘스트를 잘 진행하고 있나?';
+        bubble.innerHTML += `<br><small style="color:#aaa;">${allProgressText}</small>`;
     }
 }
 
@@ -827,6 +912,133 @@ function closeQuestHandoverUI() {
     }
 }
 
+/**
+ * NPC에게 아직 수주 가능한 퀘스트가 있는지 확인합니다.
+ */
+function checkHasAvailableQuest(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc || !npc.quests || typeof QUESTS === 'undefined') return false;
+    if (!player.quests) player.quests = {};
+    if (!player.completedQuests) player.completedQuests = {};
+
+    for (const questId of npc.quests) {
+        // 이미 완료 또는 진행 중이면 스킵
+        if (player.completedQuests[questId]) continue;
+        if (player.quests[questId]) continue;
+
+        const questDef = QUESTS[questId];
+        if (!questDef) continue;
+
+        // 선행 퀘스트 확인
+        if (questDef.prerequisite && !player.completedQuests[questDef.prerequisite]) continue;
+
+        return true;  // 수주 가능한 퀘스트 있음
+    }
+    return false;
+}
+
+/**
+ * kill/spar 타입 퀘스트를 완료 보고합니다.
+ */
+function turnInKillQuest(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc) return;
+
+    // 해당 NPC의 활성 퀘스트 중 완료 가능한 것 찾기
+    for (const questKey in player.quests) {
+        const quest = player.quests[questKey];
+        if (quest.npcId === npcId && quest.status === 'active') {
+            const isComplete = (quest.objective.current || 0) >= (quest.objective.count || 1);
+            if (isComplete) {
+                // 퀘스트 완료 처리
+                completeQuest(questKey);
+
+                // 완료 대화 표시
+                const bubble = document.querySelector('.npc-dialog-bubble p');
+                if (bubble) {
+                    bubble.textContent = npc.dialogues.quest_complete || '훌륭하군! 보상을 받게나.';
+                }
+
+                // 대화창 새로고침
+                closeNPCModal();
+                if (currentNpc) showNPCConversation(currentNpc);
+                return;
+            }
+        }
+    }
+}
+
+/**
+ * 다중 아이템/골드 전달 퀘스트를 처리합니다. (기계공 등)
+ */
+function tryMultiDelivery(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc) return;
+
+    const quest = getNpcActiveQuest(npcId);
+    if (!quest || quest.objective.type !== 'multi_delivery') return;
+
+    const requirements = quest.objective.requirements;
+    if (!requirements) return;
+
+    // 모든 요구 조건 확인
+    let canComplete = true;
+    let missingText = '';
+
+    for (const req of requirements) {
+        if (req.type === 'gold') {
+            if (gold < req.amount) {
+                canComplete = false;
+                missingText += `골드 ${req.amount - gold} 부족\n`;
+            }
+        } else if (req.type === 'item') {
+            const inv = (typeof inventoryItems !== 'undefined') ? inventoryItems : [];
+            const invItem = inv.find(i => i.id === req.itemId);
+            const currentQty = invItem ? (invItem.quantity || 1) : 0;
+            if (currentQty < req.count) {
+                canComplete = false;
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[req.itemId] : null;
+                const itemName = itemData ? itemData.name : req.itemId;
+                missingText += `${itemName} ${req.count - currentQty}개 부족\n`;
+            }
+        }
+    }
+
+    if (!canComplete) {
+        const bubble = document.querySelector('.npc-dialog-bubble p');
+        if (bubble) {
+            bubble.textContent = `아직 재료가 부족하네. ${missingText}`;
+        }
+        return;
+    }
+
+    // 재료 소모
+    for (const req of requirements) {
+        if (req.type === 'gold') {
+            gold -= req.amount;
+            addGameLog(`💰 ${req.amount} 골드 전달`);
+        } else if (req.type === 'item') {
+            if (typeof removeItemFromInventory === 'function') {
+                removeItemFromInventory(req.itemId, req.count);
+            }
+            const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[req.itemId] : null;
+            addGameLog(`📦 ${itemData ? itemData.name : req.itemId} x${req.count} 전달`);
+        }
+    }
+
+    // 퀘스트 완료
+    completeQuest(quest.id);
+
+    // 완료 대화
+    const completeDlg = npc.dialogues.quest_complete || '감사하네! 보상을 받게.';
+    const bubble = document.querySelector('.npc-dialog-bubble p');
+    if (bubble) bubble.textContent = completeDlg;
+
+    // 대화창 새로고침
+    closeNPCModal();
+    if (currentNpc) showNPCConversation(currentNpc);
+}
+
 
 
 /**
@@ -843,10 +1055,209 @@ function showNPCQuest(npcId) {
         return;
     }
 
+    // 다중 퀘스트 시스템: QUESTS 상수에서 NPC의 퀘스트 목록 확인
+    if (npc.quests && npc.quests.length > 0 && typeof QUESTS !== 'undefined') {
+        showMultiQuestSelection(npcId);
+        return;
+    }
+
+    // 기계공 퀘스트 특수 처리
+    if (npcId === 'mechanist') {
+        showMechanistQuest(npcId);
+        return;
+    }
+
     const bubble = document.querySelector('.npc-dialog-bubble p');
     if (bubble) {
         bubble.textContent = npc.dialogues.quest || '아직 자네에게 줄 임무는 없네.';
     }
+}
+
+/**
+ * 다중 퀘스트 선택 UI를 표시합니다.
+ */
+function showMultiQuestSelection(npcId) {
+    const npc = NPCS[npcId];
+    if (!npc || !npc.quests) return;
+
+    if (!player.quests) player.quests = {};
+    if (!player.completedQuests) player.completedQuests = {};
+
+    // 사용 가능한 퀘스트 목록 생성
+    let questListHtml = '';
+    let availableCount = 0;
+
+    for (const questId of npc.quests) {
+        const questDef = QUESTS[questId];
+        if (!questDef) continue;
+
+        // 이미 완료된 퀘스트
+        if (player.completedQuests[questId]) {
+            questListHtml += `
+                <div class="quest-item quest-completed">
+                    <span class="quest-status">✅</span>
+                    <span class="quest-name">${questDef.name}</span>
+                    <span class="quest-label">완료</span>
+                </div>
+            `;
+            continue;
+        }
+
+        // 현재 진행 중인 퀘스트
+        if (player.quests[questId] && player.quests[questId].status === 'active') {
+            const q = player.quests[questId];
+            const progress = q.objective.current || 0;
+            const total = q.objective.count || 1;
+            questListHtml += `
+                <div class="quest-item quest-active">
+                    <span class="quest-status">📋</span>
+                    <span class="quest-name">${questDef.name} (${progress}/${total})</span>
+                    <span class="quest-label">진행 중</span>
+                </div>
+            `;
+            continue;
+        }
+
+        // 선행 퀘스트 확인
+        if (questDef.prerequisite && !player.completedQuests[questDef.prerequisite]) {
+            questListHtml += `
+                <div class="quest-item quest-locked">
+                    <span class="quest-status">🔒</span>
+                    <span class="quest-name">${questDef.name}</span>
+                    <span class="quest-label">이전 퀘스트 완료 필요</span>
+                </div>
+            `;
+            continue;
+        }
+
+        // 수주 가능한 퀘스트
+        availableCount++;
+        questListHtml += `
+            <div class="quest-item quest-available" onclick="acceptQuest('${questId}', '${npcId}')">
+                <span class="quest-status">📜</span>
+                <span class="quest-name">${questDef.name}</span>
+                <span class="quest-label" style="color:#4caf50;">수주 가능</span>
+            </div>
+        `;
+    }
+
+    // 모든 퀘스트가 완료되었는지 확인
+    const allCompleted = npc.quests.every(qId => player.completedQuests[qId]);
+
+    // 기존 모달 제거하고 퀘스트 선택 모달 표시
+    const existingModals = document.querySelectorAll('.npc-modal-overlay');
+    existingModals.forEach(m => m.remove());
+    currentNpcDialogOpen = false;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'npc-modal-overlay';
+    overlay.innerHTML = `
+        <div class="npc-dialog-modal" style="max-width:450px;">
+            <div class="npc-dialog-header">
+                <span class="npc-dialog-emoji">${npc.emoji}</span>
+                <span class="npc-dialog-name">${npc.name}의 퀘스트</span>
+            </div>
+            <div class="npc-dialog-content" style="max-height:400px;overflow-y:auto;">
+                ${allCompleted ? '<p style="color:#4caf50;text-align:center;margin-bottom:10px;">✅ 모든 퀘스트를 완료했습니다!</p>' : ''}
+                <div class="quest-list" style="display:flex;flex-direction:column;gap:8px;">
+                    ${questListHtml}
+                </div>
+            </div>
+            <div class="dialog-options" style="margin-top:10px;">
+                <button class="dialog-option-btn dialog-exit" onclick="closeNPCModal(); if(currentNpc) showNPCConversation(currentNpc);">
+                    🔙 돌아가기
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    currentNpcDialogOpen = true;
+}
+
+/**
+ * 퀘스트를 수주합니다.
+ */
+function acceptQuest(questId, npcId) {
+    const questDef = QUESTS[questId];
+    if (!questDef) return;
+
+    if (!player.quests) player.quests = {};
+
+    // 퀘스트 복사 후 활성화
+    player.quests[questId] = {
+        ...JSON.parse(JSON.stringify(questDef)),
+        status: 'active'
+    };
+
+    addGameLog(`📜 퀘스트 수주: ${questDef.name}`);
+
+    // 보상 정보 표시
+    let rewardText = '';
+    if (questDef.rewards) {
+        if (questDef.rewards.exp) rewardText += `경험치 ${questDef.rewards.exp}`;
+        if (questDef.rewards.gold) rewardText += `${rewardText ? ', ' : ''}골드 ${questDef.rewards.gold}`;
+        if (questDef.rewards.items && questDef.rewards.items.length > 0) {
+            questDef.rewards.items.forEach(item => {
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+                const itemName = itemData ? itemData.name : item.id;
+                rewardText += `${rewardText ? ', ' : ''}${itemName} x${item.quantity || 1}`;
+            });
+        }
+    }
+    if (rewardText) {
+        addGameLog(`💰 보상: ${rewardText}`);
+    }
+
+    // 퀘스트 선택 UI 새로고침
+    closeNPCModal();
+    showMultiQuestSelection(npcId);
+}
+
+/**
+ * 퀘스트 완료 처리를 합니다.
+ */
+function completeQuest(questId) {
+    const quest = player.quests[questId];
+    if (!quest) return;
+
+    const questDef = QUESTS[questId];
+    if (!questDef) return;
+
+    // 보상 지급
+    if (questDef.rewards) {
+        if (questDef.rewards.exp) {
+            player.exp = (player.exp || 0) + questDef.rewards.exp;
+            addGameLog(`✨ 경험치 ${questDef.rewards.exp} 획득!`);
+        }
+        if (questDef.rewards.gold) {
+            gold += questDef.rewards.gold;
+            addGameLog(`💰 골드 ${questDef.rewards.gold} 획득!`);
+        }
+        if (questDef.rewards.items && typeof addItemToInventory === 'function') {
+            questDef.rewards.items.forEach(item => {
+                addItemToInventory(item.id, item.quantity || 1);
+                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+                const itemName = itemData ? itemData.name : item.id;
+                addGameLog(`📦 ${itemName} x${item.quantity || 1} 획득!`);
+            });
+        }
+    }
+
+    // 퀘스트 완료 기록
+    if (!player.completedQuests) player.completedQuests = {};
+    player.completedQuests[questId] = true;
+    delete player.quests[questId];
+
+    addGameLog(`🎉 퀘스트 완료: ${questDef.name}`);
+    if (typeof checkLevelUp === 'function') checkLevelUp();
+    if (typeof updatePlayerUI === 'function') updatePlayerUI();
+}
+
+/**
+ * 기계공 퀘스트를 표시합니다.
+ */
+function showMechanistQuest(npcId) {
+    showMultiQuestSelection(npcId);
 }
 
 /**
@@ -959,8 +1370,45 @@ function startSpar(npcId) {
         return;
     }
 
-    // 이미 보상을 수령한 경우 대련 거절 대사 표시
-    if (player.sparRewardsReceived && player.sparRewardsReceived[sparMonster.id]) {
+    // 수련생 대련: 이미 승리했으면 거절
+    if (npc.isSparTrainee && player.sparRewardsReceived && player.sparRewardsReceived[sparMonster.id]) {
+        const bubble = document.querySelector('.npc-dialog-bubble p');
+        if (bubble) bubble.textContent = '이미 한번 졌잖아요... 더 이상은 안 할래요!';
+        return;
+    }
+
+    // 교관 대련 조건 확인 (수련생 제외)
+    if (!npc.isSparTrainee && npc.sparCondition) {
+        if (!player.completedQuests) player.completedQuests = {};
+
+        // 모든 퀘스트 완료 조건
+        if (npc.sparCondition.allQuestsComplete && npc.quests) {
+            const allDone = npc.quests.every(qId => player.completedQuests[qId]);
+            if (!allDone) {
+                const rejectText = npc.dialogues.spar_reject || '아직 나와 대련하기엔 너무 일러보이는군.';
+                const bubble = document.querySelector('.npc-dialog-bubble p');
+                if (bubble) bubble.textContent = rejectText;
+                addGameLog(`⚔️ ${npc.name}: "${rejectText}"`);
+                return;
+            }
+        }
+
+        // 특정 대련 승리 필요 조건 (상급교관)
+        if (npc.sparCondition.requiredSpars) {
+            if (!player.sparRewardsReceived) player.sparRewardsReceived = {};
+            const allSparsWon = npc.sparCondition.requiredSpars.every(sparId => player.sparRewardsReceived[sparId]);
+            if (!allSparsWon) {
+                const rejectText = npc.dialogues.spar_reject || '아직 나와 대련하기엔 너무 일러보이는군.';
+                const bubble = document.querySelector('.npc-dialog-bubble p');
+                if (bubble) bubble.textContent = rejectText;
+                addGameLog(`⚔️ ${npc.name}: "${rejectText}"`);
+                return;
+            }
+        }
+    }
+
+    // 이미 보상을 수령한 경우 대련 거절 대사 표시 (교관 전용)
+    if (!npc.isSparTrainee && player.sparRewardsReceived && player.sparRewardsReceived[sparMonster.id]) {
         // NPC별 거절 대사 설정
         const refusalDialogues = {
             instructor2: '자네는 이미 내 활솜씨를 넘어섰네. 더 넓은 세상의 적들과 겨뤄보게나. 자네의 앞길에 행운을 빌겠네.',

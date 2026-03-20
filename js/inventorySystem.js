@@ -521,6 +521,99 @@ const ITEMS_DATABASE = {
         icon: '🗡️',
         sellPrice: 300,
         job: 'skirmisher'
+    },
+
+    // ========== 음식 아이템 ==========
+    bread: {
+        id: 'bread',
+        name: '빵',
+        type: 'consumable',
+        rarity: 'common',
+        effect: { hunger: 20 },
+        description: '맛있는 빵입니다. 배고픔을 달랠 수 있습니다.',
+        icon: '🍞',
+        sellPrice: 4,
+        stackable: true
+    },
+    green_tea: {
+        id: 'green_tea',
+        name: '녹차',
+        type: 'consumable',
+        rarity: 'common',
+        effect: { thirst: 20 },
+        description: '향긋한 녹차입니다. 갈증을 해소할 수 있습니다.',
+        icon: '🍵',
+        sellPrice: 4,
+        stackable: true
+    },
+
+    // ========== 교관 보상 아이템 ==========
+    instructor_hat: {
+        id: 'instructor_hat',
+        name: '교관의 모자',
+        type: 'armor',
+        slot: 'head',
+        rarity: 'rare',
+        stats: { pDef: 8, mDef: 8, str: 1, int: 1, agi: 1 },
+        description: '상급교관이 직접 하사한 훈련장 교관의 모자입니다. 모든 능력치가 소폭 상승합니다.',
+        icon: '🎓',
+        sellPrice: 500
+    },
+    golem_essence: {
+        id: 'golem_essence',
+        name: '골렘의 정수',
+        type: 'special',
+        rarity: 'epic',
+        description: '훈련용 마법골렘의 핵심 부품에서 추출한 마력의 정수입니다. 강력한 마력이 느껴집니다.',
+        icon: '💎',
+        sellPrice: 1000,
+        stackable: false
+    },
+
+    // ========== 영약 아이템 ==========
+    power_elixir: {
+        id: 'power_elixir',
+        name: '힘의 영약',
+        type: 'consumable',
+        rarity: 'rare',
+        effect: { permanentStat: { str: 3 } },
+        description: '마시면 영구적으로 힘이 3 증가합니다.',
+        icon: '💪',
+        sellPrice: 400,
+        stackable: true
+    },
+    old_wind_elixir: {
+        id: 'old_wind_elixir',
+        name: '오래된 바람의 영약',
+        type: 'consumable',
+        rarity: 'rare',
+        effect: { permanentStat: { agi: 2 } },
+        description: '오래되었지만 여전히 효력이 있는 바람의 영약입니다. 영구적으로 민첩이 2 증가합니다.',
+        icon: '🌬️',
+        sellPrice: 350,
+        stackable: true
+    },
+    old_wisdom_elixir: {
+        id: 'old_wisdom_elixir',
+        name: '오래된 지혜의 영약',
+        type: 'consumable',
+        rarity: 'rare',
+        effect: { permanentStat: { int: 2 } },
+        description: '오래되었지만 여전히 효력이 있는 지혜의 영약입니다. 영구적으로 지능이 2 증가합니다.',
+        icon: '📘',
+        sellPrice: 350,
+        stackable: true
+    },
+    old_will_elixir: {
+        id: 'old_will_elixir',
+        name: '오래된 의지의 영약',
+        type: 'consumable',
+        rarity: 'rare',
+        effect: { permanentStat: { str: 1, agi: 1 } },
+        description: '오래되었지만 여전히 효력이 있는 의지의 영약입니다. 영구적으로 힘과 민첩이 1씩 증가합니다.',
+        icon: '🔥',
+        sellPrice: 350,
+        stackable: true
     }
 };
 

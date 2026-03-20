@@ -366,13 +366,43 @@ function endBattle(result) {
                 const sparMonsterData = monster;
                 const sparNpc = battleState.sparNpc;
                 const sparMonsterId = sparMonsterData ? sparMonsterData.id : null;
-                
+
                 // 이미 보상을 받았는지 확인
                 if (!player.sparRewardsReceived) player.sparRewardsReceived = {};
                 const alreadyRewarded = player.sparRewardsReceived[sparMonsterId];
-                
+
+                // 수련생 대련인 경우 퀘스트 진행도 업데이트 (보상 없음)
+                const isTraineeSpar = sparMonsterData && sparMonsterData.sparClass === 'trainee';
+
                 let sparRewards;
-                if (alreadyRewarded) {
+                if (isTraineeSpar) {
+                    // 수련생 대련: 보상 없음, 퀘스트 진행도만 업데이트
+                    sparRewards = { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
+                    if (!alreadyRewarded) {
+                        player.sparRewardsReceived[sparMonsterId] = true;
+                    }
+                    addGameLog(`⚔️ ${sparMonsterData.name} 대련 승리!`);
+
+                    // spar 타입 퀘스트 진행도 업데이트
+                    if (player.quests) {
+                        for (const questKey in player.quests) {
+                            const quest = player.quests[questKey];
+                            if (quest.status === 'active') {
+                                if (quest.objective.type === 'spar' && quest.objective.target === sparMonsterId) {
+                                    quest.objective.current = (quest.objective.current || 0) + 1;
+                                    addGameLog(`📜 퀘스트 진행: ${quest.name} (${quest.objective.current}/${quest.objective.count})`);
+                                }
+                                if (quest.objective.type === 'spar_multi' && quest.objective.targets) {
+                                    if (quest.objective.targets.includes(sparMonsterId) && !quest.objective.completed[sparMonsterId]) {
+                                        quest.objective.completed[sparMonsterId] = true;
+                                        quest.objective.current = Object.keys(quest.objective.completed).length;
+                                        addGameLog(`📜 퀘스트 진행: ${quest.name} (${quest.objective.current}/${quest.objective.count})`);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (alreadyRewarded) {
                     // 이미 보상을 받은 경우 → 보상 없음
                     sparRewards = { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
                     addGameLog(`⚔️ 대련 승리! (이미 보상을 수령했습니다)`);
@@ -381,14 +411,14 @@ function endBattle(result) {
                     sparRewards = getSparRewards(sparMonsterData);
                     gold += sparRewards.gold;
                     player.exp = (player.exp || 0) + sparRewards.exp;
-                    
+
                     addGameLog(`🎉 대련 승리! ${sparRewards.exp} EXP, ${sparRewards.gold} Gold 획득!`);
-                    
+
                     // 스킬북 보상 적용
                     if (sparRewards.skillBook) {
                         sparRewards.skillResult = applySkillBookReward(sparRewards.skillBook);
                     }
-                    
+
                     // 무기 보상 적용
                     if (sparRewards.weapon) {
                         const weaponData = typeof ITEMS_DATABASE !== 'undefined' ? ITEMS_DATABASE[sparRewards.weapon] : null;
@@ -397,10 +427,22 @@ function endBattle(result) {
                             sparRewards.weaponName = weaponData.name;
                         }
                     }
-                    
+
+                    // 추가 아이템 보상 적용
+                    if (sparRewards.items && sparRewards.items.length > 0) {
+                        sparRewards.items.forEach(item => {
+                            if (typeof addItemToInventory === 'function') {
+                                addItemToInventory(item.id, item.quantity || 1);
+                                const itemData = typeof ITEMS_DATABASE !== 'undefined' ? ITEMS_DATABASE[item.id] : null;
+                                const itemName = itemData ? itemData.name : item.id;
+                                addGameLog(`📦 ${itemName} x${item.quantity || 1} 획득!`);
+                            }
+                        });
+                    }
+
                     // 보상 수령 기록
                     player.sparRewardsReceived[sparMonsterId] = true;
-                    
+
                     checkLevelUp();
                 }
                 
@@ -544,6 +586,15 @@ function endBattle(result) {
                 return;
             }
 
+            // 수련의 방 강제전투 - 승리 후 처리
+            if (window._trainingRoomPostBattle) {
+                setTimeout(() => {
+                    if (typeof handleTrainingRoomPostBattle === 'function') {
+                        handleTrainingRoomPostBattle('victory');
+                    }
+                }, 1500);
+            }
+
             // 고대유적 특수 조우 - 전투 승리 후 고대 수호자 대화 시작
             if (window._ancientRuinsPostBattle) {
                 setTimeout(() => {
@@ -606,6 +657,14 @@ function endBattle(result) {
                 return;
             }
 
+            // 수련의 방 강제전투 패배 시 플래그 처리
+            if (window._trainingRoomPostBattle) {
+                if (typeof handleTrainingRoomPostBattle === 'function') {
+                    handleTrainingRoomPostBattle('defeat');
+                }
+                window._trainingRoomPostBattle = false;
+            }
+
             // 현재 맵의 noDeathZone 설정 확인
             const currentMapData = getCurrentMap();
             if (currentMapData && currentMapData.noDeathZone) {
@@ -652,21 +711,12 @@ function endBattle(result) {
  * @returns {Object} { exp, gold, skillBook, weapon, message[] }
  */
 function getSparRewards(sparMonster) {
-    if (!sparMonster) return { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
-    
-    const sparClass = sparMonster.sparClass; // archer, mage, skirmisher, warrior
+    if (!sparMonster) return { exp: 0, gold: 0, skillBook: null, weapon: null, items: [], messages: [] };
+
+    const sparClass = sparMonster.sparClass; // archer, mage, skirmisher, warrior, trainee
     const playerJob = player.job; // warrior, archer, mage, skirmisher
     const isMatchingJob = (playerJob === sparClass);
-    const messages = [];
-    
-    // 직업별 스킬 목록 (하급~중급)
-    const jobSkills = {
-        archer: ['multishot', 'charge_shot'],
-        mage: ['fireball', 'lightning_bolt'],
-        skirmisher: ['slash_combo', 'ambush'],
-        warrior: ['smash', 'spirit_sword']
-    };
-    
+
     // 직업별 강철 무기 매핑
     const steelWeapons = {
         warrior: 'steel_longsword',
@@ -674,43 +724,64 @@ function getSparRewards(sparMonster) {
         mage: 'steel_staff',
         skirmisher: 'steel_dagger'
     };
-    
-    let rewards = { exp: 0, gold: 0, skillBook: null, weapon: null, messages: [] };
-    
+
+    let rewards = { exp: 0, gold: 0, skillBook: null, weapon: null, items: [], messages: [] };
+
+    // 수련생 대련은 보상 없음
+    if (sparClass === 'trainee') {
+        return rewards;
+    }
+
     if (sparClass === 'warrior') {
         // 상급교관 (전사): 특별 보상
         if (isMatchingJob) {
             rewards.exp = 2000;
             rewards.gold = 1000;
-            // 전사 스킬북 (랜덤)
-            const availableSkills = jobSkills.warrior;
-            const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-            rewards.skillBook = randomSkill;
-            // 강철 대검
-            rewards.weapon = steelWeapons.warrior;
+            rewards.weapon = steelWeapons.warrior;  // 강철 장검
+            rewards.items.push({ id: 'instructor_hat', quantity: 1 });  // 교관의 모자
         } else {
-            rewards.exp = 3000;  // 1.5배
-            rewards.gold = 1500; // 1.5배
-            // 플레이어 직업에 맞는 강철 무기
-            rewards.weapon = steelWeapons[playerJob] || steelWeapons.warrior;
+            rewards.exp = 4000;
+            rewards.gold = 2000;
+            rewards.items.push({ id: 'instructor_hat', quantity: 1 });  // 교관의 모자
         }
-    } else {
-        // 일반 교관 (궁수/마법사/도적)
+    } else if (sparClass === 'archer') {
+        // 훈련교관2 (궁수)
         if (isMatchingJob) {
             rewards.exp = 1000;
             rewards.gold = 500;
-            // 해당 직업 스킬북 (랜덤)
-            const availableSkills = jobSkills[sparClass] || [];
-            if (availableSkills.length > 0) {
-                const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-                rewards.skillBook = randomSkill;
-            }
+            rewards.weapon = steelWeapons.archer;  // 강철 활
+            rewards.items.push({ id: 'old_wind_elixir', quantity: 1 });
         } else {
-            rewards.exp = 1500;  // 1.5배
-            rewards.gold = 750;  // 1.5배
+            rewards.exp = 2000;
+            rewards.gold = 1000;
+            rewards.items.push({ id: 'old_wind_elixir', quantity: 1 });
+        }
+    } else if (sparClass === 'mage') {
+        // 훈련교관3 (마법사)
+        if (isMatchingJob) {
+            rewards.exp = 1000;
+            rewards.gold = 500;
+            rewards.weapon = steelWeapons.mage;  // 강철장식 지팡이
+            rewards.items.push({ id: 'old_wisdom_elixir', quantity: 1 });
+        } else {
+            rewards.exp = 2000;
+            rewards.gold = 1000;
+            rewards.items.push({ id: 'old_wisdom_elixir', quantity: 1 });
+        }
+    } else if (sparClass === 'skirmisher') {
+        // 훈련교관4 (도적)
+        if (isMatchingJob) {
+            rewards.exp = 1000;
+            rewards.gold = 500;
+            rewards.weapon = steelWeapons.skirmisher;  // 강철 단검
+            rewards.items.push({ id: 'old_will_elixir', quantity: 1 });
+        } else {
+            rewards.exp = 2000;
+            rewards.gold = 1000;
+            rewards.items.push({ id: 'old_will_elixir', quantity: 1 });
         }
     }
-    
+
     return rewards;
 }
 
@@ -4334,8 +4405,13 @@ function updateBattleUI() {
         const gradeName = monster.gradeData?.name || '일반';
         const gradeDisplay = gradeName !== '일반' ? `${gradeIcon}[${gradeName}] ` : '';
         
+        const fallbackEmojiLiteral = JSON.stringify(monster.emoji || '👹');
+        const spriteMarkup = monster.image
+            ? `<img src="${monster.image}" alt="${monster.name}" class="monster-image" onerror="this.onerror=null;const box=this.parentElement;if(box){box.classList.add('sprite-fallback');box.textContent=${fallbackEmojiLiteral};}">`
+            : (monster.emoji || '👹');
+
         monsterCard.innerHTML = `
-            <div class="monster-sprite">${monster.image ? `<img src="${monster.image}" alt="${monster.name}" class="monster-image">` : (monster.emoji || '👹')}</div>
+            <div class="monster-sprite">${spriteMarkup}</div>
             <div class="monster-info">
                 <span class="monster-name" style="color: ${gradeColor}; text-shadow: 0 0 5px ${gradeColor}40;">${gradeDisplay}${monster.name}${isDead ? ' ☠️' : ''}</span>
                 <div class="bar monster-hp-bar">
@@ -4384,6 +4460,34 @@ function selectMonsterTarget(index) {
  * @param {string} imagePath - 배경 이미지 경로
  */
 function applyBattleBackground(imagePath) {
+    const fallbackBackground = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+
+    /**
+     * 전투 배경 이미지 로딩 실패 시 폴백을 적용합니다.
+     * @param {HTMLElement} element
+     */
+    function applyBackgroundOrFallback(element) {
+        if (!element) return;
+
+        element.style.backgroundSize = 'cover';
+        element.style.backgroundPosition = 'center';
+
+        if (!imagePath) {
+            element.style.backgroundImage = fallbackBackground;
+            return;
+        }
+
+        const image = new Image();
+        image.onload = () => {
+            element.style.backgroundImage = `url('${imagePath}')`;
+        };
+        image.onerror = () => {
+            element.style.backgroundImage = fallbackBackground;
+            console.warn('⚠️ 전투 배경 로딩 실패:', imagePath);
+        };
+        image.src = imagePath;
+    }
+
     // 전체 게임 배경에 대련 배경 적용 (gameBackground)
     const gameBackground = document.getElementById('gameBackground');
     if (gameBackground) {
@@ -4391,18 +4495,14 @@ function applyBattleBackground(imagePath) {
         if (!battleState._originalBackground) {
             battleState._originalBackground = gameBackground.style.backgroundImage || '';
         }
-        gameBackground.style.backgroundImage = `url('${imagePath}')`;
-        gameBackground.style.backgroundSize = 'cover';
-        gameBackground.style.backgroundPosition = 'center';
+        applyBackgroundOrFallback(gameBackground);
         console.log('🎨 대련 배경 적용 (gameBackground):', imagePath);
     }
 
     // 전투 아레나에도 배경 적용
     const battleArena = document.querySelector('.battle-arena');
     if (battleArena) {
-        battleArena.style.backgroundImage = `url('${imagePath}')`;
-        battleArena.style.backgroundSize = 'cover';
-        battleArena.style.backgroundPosition = 'center';
+        applyBackgroundOrFallback(battleArena);
         battleArena.style.borderRadius = '10px';
     }
     
