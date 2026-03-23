@@ -388,6 +388,165 @@ let currentShopMode = 'buy'; // 'buy' or 'sell'
 let currentNpcDialogOpen = false;
 let currentNpc = null;
 
+/**
+ * 보상 아이템 배열을 표준 형태로 정규화합니다.
+ * @param {Array} rawItems - 문자열 ID 배열 또는 {id, quantity} 객체 배열
+ * @returns {Array} 정규화된 아이템 배열
+ */
+function normalizeRewardItems(rawItems) {
+    if (!Array.isArray(rawItems)) return [];
+
+    return rawItems
+        .map(entry => {
+            if (typeof entry === 'string') {
+                return { id: entry, quantity: 1 };
+            }
+
+            if (entry && typeof entry === 'object' && entry.id) {
+                return { id: entry.id, quantity: entry.quantity || 1 };
+            }
+
+            return null;
+        })
+        .filter(Boolean);
+}
+
+/**
+ * 보상을 실제로 지급하고 요약 정보를 반환합니다.
+ * @param {Object} rewards - 보상 데이터
+ * @returns {{exp:number, gold:number, items:Array}} 지급된 보상 요약
+ */
+function applyQuestRewards(rewards) {
+    const summary = {
+        exp: 0,
+        gold: 0,
+        items: []
+    };
+
+    if (!rewards) return summary;
+
+    if (rewards.exp) {
+        const expAmount = rewards.exp;
+        player.exp = (player.exp || 0) + expAmount;
+        summary.exp = expAmount;
+        addGameLog(`✨ 경험치 ${expAmount} 획득!`);
+    }
+
+    if (rewards.gold) {
+        const goldAmount = rewards.gold;
+        gold = (gold || 0) + goldAmount;
+        summary.gold = goldAmount;
+        addGameLog(`💰 골드 ${goldAmount} 획득!`);
+    }
+
+    const normalizedItems = normalizeRewardItems(rewards.items);
+    normalizedItems.forEach(item => {
+        if (typeof addItemToInventory === 'function') {
+            addItemToInventory(item.id, item.quantity);
+        }
+
+        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
+        const itemName = itemData ? itemData.name : item.id;
+
+        summary.items.push({
+            id: item.id,
+            quantity: item.quantity,
+            name: itemName,
+            icon: itemData ? itemData.icon : '📦',
+            image: itemData ? itemData.image : null
+        });
+
+        addGameLog(`📦 ${itemName} x${item.quantity} 획득!`);
+    });
+
+    return summary;
+}
+
+/**
+ * 보상 수령 알림창을 표시합니다.
+ * @param {Object} options - 알림 옵션
+ * @param {string} options.title - 알림 제목
+ * @param {string} options.message - 알림 본문
+ * @param {number} [options.exp] - 경험치 보상
+ * @param {number} [options.gold] - 골드 보상
+ * @param {Array} [options.items] - 아이템 보상 목록
+ */
+function showRewardReceiveModal(options = {}) {
+    const {
+        title = '축하합니다!',
+        message = '',
+        exp = 0,
+        gold: rewardGold = 0,
+        items = []
+    } = options;
+
+    const existing = document.querySelector('.reward-alert-overlay');
+    if (existing) existing.remove();
+
+    const primaryItem = items[0] || null;
+    const primaryVisual = primaryItem
+        ? (primaryItem.image
+            ? `<img src="${primaryItem.image}" class="reward-alert-item-image" alt="${primaryItem.name}">`
+            : (primaryItem.icon || '🎁'))
+        : '🎉';
+
+    const itemLines = items.map(item => `
+        <div class="reward-alert-line">
+            <span class="reward-alert-line-label">📦</span>
+            <span>${item.name} x${item.quantity}</span>
+        </div>
+    `).join('');
+
+    const expLine = exp > 0
+        ? `
+        <div class="reward-alert-line">
+            <span class="reward-alert-line-label">✨</span>
+            <span>경험치 ${exp}</span>
+        </div>
+    `
+        : '';
+
+    const goldLine = rewardGold > 0
+        ? `
+        <div class="reward-alert-line">
+            <span class="reward-alert-line-label">💰</span>
+            <span>골드 ${rewardGold}</span>
+        </div>
+    `
+        : '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'reward-alert-overlay';
+    overlay.innerHTML = `
+        <div class="reward-alert-modal">
+            <div class="reward-alert-header">🎊 ${title}</div>
+            <div class="reward-alert-body">
+                <div class="reward-alert-icon-wrap">
+                    <div class="reward-alert-burst"></div>
+                    <div class="reward-alert-icon">${primaryVisual}</div>
+                </div>
+                ${message ? `<p class="reward-alert-message">${message}</p>` : ''}
+                <div class="reward-alert-lines">
+                    ${itemLines}
+                    ${expLine}
+                    ${goldLine}
+                </div>
+            </div>
+            <button class="reward-alert-confirm" onclick="closeRewardReceiveModal()">확인</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+}
+
+/**
+ * 보상 수령 알림창을 닫습니다.
+ */
+function closeRewardReceiveModal() {
+    const overlay = document.querySelector('.reward-alert-overlay');
+    if (overlay) overlay.remove();
+}
+
 // ============================================
 // 💬 NPC 대화 시스템
 // ============================================
@@ -464,23 +623,40 @@ function selectNPC(npcId) {
 /**
  * NPC와의 대화를 표시합니다.
  */
-function showNPCConversation(npc) {
+function showNPCConversation(npc, overrideGreetingText = null) {
     const overlay = document.createElement('div');
     overlay.className = 'npc-modal-overlay';
 
     // 훈련교관1 첫 대화 선물 처리
-    let greetingText = npc.dialogues.greeting;
+    let greetingText = overrideGreetingText || npc.dialogues.greeting;
     if (npc.id === 'instructor1' && npc.firstMeetGift && !player.instructor1GiftReceived) {
         greetingText = npc.dialogues.first_greeting || greetingText;
         player.instructor1GiftReceived = true;
         // 선물 지급
+        const receivedGiftItems = [];
         if (npc.firstMeetGift.items && typeof addItemToInventory === 'function') {
             npc.firstMeetGift.items.forEach(gift => {
-                addItemToInventory(gift.id, gift.quantity || 1);
+                const quantity = gift.quantity || 1;
+                addItemToInventory(gift.id, quantity);
                 const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[gift.id] : null;
                 const itemName = itemData ? itemData.name : gift.id;
-                addGameLog(`🎁 ${itemName} x${gift.quantity || 1}을(를) 받았습니다!`);
+                receivedGiftItems.push({
+                    id: gift.id,
+                    quantity,
+                    name: itemName,
+                    icon: itemData ? itemData.icon : '🎁',
+                    image: itemData ? itemData.image : null
+                });
+                addGameLog(`🎁 ${itemName} x${quantity}을(를) 받았습니다!`);
             });
+
+            if (receivedGiftItems.length > 0) {
+                showRewardReceiveModal({
+                    title: '첫 방문 선물',
+                    message: `${npc.name}에게 선물을 받았습니다!`,
+                    items: receivedGiftItems
+                });
+            }
         }
     }
 
@@ -850,28 +1026,22 @@ function tryHandoverItem(invIndex, npcId) {
     addGameLog(`📦 ${itemData2 ? itemData2.name : requiredItemId}을(를) ${npc.name}에게 전달했습니다!`);
 
     // 보상 지급
-    if (quest.rewards) {
-        if (quest.rewards.exp) {
-            player.exp += quest.rewards.exp;
-            addGameLog(`✨ ${quest.rewards.exp} EXP 획득!`);
-            if (typeof checkLevelUp === 'function') checkLevelUp();
-        }
-        if (quest.rewards.gold) {
-            if (typeof gold !== 'undefined') gold += quest.rewards.gold;
-            addGameLog(`💰 ${quest.rewards.gold} Gold 획득!`);
-        }
-        if (quest.rewards.items && Array.isArray(quest.rewards.items)) {
-            quest.rewards.items.forEach(rewardItemId => {
-                if (typeof addItemToInventory === 'function') addItemToInventory(rewardItemId);
-            });
-            addGameLog('📦 보상 아이템을 획득했습니다!');
-        }
-    }
+    const rewardSummary = applyQuestRewards(quest.rewards);
 
     if (typeof updatePlayerUI === 'function') updatePlayerUI();
+    if (typeof checkLevelUp === 'function') checkLevelUp();
 
     // 성공 다이얼로그 표시
-    showHandoverResultDialog(npc, true, npc.dialogues.quest_complete || '잘 해냈군! 약속대로 보물을 주겠다.');
+    const completionMessage = npc.dialogues.quest_complete || '수고했네. 꽤나 힘들었을 텐데 잘 완수해주었군! 여기 약속한 보상일세.';
+    showHandoverResultDialog(npc, true, completionMessage);
+
+    showRewardReceiveModal({
+        title: '퀘스트 보상',
+        message: `${quest.name} 완료 보상을 받았습니다!`,
+        exp: rewardSummary.exp,
+        gold: rewardSummary.gold,
+        items: rewardSummary.items
+    });
 }
 
 /**
@@ -950,18 +1120,18 @@ function turnInKillQuest(npcId) {
         if (quest.npcId === npcId && quest.status === 'active') {
             const isComplete = (quest.objective.current || 0) >= (quest.objective.count || 1);
             if (isComplete) {
+                const completionMessage = npc.dialogues.quest_complete || '수고했네. 꽤나 힘들었을 텐데 잘 완수해주었군! 여기 약속한 보상일세.';
+
                 // 퀘스트 완료 처리
-                completeQuest(questKey);
+                completeQuest(questKey, {
+                    npcId,
+                    completionMessage,
+                    showRewardPopup: true
+                });
 
-                // 완료 대화 표시
-                const bubble = document.querySelector('.npc-dialog-bubble p');
-                if (bubble) {
-                    bubble.textContent = npc.dialogues.quest_complete || '훌륭하군! 보상을 받게나.';
-                }
-
-                // 대화창 새로고침
+                // 완료 대사를 포함한 대화창 새로고침
                 closeNPCModal();
-                if (currentNpc) showNPCConversation(currentNpc);
+                if (currentNpc) showNPCConversation(currentNpc, completionMessage);
                 return;
             }
         }
@@ -1027,16 +1197,18 @@ function tryMultiDelivery(npcId) {
     }
 
     // 퀘스트 완료
-    completeQuest(quest.id);
-
-    // 완료 대화
     const completeDlg = npc.dialogues.quest_complete || '감사하네! 보상을 받게.';
-    const bubble = document.querySelector('.npc-dialog-bubble p');
-    if (bubble) bubble.textContent = completeDlg;
+
+    // 퀘스트 완료
+    completeQuest(quest.id, {
+        npcId,
+        completionMessage: completeDlg,
+        showRewardPopup: true
+    });
 
     // 대화창 새로고침
     closeNPCModal();
-    if (currentNpc) showNPCConversation(currentNpc);
+    if (currentNpc) showNPCConversation(currentNpc, completeDlg);
 }
 
 
@@ -1216,32 +1388,24 @@ function acceptQuest(questId, npcId) {
 /**
  * 퀘스트 완료 처리를 합니다.
  */
-function completeQuest(questId) {
+function completeQuest(questId, options = {}) {
     const quest = player.quests[questId];
     if (!quest) return;
 
     const questDef = QUESTS[questId];
     if (!questDef) return;
 
-    // 보상 지급
-    if (questDef.rewards) {
-        if (questDef.rewards.exp) {
-            player.exp = (player.exp || 0) + questDef.rewards.exp;
-            addGameLog(`✨ 경험치 ${questDef.rewards.exp} 획득!`);
-        }
-        if (questDef.rewards.gold) {
-            gold += questDef.rewards.gold;
-            addGameLog(`💰 골드 ${questDef.rewards.gold} 획득!`);
-        }
-        if (questDef.rewards.items && typeof addItemToInventory === 'function') {
-            questDef.rewards.items.forEach(item => {
-                addItemToInventory(item.id, item.quantity || 1);
-                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
-                const itemName = itemData ? itemData.name : item.id;
-                addGameLog(`📦 ${itemName} x${item.quantity || 1} 획득!`);
-            });
-        }
+    const npc = options.npcId && typeof NPCS !== 'undefined' ? NPCS[options.npcId] : null;
+    const completionMessage = options.completionMessage
+        || (npc && npc.dialogues ? npc.dialogues.quest_complete : null)
+        || '수고했네. 꽤나 힘들었을 텐데 잘 완수해주었군! 여기 약속한 보상일세.';
+
+    if (npc) {
+        addGameLog(`💬 ${npc.name}: "${completionMessage}"`);
     }
+
+    // 보상 지급
+    const rewardSummary = applyQuestRewards(questDef.rewards);
 
     // 퀘스트 완료 기록
     if (!player.completedQuests) player.completedQuests = {};
@@ -1251,6 +1415,21 @@ function completeQuest(questId) {
     addGameLog(`🎉 퀘스트 완료: ${questDef.name}`);
     if (typeof checkLevelUp === 'function') checkLevelUp();
     if (typeof updatePlayerUI === 'function') updatePlayerUI();
+
+    if (options.showRewardPopup) {
+        showRewardReceiveModal({
+            title: '퀘스트 보상',
+            message: `${questDef.name} 완료 보상을 받았습니다!`,
+            exp: rewardSummary.exp,
+            gold: rewardSummary.gold,
+            items: rewardSummary.items
+        });
+    }
+
+    return {
+        completionMessage,
+        rewardSummary
+    };
 }
 
 /**

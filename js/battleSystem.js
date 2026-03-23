@@ -300,7 +300,7 @@ function createBattleMonster(monsterType) {
     if (!template) {
         template = {
             name: '알 수 없는 몬스터',
-            hp: 50, atk: 10, def: 5, exp: 20000000000000, gold: 10, emoji: '👹'
+            hp: 50, atk: 10, def: 5, exp: 200000000000, gold: 10, emoji: '👹'
         };
     }
 
