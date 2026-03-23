@@ -372,8 +372,8 @@ const ITEMS_DATABASE = {
         name: '이름 없는 왕의 반지',
         type: 'ring',
         rarity: 'legendary',
-        stats: { pAtk: 10, mAtk: 10, pDef: 5, mDef: 5 },
-        description: '고대 왕이 사용했다는 전설의 반지입니다.',
+        stats: { pAtk: 10, mAtk: 10, pDef: 8, mDef: 8, str: 7, agi: 7, int: 7, vit: 7 },
+        description: '고대 왕이 사용했다는 전설의 반지입니다. 강력한 힘이 깃들어 있습니다.',
         icon: '💍',
         sellPrice: 2000
     },
@@ -392,8 +392,8 @@ const ITEMS_DATABASE = {
         name: '왕의 목걸이',
         type: 'necklace',
         rarity: 'legendary',
-        stats: { pAtk: 8, mAtk: 8, pDef: 4, mDef: 4 },
-        description: '고대 왕이 사용했다는 목걸이입니다.',
+        stats: { pAtk: 8, mAtk: 8, pDef: 5, mDef: 5, str: 7, agi: 7, int: 7, vit: 7 },
+        description: '고대 왕이 사용했다는 목걸이입니다. 특별한 힘이 느껴진다.',
         icon: '📿',
         sellPrice: 1800
     },
@@ -568,6 +568,16 @@ const ITEMS_DATABASE = {
         icon: '💎',
         sellPrice: 1000,
         stackable: false
+    },
+    instructor_ring: {
+        id: 'instructor_ring',
+        name: '교관의 증명',
+        type: 'ring',
+        rarity: 'epic',
+        stats: { pAtk: 5, mAtk: 5, pDef: 5, mDef: 5, str: 5, agi: 5, int: 5, vit: 5 },
+        description: '훈련교관이 유망한 신인에게 증표로 선물한 반지입니다. 초반 여정에 매우 큰 도움이 될 것입니다. 가지고있으면 특별한 일이 일어날 수도 있을 것 같다.',
+        icon: '💍',
+        sellPrice: 500
     },
 
     // ========== 영약 아이템 ==========

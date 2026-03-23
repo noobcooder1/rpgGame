@@ -517,6 +517,7 @@ function showRewardReceiveModal(options = {}) {
 
     const overlay = document.createElement('div');
     overlay.className = 'reward-alert-overlay';
+    if (options.onClose) overlay.onCloseCallback = options.onClose;
     overlay.innerHTML = `
         <div class="reward-alert-modal">
             <div class="reward-alert-header">🎊 ${title}</div>
@@ -544,7 +545,11 @@ function showRewardReceiveModal(options = {}) {
  */
 function closeRewardReceiveModal() {
     const overlay = document.querySelector('.reward-alert-overlay');
-    if (overlay) overlay.remove();
+    if (overlay) {
+        const callback = overlay.onCloseCallback;
+        overlay.remove();
+        if (typeof callback === 'function') callback();
+    }
 }
 
 // ============================================
@@ -629,34 +634,40 @@ function showNPCConversation(npc, overrideGreetingText = null) {
 
     // 훈련교관1 첫 대화 선물 처리
     let greetingText = overrideGreetingText || npc.dialogues.greeting;
-    if (npc.id === 'instructor1' && npc.firstMeetGift && !player.instructor1GiftReceived) {
-        greetingText = npc.dialogues.first_greeting || greetingText;
-        player.instructor1GiftReceived = true;
-        // 선물 지급
-        const receivedGiftItems = [];
-        if (npc.firstMeetGift.items && typeof addItemToInventory === 'function') {
-            npc.firstMeetGift.items.forEach(gift => {
-                const quantity = gift.quantity || 1;
-                addItemToInventory(gift.id, quantity);
-                const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[gift.id] : null;
-                const itemName = itemData ? itemData.name : gift.id;
-                receivedGiftItems.push({
-                    id: gift.id,
-                    quantity,
-                    name: itemName,
-                    icon: itemData ? itemData.icon : '🎁',
-                    image: itemData ? itemData.image : null
-                });
-                addGameLog(`🎁 ${itemName} x${quantity}을(를) 받았습니다!`);
-            });
-
-            if (receivedGiftItems.length > 0) {
-                showRewardReceiveModal({
-                    title: '첫 방문 선물',
-                    message: `${npc.name}에게 선물을 받았습니다!`,
-                    items: receivedGiftItems
-                });
-            }
+    if (npc.id === 'instructor1' && npc.firstMeetGift && !player.instructor1EventComplete) {
+        if (player.instructor1EventStep === undefined) player.instructor1EventStep = 0;
+        
+        if (player.instructor1EventStep === 0) {
+            greetingText = '오호 자네 훈련장에는 처음이로군? 훈련장에 처음왔으니 힘내라는 의미로 주는 선물일세. 열심히 훈련해서 대단한 모험가가 되길바라네!';
+            
+            const overlayOptionsHtml = `
+                <button class="dialog-option-btn" onclick="handleInstructor1Event(1)">
+                    1. 감사합니다! 열심히 하겠습니다!
+                </button>
+                <button class="dialog-option-btn" onclick="handleInstructor1Event(2)">
+                    2. 아닙니다! 마음만 받겠습니다!
+                </button>
+            `;
+            
+            overlay.innerHTML = `
+                <div class="npc-dialog-modal">
+                    <div class="npc-dialog-header">
+                        <span class="npc-dialog-emoji">${npc.emoji}</span>
+                        <span class="npc-dialog-name">${npc.name}</span>
+                    </div>
+                    <div class="npc-dialog-content">
+                        <div class="npc-dialog-bubble">
+                            <p>${greetingText}</p>
+                        </div>
+                        <div class="dialog-options">
+                            ${overlayOptionsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            currentNpcDialogOpen = true;
+            return;
         }
     }
 
@@ -2207,3 +2218,133 @@ function registerShopItemsToDatabase() {
 
 // 즉시 실행
 registerShopItemsToDatabase();
+
+// ============================================
+// 🎁 훈련교관1 특수 이벤트 관리
+// ============================================
+
+window.handleInstructor1Event = function(choice) {
+    const npc = NPCS['instructor1'];
+    player.instructor1EventStep = 1;
+    
+    // 모달 DOM 참조
+    const bubbleText = document.querySelector('.npc-dialog-bubble p');
+    const optionsContainer = document.querySelector('.dialog-options');
+    if (!bubbleText || !optionsContainer) return;
+    
+    if (choice === 1) {
+        bubbleText.textContent = "열정적이어서 좋군! 열심히 훈련해서 제국에 도움이 되도록!";
+        optionsContainer.innerHTML = ''; // 선택지 숨김
+        
+        setTimeout(() => {
+            giveInstructor1BasicGift(npc, false);
+        }, 1500);
+    } else if (choice === 2) {
+        bubbleText.textContent = "내 선물을 거절하다니, 이런 경우는 또 처음이군..";
+        optionsContainer.innerHTML = `<button class="dialog-option-btn" onclick="handleInstructor1Event(3)">다음으로 ▶</button>`;
+    } else if (choice === 3) {
+        bubbleText.textContent = "그 마음 정말 훌륭하군! 하지만 이 선물은 받아도 아무 문제없는 선물이니 그냥 받게!";
+        optionsContainer.innerHTML = '';
+        
+        setTimeout(() => {
+            giveInstructor1BasicGift(npc, true);
+        }, 1500);
+    } else if (choice === 4) {
+        bubbleText.textContent = "아! 까먹을뻔 했군. 이것도 받게나! 앞으로의 여정에 도움이 될 것이네.";
+        optionsContainer.innerHTML = '';
+        
+        setTimeout(() => {
+            giveInstructor1BonusGift(npc);
+        }, 1500);
+    } else if (choice === 5) {
+        // 모든 이벤트 종료 후 상태 저장 및 대화 재개
+        player.instructor1EventComplete = true;
+        player.instructor1GiftReceived = true; // 호환성
+        closeNPCModal(); // 현재 모달 닫기
+        // 정상 대화로 다시 오픈
+        showNPCConversation(npc);
+    }
+};
+
+function giveInstructor1BasicGift(npc, includeBonus = false) {
+    const receivedGiftItems = [];
+    let bonusExp = 0;
+    let bonusGold = 0;
+
+    if (includeBonus) {
+        bonusExp = 200;
+        bonusGold = 100;
+
+        if (typeof player !== 'undefined') {
+            player.exp = (player.exp || 0) + bonusExp;
+            addGameLog(`✨ 경험치 ${bonusExp} 획득!`);
+            if (typeof checkLevelUp === 'function') checkLevelUp();
+        }
+        if (typeof gold !== 'undefined') {
+            gold += bonusGold;
+            addGameLog(`💰 골드 ${bonusGold} 획득!`);
+            if (typeof updatePlayerUI === 'function') updatePlayerUI();
+        }
+    }
+
+    if (npc.firstMeetGift && npc.firstMeetGift.items && typeof addItemToInventory === 'function') {
+        npc.firstMeetGift.items.forEach(gift => {
+            const quantity = gift.quantity || 1;
+            addItemToInventory(gift.id, quantity);
+            const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[gift.id] : null;
+            const itemName = itemData ? itemData.name : gift.id;
+            receivedGiftItems.push({
+                id: gift.id,
+                quantity,
+                name: itemName,
+                icon: itemData ? itemData.icon : '🎁',
+                image: itemData ? itemData.image : null
+            });
+            addGameLog(`🎁 ${itemName} x${quantity}을(를) 받았습니다!`);
+        });
+
+        if (receivedGiftItems.length > 0 || includeBonus) {
+            let message = `${npc.name}에게 선물을 받았습니다!`;
+            if (includeBonus) message = `${npc.name}에게 선물과 함께 특별한 보상을 받았습니다!`;
+
+            showRewardReceiveModal({
+                title: '첫 방문 선물',
+                message: message,
+                items: receivedGiftItems,
+                exp: bonusExp > 0 ? bonusExp : undefined,
+                gold: bonusGold > 0 ? bonusGold : undefined,
+                onClose: () => handleInstructor1Event(4) // 닫으면 다음 대사로 연결
+            });
+        } else {
+            handleInstructor1Event(4);
+        }
+    } else {
+        handleInstructor1Event(4);
+    }
+}
+
+function giveInstructor1BonusGift(npc) {
+    if (typeof addItemToInventory === 'function') {
+        addItemToInventory('instructor_ring', 1);
+        const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE['instructor_ring'] : null;
+        
+        const itemName = itemData ? itemData.name : '교관의 증명';
+        const itemIcon = itemData ? itemData.icon : '💍';
+        
+        showRewardReceiveModal({
+            title: '특별한 선물',
+            message: `${npc.name}이 특별 추가 선물을 주었습니다!`,
+            items: [{
+                id: 'instructor_ring',
+                quantity: 1,
+                name: itemName,
+                icon: itemIcon,
+                image: itemData ? itemData.image : null
+            }],
+            onClose: () => handleInstructor1Event(5) // 모든 절차 완료
+        });
+        addGameLog(`🎁 ${itemName} x1 을(를) 받았습니다!`);
+    } else {
+        handleInstructor1Event(5);
+    }
+}
