@@ -1641,6 +1641,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '조잡하게 만든 체력회복물약입니다.',
             icon: '❤️',
+            image: 'assets/items/hp_potion.png',
             effect: { hp: 30 },
             sellPrice: 5,
             stackable: true
@@ -1650,6 +1651,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '조잡하게 만든 마나회복물약입니다.',
             icon: '💙',
+            image: 'assets/items/mp_potion.png',
             effect: { mp: 20 },
             sellPrice: 6,
             stackable: true

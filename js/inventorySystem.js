@@ -193,6 +193,18 @@ const ITEMS_DATABASE = {
         sellPrice: 20,
         stackable: true
     },
+    purify_potion: {
+        id: 'purify_potion',
+        name: '정화의 물약',
+        type: 'consumable',
+        rarity: 'uncommon',
+        effect: { type: 'cure_status' },
+        description: '모든 상태이상을 제거합니다.',
+        icon: '✨',
+        image: 'assets/items/purify_potion.png',
+        sellPrice: 12,
+        stackable: true
+    },
     // 재료
     herb: {
         id: 'herb',

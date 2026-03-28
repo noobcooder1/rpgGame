@@ -323,6 +323,7 @@ const SHOP_ITEMS = {
             rarity: 'uncommon',
             description: '모든 상태이상을 제거합니다.',
             icon: '✨',
+            image: 'assets/items/purify_potion.png',
             price: 25,
             sellPrice: 12,
             effect: { type: 'cure_status' },
@@ -1391,9 +1392,67 @@ function acceptQuest(questId, npcId) {
         addGameLog(`💰 보상: ${rewardText}`);
     }
 
-    // 퀘스트 선택 UI 새로고침
+    // 퀘스트 선택 UI 먼저 닫기
     closeNPCModal();
-    showMultiQuestSelection(npcId);
+
+    // NPC 정보 가져오기
+    const npc = (typeof NPCS !== 'undefined' && NPCS[npcId]) ? NPCS[npcId] : null;
+
+    // 퀘스트 수락 알림창/대사 표시
+    showQuestAcceptModal(questDef, npc, () => {
+        // 알림창 확인 후 퀘스트 목록 다시 열기
+        showMultiQuestSelection(npcId);
+    });
+}
+
+/**
+ * 퀘스트 수락 알림 모달을 표시합니다.
+ */
+function showQuestAcceptModal(questDef, npc, onConfirm) {
+    const existing = document.querySelector('.quest-alert-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    // 기존 보상 알림창 스타일을 재사용하되 커스텀 클래스도 추가
+    overlay.className = 'reward-alert-overlay quest-alert-overlay';
+    
+    // NPC 이미지가 있으면 넣고, 아니면 이모지
+    const npcVisual = npc ? `<div class="reward-alert-icon" style="font-size: 3.5rem;">${npc.emoji}</div>` : '<div class="reward-alert-icon">📜</div>';
+    const npcName = npc ? npc.name : '알림';
+    
+    // NPC 수락 대사 (없으면 기본 대사)
+    let acceptMessage = `"${questDef.name}" 퀘스트를 수락했습니다!`;
+    if (npc) {
+        if (npc.dialogues && npc.dialogues.quest_accept) {
+            acceptMessage = npc.dialogues.quest_accept;
+        } else {
+            acceptMessage = "좋아, 부탁을 수락해줘서 고맙군! 기대하고 있겠네.";
+        }
+    }
+        
+    overlay.innerHTML = `
+        <div class="reward-alert-modal">
+            <div class="reward-alert-header">📜 퀘스트 수락</div>
+            <div class="reward-alert-body">
+                <div class="reward-alert-icon-wrap" style="margin-bottom: 15px;">
+                    ${npcVisual}
+                </div>
+                <h3 style="color: #f1c40f; margin-top: 0; margin-bottom: 15px;">${questDef.name}</h3>
+                <div style="background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #3498db;">
+                    <p style="margin: 0; color: #ecf0f1; font-style: italic; font-size: 1.1em;">"${acceptMessage}"</p>
+                    <div style="text-align: right; margin-top: 5px; color: #bdc3c7; font-size: 0.9em;">- ${npcName}</div>
+                </div>
+            </div>
+            <button class="reward-alert-confirm" id="questAcceptConfirmBtn">확인</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    
+    document.getElementById('questAcceptConfirmBtn').onclick = () => {
+        overlay.remove();
+        if (typeof onConfirm === 'function') onConfirm();
+    };
 }
 
 /**

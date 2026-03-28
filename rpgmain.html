@@ -209,6 +209,7 @@
                 </div>
                 <div class="header-right">
                     <div class="game-menu-buttons">
+                        <button class="game-menu-btn" onclick="showCrafting()" title="제작">🛠️</button>
                         <button class="game-menu-btn" onclick="showInventory()" title="인벤토리">🎒</button>
                         <button class="game-menu-btn" onclick="showSaveLoadMenu('save')" title="저장">💾</button>
                         <button class="game-menu-btn" onclick="showGameRule()" title="도움말">📖</button>
@@ -410,6 +411,43 @@
         <div id="itemTooltip" class="item-tooltip hidden"></div>
     </div>
 
+    <!-- ===== 제작 모달 ===== -->
+    <div id="craftingModal" class="modal-overlay hidden">
+        <div class="crafting-modal">
+            <div class="crafting-header">
+                <h2>🛠️ 제작</h2>
+                <button class="crafting-close-btn" onclick="hideCrafting()">✕</button>
+            </div>
+            <div class="crafting-content">
+                <p class="crafting-guide">
+                    재료를 소모해 아이템을 제작합니다. 성공 확률은 <strong>근력</strong>과 <strong>지능</strong>에 영향을 받습니다.
+                </p>
+                <div id="craftingStatBonus" class="crafting-stat-bonus"></div>
+                <div class="crafting-tabs" id="craftingTabs">
+                    <button class="crafting-tab-btn active" data-tab="recipe" onclick="switchCraftingTab('recipe')">📜 레시피 제작</button>
+                    <button class="crafting-tab-btn" data-tab="manual" onclick="switchCraftingTab('manual')">🧪 자유 조합</button>
+                    <button class="crafting-tab-btn" data-tab="dismantle" onclick="switchCraftingTab('dismantle')">🧰 분해</button>
+                </div>
+
+                <div id="craftingRecipePanel" class="crafting-panel">
+                    <div id="craftingRecipeList" class="crafting-recipe-list">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+
+                <div id="craftingManualPanel" class="crafting-panel hidden">
+                    <!-- 동적 생성 -->
+                </div>
+
+                <div id="craftingDismantlePanel" class="crafting-panel hidden">
+                    <div id="craftingDismantleList" class="crafting-recipe-list">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 난이도 선택 UI -->
     <div id="difficultyOverlay" class="difficulty-overlay" style="display: none;">
         <div class="difficulty-panel">
@@ -466,6 +504,7 @@
     <script src="js/mapSystem.js"></script>
     <script src="js/battleSystem.js"></script>
     <script src="js/inventorySystem.js"></script>
+    <script src="js/craftingSystem.js"></script>
     <script src="js/shopSystem.js"></script>
     <script src="js/hungerSystem.js"></script>
     <!-- 3. 인증 시스템 (saveload.js보다 먼저 로드해야 함) -->

@@ -2058,6 +2058,320 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* 제작 모달 */
+.crafting-modal {
+    background: linear-gradient(135deg, #1d1b2f 0%, #13283b 60%, #0f1f2d 100%);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    width: 92%;
+    max-width: 760px;
+    max-height: 88vh;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 215, 0, 0.12);
+}
+
+.crafting-header {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(77, 168, 218, 0.2));
+    padding: 14px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.crafting-header h2 {
+    margin: 0;
+    color: var(--gold);
+    font-size: 22px;
+}
+
+.crafting-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.crafting-close-btn:hover {
+    background: rgba(233, 69, 96, 0.5);
+    border-color: var(--primary);
+}
+
+.crafting-content {
+    padding: 16px 20px 20px;
+    overflow-y: auto;
+    max-height: calc(88vh - 70px);
+}
+
+.crafting-guide {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.crafting-stat-bonus {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.crafting-stat-bonus span {
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 6px 10px;
+}
+
+.crafting-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.crafting-tab-btn {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.28);
+    color: #dbe7ff;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.crafting-tab-btn:hover {
+    border-color: rgba(255, 215, 0, 0.45);
+}
+
+.crafting-tab-btn.active {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(52, 152, 219, 0.3));
+    border-color: rgba(255, 215, 0, 0.45);
+    color: #fff3bf;
+}
+
+.crafting-panel.hidden {
+    display: none;
+}
+
+.crafting-recipe-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.crafting-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.crafting-card.can-craft {
+    border-color: rgba(76, 175, 80, 0.45);
+    box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.2);
+}
+
+.crafting-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.crafting-card-header h4 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.crafting-result-qty {
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.crafting-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    min-height: 34px;
+}
+
+.crafting-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.crafting-ingredients {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.crafting-ingredient {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    border-radius: 8px;
+    padding: 5px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.crafting-ingredient.enough {
+    color: #a5e6ae;
+    background: rgba(76, 175, 80, 0.12);
+}
+
+.crafting-ingredient.lack {
+    color: #ffb0b0;
+    background: rgba(231, 76, 60, 0.14);
+}
+
+.crafting-btn {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, #2e8b57, #1f6b45);
+    transition: all 0.2s ease;
+}
+
+.crafting-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.crafting-btn:disabled {
+    cursor: not-allowed;
+    background: #5a5f6d;
+    opacity: 0.75;
+}
+
+.crafting-btn-secondary {
+    background: linear-gradient(135deg, #46506a, #3c455c);
+}
+
+.manual-guide {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.manual-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.manual-slot-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.manual-slot-title {
+    font-size: 12px;
+    color: #cfd8ff;
+}
+
+.manual-slot-select,
+.manual-slot-qty {
+    background: rgba(10, 15, 24, 0.8);
+    color: #e7edf6;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: 13px;
+}
+
+.manual-slot-qty:disabled {
+    opacity: 0.5;
+}
+
+.manual-preview {
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.manual-preview-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #dbe7ff;
+}
+
+.manual-preview-result {
+    margin-top: 6px;
+    font-size: 13px;
+    padding: 7px 9px;
+    border-radius: 8px;
+}
+
+.manual-preview-result.valid {
+    background: rgba(76, 175, 80, 0.16);
+    color: #b9efc0;
+}
+
+.manual-preview-result.invalid {
+    background: rgba(231, 76, 60, 0.15);
+    color: #ffb0b0;
+}
+
+.manual-actions {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.crafting-warning {
+    margin-top: 8px;
+    margin-bottom: 0;
+    font-size: 12px;
+    color: #ffb0b0;
+}
+
+.crafting-empty {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 10px;
+    text-align: center;
+}
+
+.dismantle-result {
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #c9d6ff;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 7px 8px;
+}
+
 /* ============================================ */
 /* 대련 결과 오버레이                            */
 /* ============================================ */
@@ -5364,6 +5678,34 @@ body {
     .inventory-grid {
         grid-template-columns: repeat(5, 1fr);
         gap: 4px;
+    }
+
+    /* 제작 모달 */
+    #craftingModal {
+        padding: 0;
+    }
+
+    .crafting-modal {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    .crafting-content {
+        max-height: calc(100% - 70px);
+    }
+
+    .crafting-recipe-list {
+        grid-template-columns: 1fr;
+    }
+
+    .manual-slot-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .manual-actions {
+        grid-template-columns: 1fr;
     }
 
     .inventory-slot {
