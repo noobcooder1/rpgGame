@@ -187,10 +187,14 @@ const DISMANTLE_RECIPES = {
 };
 
 const CRAFTING_EQUIPABLE_TYPES = ['weapon', 'armor', 'helmet', 'boots', 'gloves', 'tool', 'necklace', 'ring', 'accessory'];
-const MANUAL_CRAFTING_SLOT_COUNT = 4;
+const MANUAL_CRAFTING_SLOT_COUNT = 9;
+const MANUAL_PICKER_PAGE_SIZE = 20;
 
 let currentCraftingTab = 'recipe';
 let manualCraftSlots = Array.from({ length: MANUAL_CRAFTING_SLOT_COUNT }, () => ({ itemId: '', quantity: 1 }));
+let activeManualSlotIndex = -1;
+let manualPickerSelection = { itemId: '', quantity: 1 };
+let currentManualPickerTab = 'all';
 
 // ============================================
 // 🔧 내부 유틸
@@ -266,6 +270,7 @@ function getCraftingSelectableItems() {
             id: item.id,
             name: getItemNameById(item.id),
             icon: getItemIconById(item.id),
+            type: item.type || 'material',
             quantity: 0
         };
         prev.quantity += item.quantity || 1;
@@ -273,6 +278,24 @@ function getCraftingSelectableItems() {
     });
 
     return [...itemMap.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * 자유 조합 선택 탭 기준으로 아이템을 필터링합니다.
+ * @param {Array<{id:string, type:string}>} items - 선택 가능한 아이템 목록
+ * @param {string} tab - 탭 ID
+ * @returns {Array<Object>} 필터링된 아이템 목록
+ */
+function getManualPickerFilteredItems(items, tab) {
+    if (!Array.isArray(items) || !items.length) return [];
+    if (tab === 'all') return items;
+
+    if (tab === 'armor') {
+        const armorTypes = ['armor', 'helmet', 'boots', 'gloves', 'necklace', 'ring', 'accessory'];
+        return items.filter(item => armorTypes.includes(item.type));
+    }
+
+    return items.filter(item => item.type === tab);
 }
 
 /**
@@ -354,6 +377,36 @@ function getSelectedManualIngredients() {
     });
 
     return [...ingredientMap.entries()].map(([itemId, quantity]) => ({ itemId, quantity }));
+}
+
+/**
+ * 현재 슬롯을 제외하고 동일 아이템이 자유 조합에 예약된 수량을 반환합니다.
+ * @param {string} itemId - 아이템 ID
+ * @param {number} excludeSlotIndex - 제외할 슬롯 인덱스
+ * @returns {number} 예약 수량
+ */
+function getReservedManualQuantity(itemId, excludeSlotIndex) {
+    if (!itemId) return 0;
+
+    return manualCraftSlots.reduce((sum, slot, index) => {
+        if (index === excludeSlotIndex) return sum;
+        if (slot.itemId !== itemId) return sum;
+        return sum + Math.max(1, Number(slot.quantity) || 1);
+    }, 0);
+}
+
+/**
+ * 특정 슬롯에서 선택 가능한 아이템의 최대 수량을 반환합니다.
+ * @param {number} slotIndex - 슬롯 인덱스
+ * @param {string} itemId - 아이템 ID
+ * @returns {number} 최대 선택 수량
+ */
+function getManualSlotAvailableQuantity(slotIndex, itemId) {
+    if (!itemId) return 0;
+
+    const inventoryQuantity = getInventoryItemQuantity(itemId);
+    const reserved = getReservedManualQuantity(itemId, slotIndex);
+    return Math.max(0, inventoryQuantity - reserved);
 }
 
 /**
@@ -507,7 +560,145 @@ function setManualCraftSlotQuantity(slotIndex, quantity) {
     if (!manualCraftSlots[slotIndex]) return;
 
     const parsed = Number(quantity);
-    manualCraftSlots[slotIndex].quantity = Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1;
+    const selectedItemId = manualCraftSlots[slotIndex].itemId;
+    const maxQuantity = selectedItemId ? getManualSlotAvailableQuantity(slotIndex, selectedItemId) : 1;
+    const normalized = Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1;
+    manualCraftSlots[slotIndex].quantity = clamp(normalized, 1, Math.max(1, maxQuantity));
+
+    if (activeManualSlotIndex === slotIndex && manualPickerSelection.itemId === selectedItemId) {
+        manualPickerSelection.quantity = manualCraftSlots[slotIndex].quantity;
+    }
+
+    renderCraftingUI();
+}
+
+/**
+ * 자유 조합 슬롯 선택창을 엽니다.
+ * @param {number} slotIndex - 슬롯 인덱스
+ */
+function openManualCraftSlotPicker(slotIndex) {
+    if (!manualCraftSlots[slotIndex]) return;
+
+    const slot = manualCraftSlots[slotIndex];
+    activeManualSlotIndex = slotIndex;
+
+    if (slot.itemId) {
+        const maxQuantity = Math.max(1, getManualSlotAvailableQuantity(slotIndex, slot.itemId));
+        manualPickerSelection = {
+            itemId: slot.itemId,
+            quantity: clamp(slot.quantity || 1, 1, maxQuantity)
+        };
+    } else {
+        manualPickerSelection = { itemId: '', quantity: 1 };
+    }
+
+    renderCraftingUI();
+}
+
+/**
+ * 자유 조합 슬롯 선택창을 닫습니다.
+ */
+function closeManualCraftSlotPicker() {
+    activeManualSlotIndex = -1;
+    manualPickerSelection = { itemId: '', quantity: 1 };
+    currentManualPickerTab = 'all';
+    renderCraftingUI();
+}
+
+/**
+ * 자유 조합 아이템 선택 탭을 변경합니다.
+ * @param {string} tab - 탭 ID
+ */
+function changeManualCraftPickerTab(tab) {
+    const validTabs = ['all', 'weapon', 'armor', 'consumable', 'material'];
+    if (!validTabs.includes(tab)) return;
+
+    currentManualPickerTab = tab;
+    renderCraftingUI();
+}
+
+/**
+ * 슬롯 선택창에서 아이템을 선택합니다.
+ * @param {string} itemId - 아이템 ID
+ */
+function selectManualCraftPickerItem(itemId) {
+    if (activeManualSlotIndex < 0) return;
+
+    const slot = manualCraftSlots[activeManualSlotIndex];
+    const maxQuantity = Math.max(1, getManualSlotAvailableQuantity(activeManualSlotIndex, itemId));
+    const nextQuantity = slot.itemId === itemId ? slot.quantity || 1 : 1;
+
+    manualPickerSelection = {
+        itemId,
+        quantity: clamp(nextQuantity, 1, maxQuantity)
+    };
+
+    renderCraftingUI();
+}
+
+/**
+ * 슬롯 선택창의 수량을 변경합니다.
+ * @param {number|string} quantity - 변경 수량
+ */
+function setManualCraftPickerQuantity(quantity) {
+    if (activeManualSlotIndex < 0 || !manualPickerSelection.itemId) return;
+
+    const parsed = Number(quantity);
+    const maxQuantity = Math.max(1, getManualSlotAvailableQuantity(activeManualSlotIndex, manualPickerSelection.itemId));
+    const normalized = Number.isFinite(parsed) ? Math.floor(parsed) : 1;
+    manualPickerSelection.quantity = clamp(normalized, 1, maxQuantity);
+    renderCraftingUI();
+}
+
+/**
+ * 슬롯 선택창 수량을 증감합니다.
+ * @param {number} delta - 증감량
+ */
+function changeManualCraftPickerQuantity(delta) {
+    if (activeManualSlotIndex < 0 || !manualPickerSelection.itemId) return;
+
+    const baseQuantity = Number.isFinite(Number(manualPickerSelection.quantity)) ? Number(manualPickerSelection.quantity) : 1;
+    setManualCraftPickerQuantity(baseQuantity + delta);
+}
+
+/**
+ * 슬롯 선택창의 선택을 슬롯에 반영합니다.
+ */
+function applyManualCraftPickerSelection() {
+    if (activeManualSlotIndex < 0 || !manualCraftSlots[activeManualSlotIndex]) return;
+    if (!manualPickerSelection.itemId) {
+        addCraftLog('❌ 아이템을 먼저 선택해주세요.');
+        return;
+    }
+
+    const maxQuantity = getManualSlotAvailableQuantity(activeManualSlotIndex, manualPickerSelection.itemId);
+    if (maxQuantity <= 0) {
+        addCraftLog('❌ 해당 아이템의 사용 가능한 수량이 없습니다.');
+        return;
+    }
+
+    manualCraftSlots[activeManualSlotIndex].itemId = manualPickerSelection.itemId;
+    manualCraftSlots[activeManualSlotIndex].quantity = clamp(manualPickerSelection.quantity || 1, 1, maxQuantity);
+
+    activeManualSlotIndex = -1;
+    manualPickerSelection = { itemId: '', quantity: 1 };
+    renderCraftingUI();
+}
+
+/**
+ * 자유 조합 슬롯을 비웁니다.
+ * @param {number} slotIndex - 슬롯 인덱스
+ */
+function clearManualCraftSlot(slotIndex) {
+    if (!manualCraftSlots[slotIndex]) return;
+
+    manualCraftSlots[slotIndex] = { itemId: '', quantity: 1 };
+
+    if (activeManualSlotIndex === slotIndex) {
+        activeManualSlotIndex = -1;
+        manualPickerSelection = { itemId: '', quantity: 1 };
+    }
+
     renderCraftingUI();
 }
 
@@ -516,6 +707,9 @@ function setManualCraftSlotQuantity(slotIndex, quantity) {
  */
 function resetManualCraftSlots() {
     manualCraftSlots = Array.from({ length: MANUAL_CRAFTING_SLOT_COUNT }, () => ({ itemId: '', quantity: 1 }));
+    activeManualSlotIndex = -1;
+    manualPickerSelection = { itemId: '', quantity: 1 };
+    currentManualPickerTab = 'all';
     renderCraftingUI();
 }
 
@@ -699,32 +893,96 @@ function renderManualPanel() {
     const hasEnough = selectedIngredients.length > 0 && hasEnoughIngredients(selectedIngredients);
 
     const slotHtml = manualCraftSlots.map((slot, index) => {
-        const selectedTotalQty = getInventoryItemQuantity(slot.itemId);
-        const quantityMax = Math.max(1, selectedTotalQty || 1);
+        const isActive = activeManualSlotIndex === index;
+        const hasItem = Boolean(slot.itemId);
+        const itemName = hasItem ? getItemNameById(slot.itemId) : '빈 슬롯';
+        const itemIcon = hasItem ? getItemIconById(slot.itemId) : '➕';
 
         return `
-            <div class="manual-slot-card">
-                <div class="manual-slot-title">재료 슬롯 ${index + 1}</div>
-                <select class="manual-slot-select" onchange="setManualCraftSlotItem(${index}, this.value)">
-                    <option value="">재료 선택</option>
-                    ${selectableItems.map(item => `
-                        <option value="${item.id}" ${slot.itemId === item.id ? 'selected' : ''}>
-                            ${item.icon} ${item.name} (보유 ${item.quantity})
-                        </option>
-                    `).join('')}
-                </select>
-                <input
-                    class="manual-slot-qty"
-                    type="number"
-                    min="1"
-                    max="${quantityMax}"
-                    value="${slot.quantity || 1}"
-                    ${slot.itemId ? '' : 'disabled'}
-                    onchange="setManualCraftSlotQuantity(${index}, this.value)"
-                />
+            <article class="manual-combine-slot ${isActive ? 'active' : ''} ${hasItem ? 'filled' : 'empty'}">
+                <button class="manual-slot-hitbox" onclick="openManualCraftSlotPicker(${index})">
+                    <span class="manual-slot-index">${index + 1}</span>
+                    <div class="manual-slot-icon">${itemIcon}</div>
+                    <div class="manual-slot-name">${itemName}</div>
+                    <div class="manual-slot-qty">${hasItem ? `x${slot.quantity || 1}` : '선택'}</div>
+                </button>
+                ${hasItem ? `<button class="manual-slot-clear" onclick="clearManualCraftSlot(${index})" title="슬롯 비우기">✕</button>` : ''}
+            </article>
+        `;
+    }).join('');
+
+    const activeSlot = manualCraftSlots[activeManualSlotIndex] || null;
+    const pickerVisible = activeManualSlotIndex >= 0 && Boolean(activeSlot);
+    const pickerItemId = manualPickerSelection.itemId;
+    const pickerMaxQuantity = pickerItemId
+        ? Math.max(1, getManualSlotAvailableQuantity(activeManualSlotIndex, pickerItemId))
+        : 1;
+    const pickerQuantity = clamp(manualPickerSelection.quantity || 1, 1, pickerMaxQuantity);
+    const pickerCanApply = pickerVisible && Boolean(pickerItemId);
+
+    const filteredPickerItems = getManualPickerFilteredItems(selectableItems, currentManualPickerTab);
+    const gridCount = Math.max(MANUAL_PICKER_PAGE_SIZE, Math.ceil(filteredPickerItems.length / 5) * 5);
+
+    const pickerGridHtml = Array.from({ length: gridCount }, (_, slotIndex) => {
+        const item = filteredPickerItems[slotIndex];
+        if (!item) {
+            return '<div class="manual-picker-grid-slot"><div class="manual-picker-empty"></div></div>';
+        }
+
+        const selectableQuantity = getManualSlotAvailableQuantity(activeManualSlotIndex, item.id);
+        const disabled = selectableQuantity <= 0;
+        const selected = pickerItemId === item.id;
+
+        return `
+            <div class="manual-picker-grid-slot ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}">
+                <button class="manual-picker-grid-hitbox" onclick="selectManualCraftPickerItem('${item.id}')" ${disabled ? 'disabled' : ''}>
+                    <span class="manual-picker-grid-icon">${item.icon}</span>
+                    <span class="manual-picker-grid-name">${item.name}</span>
+                    <span class="manual-picker-grid-count">${Math.max(0, selectableQuantity)}</span>
+                </button>
             </div>
         `;
     }).join('');
+
+    const pickerHtml = pickerVisible
+        ? `
+            <section class="manual-picker">
+                <header class="manual-picker-header">
+                    <h4>슬롯 ${activeManualSlotIndex + 1} 재료 선택</h4>
+                    <button class="manual-picker-close" onclick="closeManualCraftSlotPicker()">닫기</button>
+                </header>
+                <div class="manual-picker-tabs">
+                    <button class="manual-picker-tab ${currentManualPickerTab === 'all' ? 'active' : ''}" onclick="changeManualCraftPickerTab('all')">전체</button>
+                    <button class="manual-picker-tab ${currentManualPickerTab === 'weapon' ? 'active' : ''}" onclick="changeManualCraftPickerTab('weapon')">무기</button>
+                    <button class="manual-picker-tab ${currentManualPickerTab === 'armor' ? 'active' : ''}" onclick="changeManualCraftPickerTab('armor')">방어구</button>
+                    <button class="manual-picker-tab ${currentManualPickerTab === 'consumable' ? 'active' : ''}" onclick="changeManualCraftPickerTab('consumable')">소모품</button>
+                    <button class="manual-picker-tab ${currentManualPickerTab === 'material' ? 'active' : ''}" onclick="changeManualCraftPickerTab('material')">재료</button>
+                </div>
+                <div class="manual-picker-grid">${pickerGridHtml}</div>
+                <div class="manual-picker-controls">
+                    <div class="manual-picker-qty-label">수량</div>
+                    <div class="manual-picker-qty-box">
+                        <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(-1)" ${pickerItemId ? '' : 'disabled'}>-</button>
+                        <input
+                            class="manual-picker-qty-input"
+                            type="number"
+                            min="1"
+                            max="${pickerMaxQuantity}"
+                            value="${pickerQuantity}"
+                            ${pickerItemId ? '' : 'disabled'}
+                            onchange="setManualCraftPickerQuantity(this.value)"
+                        />
+                        <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(1)" ${pickerItemId ? '' : 'disabled'}>+</button>
+                    </div>
+                    <button class="crafting-btn" onclick="applyManualCraftPickerSelection()" ${pickerCanApply ? '' : 'disabled'}>슬롯에 추가</button>
+                </div>
+            </section>
+        `
+        : `
+            <section class="manual-picker manual-picker-placeholder">
+                <p>재료 슬롯을 클릭하면 인벤토리 형태의 아이템 칸이 열립니다.</p>
+            </section>
+        `;
 
     const selectedHtml = selectedIngredients.length
         ? selectedIngredients.map(ingredient => `
@@ -741,9 +999,15 @@ function renderManualPanel() {
     }
 
     manualPanel.innerHTML = `
-        <div class="manual-guide">인벤토리 아이템을 자유롭게 넣어 조합을 시도하세요. 말이 안 되는 조합은 실패합니다.</div>
-        <div class="manual-slot-grid">${slotHtml}</div>
-        <div class="manual-preview">
+        <div class="manual-guide">재료 슬롯을 눌러 인벤토리에서 아이템을 고르고 수량을 정한 뒤 추가하세요. 최대 9가지 재료를 넣을 수 있습니다.</div>
+        <div class="manual-main-layout">
+            <section class="manual-left-zone">
+                <div class="manual-combine-layout">
+                    <section class="manual-combine-board">${slotHtml}</section>
+                    ${pickerHtml}
+                </div>
+            </section>
+            <aside class="manual-preview manual-preview-side">
             <div class="manual-preview-title">조합 미리보기</div>
             <div class="crafting-ingredients">${selectedHtml}</div>
             <div class="manual-preview-result ${matchedRecipe ? 'valid' : 'invalid'}">${previewText}</div>
@@ -752,6 +1016,7 @@ function renderManualPanel() {
                 <button class="crafting-btn crafting-btn-secondary" onclick="resetManualCraftSlots()">슬롯 초기화</button>
             </div>
             ${!hasEnough && selectedIngredients.length ? '<p class="crafting-warning">선택한 수량이 보유량보다 많습니다.</p>' : ''}
+            </aside>
         </div>
     `;
 }
@@ -813,6 +1078,12 @@ function renderCraftingUI() {
     recipePanel.classList.toggle('hidden', currentCraftingTab !== 'recipe');
     manualPanel.classList.toggle('hidden', currentCraftingTab !== 'manual');
     dismantlePanel.classList.toggle('hidden', currentCraftingTab !== 'dismantle');
+
+    if (currentCraftingTab !== 'manual') {
+        activeManualSlotIndex = -1;
+        manualPickerSelection = { itemId: '', quantity: 1 };
+        currentManualPickerTab = 'all';
+    }
 
     if (currentCraftingTab === 'recipe') {
         renderRecipePanel();
