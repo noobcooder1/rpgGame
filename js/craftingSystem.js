@@ -944,9 +944,17 @@ function renderManualPanel() {
         `;
     }).join('');
 
-    const pickerHtml = pickerVisible
+    const pickerSelectedItem = pickerItemId ? selectableItems.find(item => item.id === pickerItemId) : null;
+    const pickerSelectedItemType = pickerSelectedItem?.type && typeof ITEM_TYPES !== 'undefined'
+        ? (ITEM_TYPES[pickerSelectedItem.type]?.name || pickerSelectedItem.type)
+        : '';
+    const pickerSelectedItemDesc = pickerItemId ? (ITEMS_DATABASE[pickerItemId]?.description || '설명이 없는 아이템입니다.') : '';
+    const pickerSelectedAvailable = pickerItemId ? Math.max(0, getManualSlotAvailableQuantity(activeManualSlotIndex, pickerItemId)) : 0;
+
+    const pickerModalHtml = pickerVisible
         ? `
-            <section class="manual-picker">
+            <div class="manual-picker-overlay" onclick="closeManualCraftSlotPicker()">
+            <section class="manual-picker manual-picker-modal" onclick="event.stopPropagation()">
                 <header class="manual-picker-header">
                     <h4>슬롯 ${activeManualSlotIndex + 1} 재료 선택</h4>
                     <button class="manual-picker-close" onclick="closeManualCraftSlotPicker()">닫기</button>
@@ -958,31 +966,45 @@ function renderManualPanel() {
                     <button class="manual-picker-tab ${currentManualPickerTab === 'consumable' ? 'active' : ''}" onclick="changeManualCraftPickerTab('consumable')">소모품</button>
                     <button class="manual-picker-tab ${currentManualPickerTab === 'material' ? 'active' : ''}" onclick="changeManualCraftPickerTab('material')">재료</button>
                 </div>
-                <div class="manual-picker-grid">${pickerGridHtml}</div>
-                <div class="manual-picker-controls">
-                    <div class="manual-picker-qty-label">수량</div>
-                    <div class="manual-picker-qty-box">
-                        <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(-1)" ${pickerItemId ? '' : 'disabled'}>-</button>
-                        <input
-                            class="manual-picker-qty-input"
-                            type="number"
-                            min="1"
-                            max="${pickerMaxQuantity}"
-                            value="${pickerQuantity}"
-                            ${pickerItemId ? '' : 'disabled'}
-                            onchange="setManualCraftPickerQuantity(this.value)"
-                        />
-                        <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(1)" ${pickerItemId ? '' : 'disabled'}>+</button>
-                    </div>
-                    <button class="crafting-btn" onclick="applyManualCraftPickerSelection()" ${pickerCanApply ? '' : 'disabled'}>슬롯에 추가</button>
+                <div class="manual-picker-body">
+                    <section class="manual-picker-left">
+                        <div class="manual-picker-grid">${pickerGridHtml}</div>
+                    </section>
+                    <aside class="manual-picker-side">
+                        <div class="manual-picker-selection-title">선택 아이템</div>
+                        ${pickerSelectedItem ? `
+                            <div class="manual-picker-selected-card">
+                                <div class="manual-picker-selected-icon">${pickerSelectedItem.icon || getItemIconById(pickerItemId)}</div>
+                                <div class="manual-picker-selected-name">${pickerSelectedItem.name || getItemNameById(pickerItemId)}</div>
+                                <div class="manual-picker-selected-meta">${pickerSelectedItemType} | 보유 ${pickerSelectedItem.quantity} | 사용 가능 ${pickerSelectedAvailable}</div>
+                                <p class="manual-picker-selected-desc">${pickerSelectedItemDesc}</p>
+                            </div>
+                        ` : '<p class="manual-picker-selected-empty">아이템 칸을 선택하면 정보가 표시됩니다.</p>'}
+
+                        <div class="manual-picker-controls">
+                            <div class="manual-picker-qty-label">수량</div>
+                            <div class="manual-picker-qty-box">
+                                <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(-1)" ${pickerItemId ? '' : 'disabled'}>-</button>
+                                <input
+                                    class="manual-picker-qty-input"
+                                    type="number"
+                                    min="1"
+                                    max="${pickerMaxQuantity}"
+                                    value="${pickerQuantity}"
+                                    ${pickerItemId ? '' : 'disabled'}
+                                    onchange="setManualCraftPickerQuantity(this.value)"
+                                />
+                                <button class="manual-picker-qty-btn" onclick="changeManualCraftPickerQuantity(1)" ${pickerItemId ? '' : 'disabled'}>+</button>
+                            </div>
+                        </div>
+
+                        <button class="crafting-btn" onclick="applyManualCraftPickerSelection()" ${pickerCanApply ? '' : 'disabled'}>슬롯에 추가</button>
+                    </aside>
                 </div>
             </section>
+            </div>
         `
-        : `
-            <section class="manual-picker manual-picker-placeholder">
-                <p>재료 슬롯을 클릭하면 인벤토리 형태의 아이템 칸이 열립니다.</p>
-            </section>
-        `;
+        : '';
 
     const selectedHtml = selectedIngredients.length
         ? selectedIngredients.map(ingredient => `
@@ -1002,10 +1024,7 @@ function renderManualPanel() {
         <div class="manual-guide">재료 슬롯을 눌러 인벤토리에서 아이템을 고르고 수량을 정한 뒤 추가하세요. 최대 9가지 재료를 넣을 수 있습니다.</div>
         <div class="manual-main-layout">
             <section class="manual-left-zone">
-                <div class="manual-combine-layout">
-                    <section class="manual-combine-board">${slotHtml}</section>
-                    ${pickerHtml}
-                </div>
+                <section class="manual-combine-board">${slotHtml}</section>
             </section>
             <aside class="manual-preview manual-preview-side">
             <div class="manual-preview-title">조합 미리보기</div>
@@ -1018,6 +1037,7 @@ function renderManualPanel() {
             ${!hasEnough && selectedIngredients.length ? '<p class="crafting-warning">선택한 수량이 보유량보다 많습니다.</p>' : ''}
             </aside>
         </div>
+        ${pickerModalHtml}
     `;
 }
 
