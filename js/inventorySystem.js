@@ -1081,30 +1081,12 @@ function renderEquipment() {
 
         const item = equipment[slot];
         if (item) {
-            // 장비 스탯 문자열 생성
-            let statsStr = '';
-            if (item.stats) {
-                const statParts = [];
-                if (item.stats.pAtk) statParts.push(`물공+${item.stats.pAtk}`);
-                if (item.stats.mAtk) statParts.push(`마공+${item.stats.mAtk}`);
-                if (item.stats.pDef) statParts.push(`물방+${item.stats.pDef}`);
-                if (item.stats.mDef) statParts.push(`마방+${item.stats.mDef}`);
-                if (item.stats.atk) statParts.push(`공격+${item.stats.atk}`);
-                if (item.stats.def) statParts.push(`방어+${item.stats.def}`);
-                if (item.stats.hp) statParts.push(`HP+${item.stats.hp}`);
-                if (item.stats.mp) statParts.push(`MP+${item.stats.mp}`);
-                if (item.stats.str) statParts.push(`근력+${item.stats.str}`);
-                if (item.stats.vit) statParts.push(`체력+${item.stats.vit}`);
-                if (item.stats.int) statParts.push(`지능+${item.stats.int}`);
-                if (item.stats.agi) statParts.push(`민첩+${item.stats.agi}`);
-                statsStr = statParts.join(' ');
-            }
-
             slotElement.innerHTML = `
-                <div class="equip-item" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" onclick="unequipItem('${slot}')">
+                <div class="equip-item" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" 
+                     onclick="showEquippedItemContextMenu('${slot}', event)" 
+                     oncontextmenu="event.preventDefault(); showEquippedItemContextMenu('${slot}', event);">
                     <span class="equip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
                     <span class="equip-name">${item.name}</span>
-                    ${statsStr ? `<span class="equip-stats">${statsStr}</span>` : ''}
                 </div>
             `;
             slotElement.classList.add('equipped');
@@ -1424,6 +1406,66 @@ function hideItemContextMenu() {
 }
 
 /**
+ * 장착 아이템 컨텍스트 메뉴를 표시합니다.
+ */
+function showEquippedItemContextMenu(slot, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const item = equipment[slot];
+    if (!item) return;
+
+    // 기존 컨텍스트 메뉴 제거
+    hideItemContextMenu();
+    hideItemTooltip();
+
+    const menu = document.createElement('div');
+    menu.id = 'itemContextMenu';
+    menu.className = 'item-context-menu';
+
+    menu.innerHTML = `
+        <div class="context-menu-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
+            <span class="context-menu-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="context-menu-name">${item.name}</span>
+        </div>
+        <button class="context-menu-btn info-btn" onclick="contextMenuEquippedInfo('${slot}', event)">
+            <span class="context-btn-icon">📋</span>
+            <span class="context-btn-text">정보 보기</span>
+        </button>
+        <button class="context-menu-btn equip-btn" onclick="contextMenuUnequip('${slot}')">
+            <span class="context-btn-icon">🔄</span>
+            <span class="context-btn-text">장착 해제</span>
+        </button>
+    `;
+
+    // 위치 설정 - 클릭 위치 기준
+    document.body.appendChild(menu);
+
+    // 메뉴가 화면 밖으로 나가지 않도록 위치 조정
+    const menuRect = menu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let posX = event.clientX;
+    let posY = event.clientY;
+
+    if (posX + menuRect.width > viewportWidth) {
+        posX = viewportWidth - menuRect.width - 10;
+    }
+    if (posY + menuRect.height > viewportHeight) {
+        posY = viewportHeight - menuRect.height - 10;
+    }
+
+    menu.style.left = `${posX}px`;
+    menu.style.top = `${posY}px`;
+
+    // 외부 클릭 시 메뉴 닫기
+    setTimeout(() => {
+        document.addEventListener('click', hideItemContextMenu, { once: true });
+    }, 0);
+}
+
+/**
  * 컨텍스트 메뉴 - 장착
  */
 function contextMenuEquip(slotIndex) {
@@ -1449,6 +1491,25 @@ function contextMenuInfo(slotIndex, event) {
     const posY = menu ? parseInt(menu.style.top) : event.clientY;
     hideItemContextMenu();
     showItemTooltipAtPosition(slotIndex, posX, posY);
+}
+
+/**
+ * 컨텍스트 메뉴 - 장착 해제
+ */
+function contextMenuUnequip(slot) {
+    hideItemContextMenu();
+    unequipItem(slot);
+}
+
+/**
+ * 컨텍스트 메뉴 - 장착 아이템 정보 보기
+ */
+function contextMenuEquippedInfo(slot, event) {
+    const menu = document.getElementById('itemContextMenu');
+    const posX = menu ? parseInt(menu.style.left) : event.clientX;
+    const posY = menu ? parseInt(menu.style.top) : event.clientY;
+    hideItemContextMenu();
+    showEquippedItemTooltipAtPosition(slot, posX, posY);
 }
 
 /**
@@ -1601,6 +1662,56 @@ function showItemTooltipAtPosition(slotIndex, x, y) {
     if (!tooltip) return;
 
     // showItemTooltip과 동일한 내용 표시
+    let statsHtml = '';
+    if (item.stats) {
+        if (item.stats.pAtk) statsHtml += `<div class="tooltip-stat">⚔️ 물리공격력 +${item.stats.pAtk}</div>`;
+        if (item.stats.mAtk) statsHtml += `<div class="tooltip-stat">🔮 마법공격력 +${item.stats.mAtk}</div>`;
+        if (item.stats.pDef) statsHtml += `<div class="tooltip-stat">🛡️ 물리방어력 +${item.stats.pDef}</div>`;
+        if (item.stats.mDef) statsHtml += `<div class="tooltip-stat">🔰 마법방어력 +${item.stats.mDef}</div>`;
+        if (item.stats.str) statsHtml += `<div class="tooltip-stat">💪 근력 +${item.stats.str}</div>`;
+        if (item.stats.vit) statsHtml += `<div class="tooltip-stat">🫀 체력 +${item.stats.vit}</div>`;
+        if (item.stats.int) statsHtml += `<div class="tooltip-stat">🧠 지능 +${item.stats.int}</div>`;
+        if (item.stats.agi) statsHtml += `<div class="tooltip-stat">💨 민첩 +${item.stats.agi}</div>`;
+        if (item.stats.atk) statsHtml += `<div class="tooltip-stat">⚔️ 공격력 +${item.stats.atk}</div>`;
+        if (item.stats.def) statsHtml += `<div class="tooltip-stat">🛡️ 방어력 +${item.stats.def}</div>`;
+        if (item.stats.hp) statsHtml += `<div class="tooltip-stat">❤️ HP +${item.stats.hp}</div>`;
+        if (item.stats.mp) statsHtml += `<div class="tooltip-stat">💙 MP +${item.stats.mp}</div>`;
+    }
+    if (item.effect) {
+        if (item.effect.hp) statsHtml += `<div class="tooltip-stat">❤️ HP 회복 +${item.effect.hp}</div>`;
+        if (item.effect.mp) statsHtml += `<div class="tooltip-stat">💙 MP 회복 +${item.effect.mp}</div>`;
+    }
+
+    tooltip.innerHTML = `
+        <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
+            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="tooltip-name">${item.name}</span>
+        </div>
+        <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>
+        ${statsHtml}
+        <div class="tooltip-desc">${item.description}</div>
+        <div class="tooltip-price">💰 ${item.sellPrice}G</div>
+    `;
+
+    tooltip.style.left = `${x + 10}px`;
+    tooltip.style.top = `${y}px`;
+    tooltip.classList.remove('hidden');
+
+    setTimeout(() => {
+        document.addEventListener('click', hideItemTooltip, { once: true });
+    }, 0);
+}
+
+/**
+ * 장착 아이템 툴팁을 표시합니다. (정보 보기용)
+ */
+function showEquippedItemTooltipAtPosition(slot, x, y) {
+    const item = equipment[slot];
+    if (!item) return;
+
+    const tooltip = document.getElementById('itemTooltip');
+    if (!tooltip) return;
+
     let statsHtml = '';
     if (item.stats) {
         if (item.stats.pAtk) statsHtml += `<div class="tooltip-stat">⚔️ 물리공격력 +${item.stats.pAtk}</div>`;

@@ -189,12 +189,14 @@ const DISMANTLE_RECIPES = {
 const CRAFTING_EQUIPABLE_TYPES = ['weapon', 'armor', 'helmet', 'boots', 'gloves', 'tool', 'necklace', 'ring', 'accessory'];
 const MANUAL_CRAFTING_SLOT_COUNT = 9;
 const MANUAL_PICKER_PAGE_SIZE = 20;
+const MANUAL_PICKER_TOTAL_SLOTS = typeof MAX_INVENTORY_SIZE === 'number' ? MAX_INVENTORY_SIZE : 100;
 
 let currentCraftingTab = 'recipe';
 let manualCraftSlots = Array.from({ length: MANUAL_CRAFTING_SLOT_COUNT }, () => ({ itemId: '', quantity: 1 }));
 let activeManualSlotIndex = -1;
 let manualPickerSelection = { itemId: '', quantity: 1 };
 let currentManualPickerTab = 'all';
+let currentManualPickerPage = 0;
 
 // ============================================
 // 🔧 내부 유틸
@@ -592,6 +594,8 @@ function openManualCraftSlotPicker(slotIndex) {
         manualPickerSelection = { itemId: '', quantity: 1 };
     }
 
+    currentManualPickerPage = 0;
+
     renderCraftingUI();
 }
 
@@ -602,6 +606,7 @@ function closeManualCraftSlotPicker() {
     activeManualSlotIndex = -1;
     manualPickerSelection = { itemId: '', quantity: 1 };
     currentManualPickerTab = 'all';
+    currentManualPickerPage = 0;
     renderCraftingUI();
 }
 
@@ -614,6 +619,17 @@ function changeManualCraftPickerTab(tab) {
     if (!validTabs.includes(tab)) return;
 
     currentManualPickerTab = tab;
+    currentManualPickerPage = 0;
+    renderCraftingUI();
+}
+
+/**
+ * 자유 조합 아이템 선택창 페이지를 변경합니다.
+ * @param {number} nextPage - 이동할 페이지(0부터 시작)
+ */
+function changeManualCraftPickerPage(nextPage) {
+    const totalPages = Math.max(1, Math.ceil(MANUAL_PICKER_TOTAL_SLOTS / MANUAL_PICKER_PAGE_SIZE));
+    currentManualPickerPage = clamp(nextPage, 0, totalPages - 1);
     renderCraftingUI();
 }
 
@@ -710,6 +726,7 @@ function resetManualCraftSlots() {
     activeManualSlotIndex = -1;
     manualPickerSelection = { itemId: '', quantity: 1 };
     currentManualPickerTab = 'all';
+    currentManualPickerPage = 0;
     renderCraftingUI();
 }
 
@@ -921,10 +938,14 @@ function renderManualPanel() {
     const pickerCanApply = pickerVisible && Boolean(pickerItemId);
 
     const filteredPickerItems = getManualPickerFilteredItems(selectableItems, currentManualPickerTab);
-    const gridCount = Math.max(MANUAL_PICKER_PAGE_SIZE, Math.ceil(filteredPickerItems.length / 5) * 5);
+    const pickerTotalPages = Math.max(1, Math.ceil(MANUAL_PICKER_TOTAL_SLOTS / MANUAL_PICKER_PAGE_SIZE));
+    currentManualPickerPage = clamp(currentManualPickerPage, 0, pickerTotalPages - 1);
 
-    const pickerGridHtml = Array.from({ length: gridCount }, (_, slotIndex) => {
-        const item = filteredPickerItems[slotIndex];
+    const pickerPageStartIndex = currentManualPickerPage * MANUAL_PICKER_PAGE_SIZE;
+    const pickerPageItems = filteredPickerItems.slice(pickerPageStartIndex, pickerPageStartIndex + MANUAL_PICKER_PAGE_SIZE);
+
+    const pickerGridHtml = Array.from({ length: MANUAL_PICKER_PAGE_SIZE }, (_, slotIndex) => {
+        const item = pickerPageItems[slotIndex];
         if (!item) {
             return '<div class="manual-picker-grid-slot"><div class="manual-picker-empty"></div></div>';
         }
@@ -969,6 +990,11 @@ function renderManualPanel() {
                 <div class="manual-picker-body">
                     <section class="manual-picker-left">
                         <div class="manual-picker-grid">${pickerGridHtml}</div>
+                        <div class="manual-picker-pagination">
+                            <button class="manual-picker-page-btn" onclick="changeManualCraftPickerPage(${currentManualPickerPage - 1})" ${currentManualPickerPage <= 0 ? 'disabled' : ''}>◀ 이전</button>
+                            <span class="manual-picker-page-info">${currentManualPickerPage + 1} / ${pickerTotalPages}</span>
+                            <button class="manual-picker-page-btn" onclick="changeManualCraftPickerPage(${currentManualPickerPage + 1})" ${currentManualPickerPage >= pickerTotalPages - 1 ? 'disabled' : ''}>다음 ▶</button>
+                        </div>
                     </section>
                     <aside class="manual-picker-side">
                         <div class="manual-picker-selection-title">선택 아이템</div>
