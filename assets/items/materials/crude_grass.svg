@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="crude_grass material icon">
+  <defs>
+    
+    <filter id="drop_crude_grass" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="grain_crude_grass" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="103" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="surface_crude_grass" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="120" result="surfaceNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="surfaceNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="rim_crude_grass" cx="0.35" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+    
+    <linearGradient id="leafA_crude_grass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9acb74"/>
+      <stop offset="100%" stop-color="#5a9346"/>
+    </linearGradient>
+    <linearGradient id="leafB_crude_grass" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9acb74"/>
+      <stop offset="100%" stop-color="#355f34"/>
+    </linearGradient>
+    <linearGradient id="leafC_crude_grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a9346"/>
+      <stop offset="100%" stop-color="#355f34"/>
+    </linearGradient>
+    <linearGradient id="stem_crude_grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7f5b3d"/>
+      <stop offset="100%" stop-color="#3e2717"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="256" cy="458" rx="146" ry="28" fill="#000000" opacity="0.28"/>
+  
+  <g filter="url(#drop_crude_grass)">
+    <path d="M256 456C258 412 262 362 270 318" stroke="url(#stem_crude_grass)" stroke-width="16" stroke-linecap="round"/>
+    <ellipse cx="206.0" cy="244.0" rx="62.0" ry="144.0" transform="rotate(-30.6 206.0 244.0)" fill="url(#leafA_crude_grass)" stroke="#102915" stroke-opacity="0.55" stroke-width="6"/><path d="M206.0 126.0 Q218.3 244.0 201.8 364.0" stroke="#d8ffd9" stroke-opacity="0.34" stroke-width="5" fill="none"/><path d="M206.0 199.7 Q229.1 188.3 252.3 177.0" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M206.0 290.1 Q224.2 279.2 242.4 268.3" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M206.0 178.4 Q225.4 178.9 244.7 179.4" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M206.0 226.9 Q222.9 224.7 239.7 222.6" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><ellipse cx="298.0" cy="238.0" rx="66.0" ry="148.0" transform="rotate(31.3 298.0 238.0)" fill="url(#leafB_crude_grass)" stroke="#102915" stroke-opacity="0.55" stroke-width="6"/><path d="M298.0 116.0 Q302.7 238.0 304.9 362.0" stroke="#d8ffd9" stroke-opacity="0.34" stroke-width="5" fill="none"/><path d="M298.0 259.2 Q269.2 262.2 240.4 265.2" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M298.0 247.3 Q272.8 245.6 247.6 243.9" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M298.0 187.4 Q280.2 198.1 262.4 208.8" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M298.0 165.6 Q269.5 165.0 241.0 164.4" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><ellipse cx="256.0" cy="286.0" rx="74.0" ry="134.0" transform="rotate(-5.9 256.0 286.0)" fill="url(#leafC_crude_grass)" stroke="#102915" stroke-opacity="0.55" stroke-width="6"/><path d="M256.0 178.0 Q255.6 286.0 247.7 396.0" stroke="#d8ffd9" stroke-opacity="0.34" stroke-width="5" fill="none"/><path d="M256.0 334.4 Q280.7 324.3 305.4 314.2" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M256.0 251.5 Q273.0 259.7 290.0 268.0" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M256.0 319.7 Q285.6 323.3 315.2 326.9" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/><path d="M256.0 248.7 Q274.6 245.1 293.2 241.4" stroke="#d9ffd6" stroke-opacity="0.22" stroke-width="4" fill="none"/>
+    <path d="M188 410C234 400 278 398 326 408" stroke="#0f2812" stroke-opacity="0.32" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <rect x="24" y="24" width="464" height="464" filter="url(#grain_crude_grass)"/>
+</svg>

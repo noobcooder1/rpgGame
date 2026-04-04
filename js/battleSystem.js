@@ -4284,6 +4284,12 @@ function showBattleUI() {
         battleUI.style.display = 'flex';
     }
 
+    // 대련 모드 스타일 동기화
+    const battleArena = document.querySelector('.battle-arena');
+    if (battleArena) {
+        battleArena.classList.toggle('spar-mode', Boolean(battleState.isSpar));
+    }
+
     // 탐험 UI 숨기기
     const exploreUI = document.getElementById('exploreUI');
     if (exploreUI) {
@@ -4351,6 +4357,7 @@ function hideBattleUI() {
         battleArena.style.backgroundImage = '';
         battleArena.style.backgroundSize = '';
         battleArena.style.backgroundPosition = '';
+        battleArena.classList.remove('spar-mode');
     }
 
     // 게임 배경 복원 (대련 배경에서 원래 배경으로)
@@ -4371,6 +4378,138 @@ function hideBattleUI() {
 }
 
 /**
+ * HTML 속성 값을 안전하게 이스케이프합니다.
+ * @param {string} value - 원본 문자열
+ * @returns {string}
+ */
+function escapeHtmlAttribute(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
+ * 중복 없는 이미지 후보 목록을 만듭니다.
+ * @param {string[]} candidates - 후보 경로 목록
+ * @returns {string[]}
+ */
+function dedupeImageCandidates(candidates) {
+    const unique = [];
+    candidates.forEach((candidate) => {
+        if (typeof candidate !== 'string') return;
+        const trimmed = candidate.trim();
+        if (!trimmed || unique.includes(trimmed)) return;
+        unique.push(trimmed);
+    });
+    return unique;
+}
+
+/**
+ * 몬스터 이미지 후보 경로를 구성합니다.
+ * 수련생 이미지는 확장자/파일명 변형을 자동으로 탐색해
+ * 나중에 파일만 추가해도 바로 표시되도록 합니다.
+ * @param {Object} monster - 몬스터 객체
+ * @returns {string[]}
+ */
+function buildMonsterImageCandidates(monster) {
+    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    const candidates = [];
+
+    if (monster.image) {
+        candidates.push(monster.image);
+    }
+
+    const imageBase = typeof monster.image === 'string'
+        ? monster.image.replace(/\.(png|jpg|jpeg|webp)$/i, '')
+        : '';
+
+    if (imageBase) {
+        extensions.forEach((ext) => {
+            candidates.push(`${imageBase}.${ext}`);
+        });
+    }
+
+    if (monster.id) {
+        const idBase = `assets/monsters/${monster.id}`;
+        extensions.forEach((ext) => {
+            candidates.push(`${idBase}.${ext}`);
+        });
+    }
+
+    if (monster.isSpar && monster.id && monster.id.startsWith('spar_trainee')) {
+        const traineeAliasBase = `assets/monsters/${monster.id.replace('spar_', '')}`;
+        extensions.forEach((ext) => {
+            candidates.push(`${traineeAliasBase}.${ext}`);
+        });
+
+        // 수련생2~4 개별 이미지가 없더라도 기본 수련생 이미지를 폴백으로 사용
+        candidates.push('assets/monsters/trainee1.png');
+    }
+
+    return dedupeImageCandidates(candidates);
+}
+
+/**
+ * 몬스터 이미지 로딩 실패 시 다음 후보를 시도하고,
+ * 모두 실패하면 이모지 폴백으로 전환합니다.
+ * @param {HTMLElement} monsterCard - 몬스터 카드 요소
+ * @param {string} fallbackEmoji - 폴백 이모지
+ */
+function bindMonsterImageFallback(monsterCard, fallbackEmoji) {
+    const imageEl = monsterCard.querySelector('.monster-image');
+    const spriteBox = monsterCard.querySelector('.monster-sprite');
+
+    if (!imageEl || !spriteBox) return;
+
+    let candidates = [];
+    const encodedCandidates = imageEl.getAttribute('data-candidates');
+
+    if (encodedCandidates) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(encodedCandidates));
+            if (Array.isArray(parsed)) candidates = parsed;
+        } catch (error) {
+            console.warn('몬스터 이미지 후보 파싱 실패:', error);
+        }
+    }
+
+    const tried = new Set();
+    const currentSrc = imageEl.getAttribute('src');
+    if (currentSrc) tried.add(currentSrc);
+
+    let nextIndex = 0;
+
+    const applyEmojiFallback = () => {
+        spriteBox.classList.add('sprite-fallback');
+        spriteBox.textContent = fallbackEmoji;
+    };
+
+    const tryNextCandidate = () => {
+        while (nextIndex < candidates.length && tried.has(candidates[nextIndex])) {
+            nextIndex += 1;
+        }
+
+        if (nextIndex < candidates.length) {
+            const nextPath = candidates[nextIndex];
+            nextIndex += 1;
+            tried.add(nextPath);
+            imageEl.src = nextPath;
+            return;
+        }
+
+        applyEmojiFallback();
+    };
+
+    imageEl.addEventListener('error', tryNextCandidate);
+
+    if (imageEl.complete && imageEl.naturalWidth === 0) {
+        tryNextCandidate();
+    }
+}
+
+/**
  * 전투 UI를 업데이트합니다. (다중 몬스터 지원)
  */
 function updateBattleUI() {
@@ -4386,9 +4525,14 @@ function updateBattleUI() {
     monsters.forEach((monster, index) => {
         const isSelected = index === battleState.currentMonsterIndex;
         const isDead = monster.hp <= 0;
+        const isTraineeSpar = Boolean(battleState.isSpar && monster.sparClass === 'trainee');
         
         const monsterCard = document.createElement('div');
-        monsterCard.className = `monster-card ${isSelected ? 'selected' : ''} ${isDead ? 'dead' : ''}`;
+        const cardClasses = ['monster-card'];
+        if (isSelected) cardClasses.push('selected');
+        if (isDead) cardClasses.push('dead');
+        if (isTraineeSpar) cardClasses.push('spar-trainee-card');
+        monsterCard.className = cardClasses.join(' ');
         monsterCard.dataset.index = index;
         
         // 클릭하여 타겟 선택 (죽은 몬스터 제외)
@@ -4404,16 +4548,22 @@ function updateBattleUI() {
         const gradeColor = monster.gradeData?.color || '#FFFFFF';
         const gradeName = monster.gradeData?.name || '일반';
         const gradeDisplay = gradeName !== '일반' ? `${gradeIcon}[${gradeName}] ` : '';
-        
-        const fallbackEmojiLiteral = JSON.stringify(monster.emoji || '👹');
-        const spriteMarkup = monster.image
-            ? `<img src="${monster.image}" alt="${monster.name}" class="monster-image" onerror="this.onerror=null;const box=this.parentElement;if(box){box.classList.add('sprite-fallback');box.textContent=${fallbackEmojiLiteral};}">`
-            : (monster.emoji || '👹');
+
+        const fallbackEmoji = monster.emoji || '👹';
+        const imageCandidates = buildMonsterImageCandidates(monster);
+        const encodedCandidates = encodeURIComponent(JSON.stringify(imageCandidates));
+        const spriteMarkup = imageCandidates.length > 0
+            ? `<img src="${escapeHtmlAttribute(imageCandidates[0])}" alt="${escapeHtmlAttribute(monster.name || '몬스터')}" class="monster-image" data-candidates="${escapeHtmlAttribute(encodedCandidates)}">`
+            : fallbackEmoji;
+        const showMonsterName = !isTraineeSpar;
+        const monsterNameMarkup = showMonsterName
+            ? `<span class="monster-name" style="color: ${gradeColor}; text-shadow: 0 0 5px ${gradeColor}40;">${gradeDisplay}${monster.name}${isDead ? ' ☠️' : ''}</span>`
+            : '';
 
         monsterCard.innerHTML = `
             <div class="monster-sprite">${spriteMarkup}</div>
             <div class="monster-info">
-                <span class="monster-name" style="color: ${gradeColor}; text-shadow: 0 0 5px ${gradeColor}40;">${gradeDisplay}${monster.name}${isDead ? ' ☠️' : ''}</span>
+                ${monsterNameMarkup}
                 <div class="bar monster-hp-bar">
                     <div class="bar-fill" style="width: ${hpPercent}%; background: ${isDead ? '#555' : 'linear-gradient(90deg, #e74c3c, #c0392b)'};"></div>
                     <span class="bar-text">${Math.max(0, monster.hp)}/${monster.maxHp}</span>
@@ -4421,6 +4571,8 @@ function updateBattleUI() {
             </div>
             ${isSelected && !isDead ? '<div class="target-indicator">🎯</div>' : ''}
         `;
+
+        bindMonsterImageFallback(monsterCard, fallbackEmoji);
         
         container.appendChild(monsterCard);
     });
@@ -4499,11 +4651,13 @@ function applyBattleBackground(imagePath) {
         console.log('🎨 대련 배경 적용 (gameBackground):', imagePath);
     }
 
-    // 전투 아레나에도 배경 적용
+    // 대련 시 내부 아레나는 투명 유지 (배경 이중 적용 방지)
     const battleArena = document.querySelector('.battle-arena');
     if (battleArena) {
-        applyBackgroundOrFallback(battleArena);
-        battleArena.style.borderRadius = '10px';
+        battleArena.style.backgroundImage = 'none';
+        battleArena.style.backgroundSize = '';
+        battleArena.style.backgroundPosition = '';
+        battleArena.classList.toggle('spar-mode', Boolean(battleState.isSpar));
     }
     
     // 몬스터 컨테이너에도 배경 투명하게 설정

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="silver_ore material icon">
+  <defs>
+    
+    <filter id="drop_silver_ore" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="grain_silver_ore" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="211" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="surface_silver_ore" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="228" result="surfaceNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="surfaceNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="rim_silver_ore" cx="0.35" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+    
+    <linearGradient id="base_silver_ore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e7edf6"/>
+      <stop offset="55%" stop-color="#b2bbc7"/>
+      <stop offset="100%" stop-color="#7b8490"/>
+    </linearGradient>
+    <linearGradient id="inner_silver_ore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="256" cy="458" rx="146" ry="28" fill="#000000" opacity="0.28"/>
+  
+  <g filter="url(#drop_silver_ore)">
+    <path d="M424.6 251.0 L430.1 349.0 L343.4 424.7 L250.0 415.5 L192.6 380.6 L100.8 375.0 L104.4 252.6 L133.4 194.3 L180.9 129.2 L235.7 114.9 L359.0 98.5 L391.4 200.1 Z" fill="url(#base_silver_ore)" stroke="#121212" stroke-opacity="0.55" stroke-width="8"/>
+    <path d="M374.1 252.0 L372.4 331.6 L325.4 383.1 L257.2 366.7 L205.5 343.3 L150.7 345.8 L152.1 261.8 L174.9 210.2 L205.8 164.2 L238.6 155.0 L333.7 143.3 L360.5 221.8 Z" fill="url(#inner_silver_ore)"/>
+    <path d="M374.1 252.0 L372.4 331.6 L325.4 383.1 L257.2 366.7 L205.5 343.3 L150.7 345.8 L152.1 261.8 L174.9 210.2 L205.8 164.2 L238.6 155.0 L333.7 143.3 L360.5 221.8 Z" fill="url(#rim_silver_ore)" opacity="0.45"/>
+    <path d="M255.3 243.7 L424.6 251.0 L430.1 349.0 Z" fill="#ffffff" opacity="0.096"/><path d="M240.6 249.2 L430.1 349.0 L343.4 424.7 Z" fill="#ffffff" opacity="0.180"/><path d="M239.3 256.0 L343.4 424.7 L250.0 415.5 Z" fill="#ffffff" opacity="0.071"/><path d="M272.1 244.2 L250.0 415.5 L192.6 380.6 Z" fill="#ffffff" opacity="0.091"/><path d="M262.6 269.3 L192.6 380.6 L100.8 375.0 Z" fill="#ffffff" opacity="0.146"/><path d="M240.3 238.0 L100.8 375.0 L104.4 252.6 Z" fill="#ffffff" opacity="0.067"/><path d="M267.0 245.3 L104.4 252.6 L133.4 194.3 Z" fill="#ffffff" opacity="0.065"/><path d="M271.9 258.0 L133.4 194.3 L180.9 129.2 Z" fill="#ffffff" opacity="0.117"/><path d="M241.8 254.4 L180.9 129.2 L235.7 114.9 Z" fill="#ffffff" opacity="0.171"/><path d="M255.6 245.9 L235.7 114.9 L359.0 98.5 Z" fill="#ffffff" opacity="0.134"/><path d="M250.9 262.9 L359.0 98.5 L391.4 200.1 Z" fill="#ffffff" opacity="0.127"/><path d="M245.4 253.9 L391.4 200.1 L424.6 251.0 Z" fill="#ffffff" opacity="0.107"/>
+    <path d="M192.6 380.6 Q276.6 297.7 360.5 221.8" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M133.4 194.3 Q240.6 234.1 374.1 252.0" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M424.6 251.0 Q364.0 210.6 333.7 143.3" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M235.7 114.9 Q254.6 240.4 257.2 366.7" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M430.1 349.0 Q396.5 301.1 360.5 221.8" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="221.8" cy="276.7" r="5.9" fill="#ffffff" opacity="0.405"/><circle cx="265.8" cy="302.7" r="8.6" fill="#ffffff" opacity="0.331"/><circle cx="205.1" cy="244.6" r="9.6" fill="#ffffff" opacity="0.386"/><circle cx="315.8" cy="276.5" r="7.8" fill="#ffffff" opacity="0.347"/><circle cx="280.4" cy="363.8" r="6.9" fill="#ffffff" opacity="0.202"/><circle cx="244.5" cy="256.2" r="5.6" fill="#ffffff" opacity="0.266"/><circle cx="306.4" cy="325.6" r="7.2" fill="#ffffff" opacity="0.329"/><circle cx="190.5" cy="183.9" r="9.3" fill="#ffffff" opacity="0.251"/><circle cx="241.1" cy="275.4" r="5.6" fill="#ffffff" opacity="0.210"/><circle cx="349.8" cy="307.6" r="8.5" fill="#ffffff" opacity="0.294"/><circle cx="371.6" cy="235.4" r="5.6" fill="#ffffff" opacity="0.261"/><circle cx="228.9" cy="360.3" r="8.0" fill="#ffffff" opacity="0.235"/><circle cx="308.5" cy="293.1" r="9.2" fill="#ffffff" opacity="0.425"/><circle cx="329.0" cy="229.5" r="6.3" fill="#ffffff" opacity="0.370"/><circle cx="302.9" cy="282.5" r="7.2" fill="#ffffff" opacity="0.329"/><circle cx="250.5" cy="338.5" r="5.2" fill="#ffffff" opacity="0.439"/><circle cx="286.6" cy="271.8" r="5.3" fill="#ffffff" opacity="0.184"/><circle cx="160.5" cy="220.5" r="4.0" fill="#ffffff" opacity="0.434"/>
+  </g>
+  <rect x="24" y="24" width="464" height="464" filter="url(#grain_silver_ore)"/>
+</svg>

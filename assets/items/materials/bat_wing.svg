@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="bat_wing material icon">
+  <defs>
+    
+    <filter id="drop_bat_wing" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="grain_bat_wing" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="161" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="surface_bat_wing" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="178" result="surfaceNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="surfaceNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="rim_bat_wing" cx="0.35" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+    
+    <linearGradient id="wing_bat_wing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6d6778"/>
+      <stop offset="62%" stop-color="#403d4a"/>
+      <stop offset="100%" stop-color="#1d1c27"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="256" cy="458" rx="146" ry="28" fill="#000000" opacity="0.28"/>
+  
+  <g filter="url(#drop_bat_wing)">
+    <path d="M78 318C106 214 180 138 292 108C338 96 386 104 422 132C372 160 338 190 310 244C278 308 244 376 168 426C140 386 118 350 78 318Z" fill="url(#wing_bat_wing)" stroke="#17171f" stroke-opacity="0.64" stroke-width="8"/>
+    <path d="M146 354C232 304 286 242 322 176" stroke="#ffffff" stroke-opacity="0.28" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <path d="M188 388C250 360 296 316 336 246M166 322C210 294 256 246 290 194" stroke="#000000" stroke-opacity="0.3" stroke-width="6" stroke-linecap="round" fill="none"/>
+  </g>
+  <rect x="24" y="24" width="464" height="464" filter="url(#grain_bat_wing)"/>
+</svg>

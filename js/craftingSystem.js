@@ -21,6 +21,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'common',
         description: '낡아 해졌지만 아직 쓸모가 있는 천조각입니다.',
         icon: '🧵',
+        image: 'assets/items/materials/old_cloth_scrap.svg',
         sellPrice: 2,
         stackable: true
     },
@@ -31,6 +32,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'common',
         description: '손질이 덜 된 들풀입니다.',
         icon: '🍀',
+        image: 'assets/items/materials/crude_grass.svg',
         sellPrice: 2,
         stackable: true
     },
@@ -41,6 +43,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'common',
         description: '간단한 제조에 쓰이는 깨끗한 물입니다.',
         icon: '💧',
+        image: 'assets/items/materials/water.svg',
         sellPrice: 2,
         stackable: true
     },
@@ -84,6 +87,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '구리 광석을 정제해 만든 기본 금속 재료입니다.',
         icon: '🧱',
+        image: 'assets/items/materials/copper_ingot.svg',
         sellPrice: 12,
         stackable: true
     }
@@ -1160,6 +1164,11 @@ function registerCraftingItems() {
     Object.entries(CRAFTING_ITEM_DEFINITIONS).forEach(([itemId, itemData]) => {
         if (!ITEMS_DATABASE[itemId]) {
             ITEMS_DATABASE[itemId] = itemData;
+            return;
+        }
+
+        if (!ITEMS_DATABASE[itemId].image && itemData.image) {
+            ITEMS_DATABASE[itemId].image = itemData.image;
         }
     });
 }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="black_iron_ore material icon">
+  <defs>
+    
+    <filter id="drop_black_iron_ore" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="grain_black_iron_ore" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="215" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="surface_black_iron_ore" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="232" result="surfaceNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="surfaceNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="rim_black_iron_ore" cx="0.35" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+    
+    <linearGradient id="base_black_iron_ore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c8394"/>
+      <stop offset="55%" stop-color="#4a5061"/>
+      <stop offset="100%" stop-color="#232836"/>
+    </linearGradient>
+    <linearGradient id="inner_black_iron_ore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="256" cy="458" rx="146" ry="28" fill="#000000" opacity="0.28"/>
+  
+  <g filter="url(#drop_black_iron_ore)">
+    <path d="M390.8 295.8 L365.9 362.3 L344.3 435.0 L246.9 428.7 L178.5 407.7 L80.6 370.6 L73.6 242.6 L83.2 173.9 L162.0 103.6 L277.4 130.3 L332.8 150.3 L379.1 228.1 Z" fill="url(#base_black_iron_ore)" stroke="#121212" stroke-opacity="0.55" stroke-width="8"/>
+    <path d="M353.2 293.0 L328.4 335.1 L317.2 392.3 L245.0 381.0 L206.2 357.1 L121.6 344.7 L131.0 252.1 L136.1 189.4 L194.0 144.4 L278.8 172.4 L311.4 186.8 L338.1 234.4 Z" fill="url(#inner_black_iron_ore)"/>
+    <path d="M353.2 293.0 L328.4 335.1 L317.2 392.3 L245.0 381.0 L206.2 357.1 L121.6 344.7 L131.0 252.1 L136.1 189.4 L194.0 144.4 L278.8 172.4 L311.4 186.8 L338.1 234.4 Z" fill="url(#rim_black_iron_ore)" opacity="0.45"/>
+    <path d="M273.4 266.4 L390.8 295.8 L365.9 362.3 Z" fill="#ffffff" opacity="0.173"/><path d="M251.7 236.4 L365.9 362.3 L344.3 435.0 Z" fill="#ffffff" opacity="0.062"/><path d="M272.4 241.6 L344.3 435.0 L246.9 428.7 Z" fill="#ffffff" opacity="0.177"/><path d="M262.8 249.6 L246.9 428.7 L178.5 407.7 Z" fill="#ffffff" opacity="0.109"/><path d="M251.1 250.7 L178.5 407.7 L80.6 370.6 Z" fill="#ffffff" opacity="0.080"/><path d="M264.3 246.6 L80.6 370.6 L73.6 242.6 Z" fill="#ffffff" opacity="0.170"/><path d="M272.5 255.2 L73.6 242.6 L83.2 173.9 Z" fill="#ffffff" opacity="0.151"/><path d="M248.0 266.8 L83.2 173.9 L162.0 103.6 Z" fill="#ffffff" opacity="0.068"/><path d="M265.5 255.9 L162.0 103.6 L277.4 130.3 Z" fill="#ffffff" opacity="0.066"/><path d="M248.7 261.6 L277.4 130.3 L332.8 150.3 Z" fill="#ffffff" opacity="0.159"/><path d="M252.1 239.0 L332.8 150.3 L379.1 228.1 Z" fill="#ffffff" opacity="0.154"/><path d="M250.0 236.0 L379.1 228.1 L390.8 295.8 Z" fill="#ffffff" opacity="0.174"/>
+    <path d="M344.3 435.0 Q360.5 381.4 353.2 293.0" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M80.6 370.6 Q123.6 258.3 194.0 144.4" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M80.6 370.6 Q191.6 338.3 328.4 335.1" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M246.9 428.7 Q200.0 318.8 136.1 189.4" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M80.6 370.6 Q156.7 386.2 245.0 381.0" stroke="#0a0a0a" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <circle cx="258.6" cy="167.9" r="4.0" fill="#d6dcee" opacity="0.221"/><circle cx="202.3" cy="351.8" r="4.1" fill="#d6dcee" opacity="0.336"/><circle cx="141.9" cy="274.1" r="7.0" fill="#d6dcee" opacity="0.165"/><circle cx="192.4" cy="160.7" r="9.0" fill="#d6dcee" opacity="0.296"/><circle cx="171.9" cy="263.9" r="5.0" fill="#d6dcee" opacity="0.292"/><circle cx="293.7" cy="265.3" r="7.4" fill="#d6dcee" opacity="0.205"/><circle cx="250.4" cy="198.7" r="9.9" fill="#d6dcee" opacity="0.389"/><circle cx="313.5" cy="366.5" r="4.5" fill="#d6dcee" opacity="0.252"/><circle cx="292.9" cy="320.0" r="5.8" fill="#d6dcee" opacity="0.369"/><circle cx="213.8" cy="173.0" r="9.3" fill="#d6dcee" opacity="0.355"/><circle cx="165.3" cy="322.7" r="7.0" fill="#d6dcee" opacity="0.200"/><circle cx="271.2" cy="339.2" r="4.7" fill="#d6dcee" opacity="0.338"/><circle cx="291.1" cy="154.1" r="6.6" fill="#d6dcee" opacity="0.428"/><circle cx="270.7" cy="155.6" r="7.5" fill="#d6dcee" opacity="0.255"/><circle cx="371.2" cy="305.5" r="6.9" fill="#d6dcee" opacity="0.370"/><circle cx="274.1" cy="258.8" r="8.1" fill="#d6dcee" opacity="0.441"/><circle cx="298.6" cy="188.2" r="5.2" fill="#d6dcee" opacity="0.308"/><circle cx="227.2" cy="261.7" r="9.0" fill="#d6dcee" opacity="0.321"/>
+  </g>
+  <rect x="24" y="24" width="464" height="464" filter="url(#grain_black_iron_ore)"/>
+</svg>

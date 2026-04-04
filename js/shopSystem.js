@@ -340,6 +340,7 @@ const SHOP_ITEMS = {
             rarity: 'common',
             description: '일반적인 약초입니다. 물약 제조에 사용됩니다.',
             icon: '🌿',
+            image: 'assets/items/materials/herb.svg',
             price: 5,
             sellPrice: 2,
             stackable: true
@@ -362,6 +363,7 @@ const SHOP_ITEMS = {
             rarity: 'common',
             description: '일반적인 풀입니다. 다양한 용도로 사용됩니다.',
             icon: '🌱',
+            image: 'assets/items/materials/grass.svg',
             price: 3,
             sellPrice: 1,
             stackable: true
@@ -373,6 +375,7 @@ const SHOP_ITEMS = {
             rarity: 'common',
             description: '향긋한 허브입니다. 요리나 물약에 사용됩니다.',
             icon: '🌿',
+            image: 'assets/items/materials/herb_material.svg',
             price: 6,
             sellPrice: 3,
             stackable: true
@@ -485,11 +488,26 @@ function showRewardReceiveModal(options = {}) {
     if (existing) existing.remove();
 
     const primaryItem = items[0] || null;
-    const primaryVisual = primaryItem
-        ? (primaryItem.image
-            ? `<img src="${primaryItem.image}" class="reward-alert-item-image" alt="${primaryItem.name}">`
-            : (primaryItem.icon || '🎁'))
-        : '🎉';
+    let primaryVisual = '🎉';
+
+    if (primaryItem) {
+        if (typeof getItemVisualHtml === 'function') {
+            const visualItem = {
+                id: primaryItem.id,
+                name: primaryItem.name,
+                image: primaryItem.image,
+                icon: primaryItem.icon || '🎁'
+            };
+            const renderedVisual = getItemVisualHtml(visualItem);
+            primaryVisual = typeof renderedVisual === 'string'
+                ? renderedVisual.replace('class="item-img"', 'class="item-img reward-alert-item-image"')
+                : (primaryItem.icon || '🎁');
+        } else {
+            primaryVisual = primaryItem.image
+                ? `<img src="${primaryItem.image}" class="reward-alert-item-image" alt="${primaryItem.name}">`
+                : (primaryItem.icon || '🎁');
+        }
+    }
 
     const itemLines = items.map(item => `
         <div class="reward-alert-line">
@@ -945,7 +963,10 @@ function showQuestHandoverUI(npcId) {
         inv.forEach((item, idx) => {
             const itemData = (typeof ITEMS_DATABASE !== 'undefined') ? ITEMS_DATABASE[item.id] : null;
             const name = itemData ? itemData.name : item.name || item.id;
-            const icon = (itemData && itemData.image) ? `<img src="${itemData.image}" class="item-img">` : (itemData ? (itemData.icon || '📦') : '📦');
+            const visualItem = itemData ? { ...itemData, ...item } : item;
+            const icon = (typeof getItemVisualHtml === 'function')
+                ? getItemVisualHtml(visualItem)
+                : ((itemData && itemData.image) ? `<img src="${itemData.image}" class="item-img">` : (itemData ? (itemData.icon || '📦') : '📦'));
             const qty = item.quantity || 1;
             const isRequired = itemId && item.id === itemId;
             const hasEnough = isRequired && qty >= requiredCount;
@@ -1873,9 +1894,12 @@ function createShopItemElement(item) {
     const canAfford = (gold || 0) >= item.price;
     // 소모품/재료는 수량 조절 가능, 무기/방어구는 1개만 구매
     const isStackable = (item.type === 'consumable' || item.type === 'material');
+    const itemVisualHtml = (typeof getItemVisualHtml === 'function')
+        ? getItemVisualHtml(item)
+        : (item.image ? `<img src="${item.image}" class="item-img">` : item.icon);
 
     div.innerHTML = `
-        <div class="shop-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</div>
+        <div class="shop-item-icon">${itemVisualHtml}</div>
         <div class="shop-item-info">
             <div class="shop-item-name">${item.name}</div>
             <div class="shop-item-desc">${item.description}</div>
@@ -1996,12 +2020,15 @@ function showSellItems() {
         const sellPrice = item.sellPrice || Math.floor((item.price || 10) / 2);
         const maxQty = item.quantity || 1;
         const isStackable = maxQty > 1;
+        const itemVisualHtml = (typeof getItemVisualHtml === 'function')
+            ? getItemVisualHtml(item)
+            : (item.image ? `<img src="${item.image}" class="item-img">` : (item.icon || '📦'));
 
         const div = document.createElement('div');
         div.className = `shop-item ${item.rarity || 'common'}`;
 
         div.innerHTML = `
-            <div class="shop-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : (item.icon || '📦')}</div>
+            <div class="shop-item-icon">${itemVisualHtml}</div>
             <div class="shop-item-info">
                 <div class="shop-item-name">${item.name}${maxQty > 1 ? ` x${maxQty}` : ''}</div>
                 <div class="shop-item-desc">${item.description || ''}</div>
@@ -2233,43 +2260,47 @@ console.log('🛒 shopSystem.js 로드 완료!');
  * 이렇게 해야 addItemToInventory 함수가 아이템을 찾을 수 있습니다.
  */
 function registerShopItemsToDatabase() {
+    /**
+     * 상점 아이템을 ITEMS_DATABASE에 등록하거나 누락 이미지를 보완합니다.
+     */
+    function upsertShopItem(item) {
+        if (!ITEMS_DATABASE[item.id]) {
+            ITEMS_DATABASE[item.id] = item;
+            return;
+        }
+
+        if (!ITEMS_DATABASE[item.id].image && item.image) {
+            ITEMS_DATABASE[item.id].image = item.image;
+        }
+    }
+
     // 구리 무기 등록
     if (SHOP_ITEMS.copperWeapons) {
         Object.values(SHOP_ITEMS.copperWeapons).forEach(item => {
-            if (!ITEMS_DATABASE[item.id]) {
-                ITEMS_DATABASE[item.id] = item;
-            }
+            upsertShopItem(item);
         });
     }
 
     // 무기 등록
     Object.values(SHOP_ITEMS.weapons).forEach(item => {
-        if (!ITEMS_DATABASE[item.id]) {
-            ITEMS_DATABASE[item.id] = item;
-        }
+        upsertShopItem(item);
     });
 
     // 방어구 등록
     Object.values(SHOP_ITEMS.armors).forEach(tier => {
         Object.values(tier).forEach(item => {
-            if (!ITEMS_DATABASE[item.id]) {
-                ITEMS_DATABASE[item.id] = item;
-            }
+            upsertShopItem(item);
         });
     });
 
     // 소모품 등록
     SHOP_ITEMS.consumables.forEach(item => {
-        if (!ITEMS_DATABASE[item.id]) {
-            ITEMS_DATABASE[item.id] = item;
-        }
+        upsertShopItem(item);
     });
 
     // 재료 등록
     SHOP_ITEMS.materials.forEach(item => {
-        if (!ITEMS_DATABASE[item.id]) {
-            ITEMS_DATABASE[item.id] = item;
-        }
+        upsertShopItem(item);
     });
 
     console.log('📦 상점 아이템 등록 완료!');

@@ -1662,6 +1662,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '조잡한 풀입니다.',
             icon: '🌱',
+            image: 'assets/items/materials/crude_grass.svg',
             sellPrice: 1,
             stackable: true
         },
@@ -1670,6 +1671,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '녹슨 철조각입니다.',
             icon: '🔩',
+            image: 'assets/items/materials/rusty_scrap.svg',
             sellPrice: 2,
             stackable: true
         },
@@ -1718,6 +1720,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '낡은 부초입니다.',
             icon: '🌿',
+            image: 'assets/items/materials/old_weed.svg',
             sellPrice: 2,
             stackable: true
         },
@@ -1734,6 +1737,7 @@ function createExploreItem(foundItem) {
             rarity: 'common',
             description: '낡은 천조각입니다.',
             icon: '🧵',
+            image: 'assets/items/materials/old_cloth_piece.svg',
             sellPrice: 2,
             stackable: true
         }
@@ -1940,10 +1944,41 @@ function getOreIcon(oreId) {
 }
 
 /**
+ * 광석 이미지를 반환합니다.
+ */
+function getOreImage(oreId) {
+    const images = {
+        stone: 'assets/items/materials/stone.svg',
+        coal: 'assets/items/materials/coal.svg',
+        copper_ore: 'assets/items/materials/copper_ore.svg',
+        iron_ore: 'assets/items/materials/iron_ore.svg',
+        gold_ore: 'assets/items/materials/gold_ore.svg',
+        silver_ore: 'assets/items/materials/silver_ore.svg',
+        mithril_ore: 'assets/items/materials/mithril_ore.svg',
+        black_iron_ore: 'assets/items/materials/black_iron_ore.svg',
+        mana_stone: 'assets/items/materials/mana_stone.svg',
+        obsidian: 'assets/items/materials/obsidian.svg',
+        amethyst: 'assets/items/materials/amethyst.png',
+        ruby: 'assets/items/materials/ruby.svg',
+        sapphire: 'assets/items/materials/sapphire.svg',
+        emerald: 'assets/items/materials/emerald.svg',
+        diamond: 'assets/items/materials/diamond.svg',
+        red_crystal: 'assets/items/materials/red_crystal.svg',
+        blue_crystal: 'assets/items/materials/blue_crystal.svg',
+        green_crystal: 'assets/items/materials/green_crystal.svg',
+        purple_crystal: 'assets/items/materials/purple_crystal.svg'
+    };
+
+    return images[oreId] || null;
+}
+
+/**
  * 광석을 ITEMS_DATABASE에 등록합니다.
  */
 function registerOreToDatabase(oreId, oreName) {
-    if (typeof ITEMS_DATABASE !== 'undefined' && !ITEMS_DATABASE[oreId]) {
+    if (typeof ITEMS_DATABASE === 'undefined') return;
+
+    if (!ITEMS_DATABASE[oreId]) {
         ITEMS_DATABASE[oreId] = {
             id: oreId,
             name: oreName,
@@ -1951,10 +1986,17 @@ function registerOreToDatabase(oreId, oreName) {
             rarity: getOreRarity(oreId),
             description: `${oreName}입니다. 제련하거나 판매할 수 있습니다.`,
             icon: getOreIcon(oreId),
+            image: getOreImage(oreId),
             sellPrice: getOreSellPrice(oreId),
             stackable: true
         };
         console.log(`📦 광석 등록: ${oreName} (${oreId})`);
+        return;
+    }
+
+    // 기존 데이터가 있어도 이미지 누락 시 최신 이미지 보완
+    if (!ITEMS_DATABASE[oreId].image) {
+        ITEMS_DATABASE[oreId].image = getOreImage(oreId);
     }
 }
 

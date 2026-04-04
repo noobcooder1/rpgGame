@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="monster_tooth material icon">
+  <defs>
+    
+    <filter id="drop_monster_tooth" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="grain_monster_tooth" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="151" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="surface_monster_tooth" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="168" result="surfaceNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="surfaceNoise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="rim_monster_tooth" cx="0.35" cy="0.2" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+    
+    <linearGradient id="tooth_monster_tooth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8efd9"/>
+      <stop offset="52%" stop-color="#dbc5a1"/>
+      <stop offset="100%" stop-color="#b59670"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="256" cy="458" rx="146" ry="28" fill="#000000" opacity="0.28"/>
+  
+  <g filter="url(#drop_monster_tooth)">
+    <path d="M264 74C358 108 412 184 400 286C386 378 336 444 256 466C176 446 126 376 112 286C100 184 154 106 264 74Z" fill="url(#tooth_monster_tooth)" stroke="#322920" stroke-opacity="0.58" stroke-width="8"/>
+    <path d="M256 132C316 148 350 198 344 276C338 344 304 394 256 414" stroke="#7f6a56" stroke-opacity="0.68" stroke-width="9" stroke-linecap="round" fill="none"/>
+    <path d="M188 156C156 192 144 236 152 286" stroke="#ffffff" stroke-opacity="0.3" stroke-width="7" stroke-linecap="round" fill="none"/>
+  </g>
+  <rect x="24" y="24" width="464" height="464" filter="url(#grain_monster_tooth)"/>
+</svg>

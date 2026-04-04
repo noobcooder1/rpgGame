@@ -213,6 +213,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '일반적인 약초입니다.',
         icon: '🌿',
+        image: 'assets/items/materials/herb.svg',
         sellPrice: 3,
         stackable: true
     },
@@ -223,6 +224,7 @@ const ITEMS_DATABASE = {
         rarity: 'uncommon',
         description: '몬스터의 날카로운 이빨입니다.',
         icon: '🦷',
+        image: 'assets/items/materials/monster_tooth.svg',
         sellPrice: 8,
         stackable: true
     },
@@ -234,6 +236,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '허수아비에서 떨어진 나무 조각입니다.',
         icon: '🪵',
+        image: 'assets/items/materials/wood_piece.svg',
         sellPrice: 2,
         stackable: true
     },
@@ -244,6 +247,7 @@ const ITEMS_DATABASE = {
         rarity: 'uncommon',
         description: '로봇에서 떨어진 금속 조각입니다.',
         icon: '⚙️',
+        image: 'assets/items/materials/metal_piece.svg',
         sellPrice: 10,
         stackable: true
     },
@@ -254,6 +258,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '박쥐의 얇은 날개입니다.',
         icon: '🦇',
+        image: 'assets/items/materials/bat_wing.svg',
         sellPrice: 5,
         stackable: true
     },
@@ -264,6 +269,7 @@ const ITEMS_DATABASE = {
         rarity: 'uncommon',
         description: '질긴 거미줄입니다.',
         icon: '🕸️',
+        image: 'assets/items/materials/spider_silk.svg',
         sellPrice: 8,
         stackable: true
     },
@@ -274,6 +280,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '스켈레톤에서 떨어진 뼈입니다.',
         icon: '🦴',
+        image: 'assets/items/materials/strange_bone.svg',
         sellPrice: 5,
         stackable: true
     },
@@ -284,6 +291,7 @@ const ITEMS_DATABASE = {
         rarity: 'uncommon',
         description: '저주가 깃든 뼈입니다.',
         icon: '💀',
+        image: 'assets/items/materials/cursed_bone.svg',
         sellPrice: 15,
         stackable: true
     },
@@ -294,6 +302,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '언데드에서 떨어진 썩은 살점입니다.',
         icon: '🍖',
+        image: 'assets/items/materials/rotten_flesh.svg',
         sellPrice: 3,
         stackable: true
     },
@@ -304,6 +313,7 @@ const ITEMS_DATABASE = {
         rarity: 'common',
         description: '고블린의 뾰족한 귀입니다.',
         icon: '👂',
+        image: 'assets/items/materials/goblin_ear.svg',
         sellPrice: 5,
         stackable: true
     },
@@ -314,6 +324,7 @@ const ITEMS_DATABASE = {
         rarity: 'epic',
         description: '동굴트롤의 거대하고 날카로운 이빨입니다. 고대 수호자가 찾고 있다.',
         icon: '🦷',
+        image: 'assets/items/materials/troll_tooth.svg',
         sellPrice: 500,
         stackable: true
     },
@@ -324,6 +335,7 @@ const ITEMS_DATABASE = {
         rarity: 'rare',
         description: '재생력이 있는 트롤의 피입니다.',
         icon: '🩸',
+        image: 'assets/items/materials/troll_blood.svg',
         sellPrice: 100,
         stackable: true
     },
@@ -719,15 +731,68 @@ function useItem(slotIndex) {
     if (item.type === 'consumable') {
         // 소모품 사용
         if (item.effect) {
-            if (item.effect.hp) {
-                const healAmount = Math.min(item.effect.hp, player.maxHp - player.hp);
+            const hpEffect = typeof item.effect.hp === 'number'
+                ? item.effect.hp
+                : (item.effect.type === 'heal_hp' && typeof item.effect.amount === 'number' ? item.effect.amount : 0);
+
+            const mpEffect = typeof item.effect.mp === 'number'
+                ? item.effect.mp
+                : (item.effect.type === 'heal_mp' && typeof item.effect.amount === 'number' ? item.effect.amount : 0);
+
+            if (hpEffect > 0) {
+                const healAmount = Math.min(hpEffect, player.maxHp - player.hp);
                 player.hp += healAmount;
                 addGameLog(`💚 ${item.name} 사용! HP +${healAmount}`);
             }
-            if (item.effect.mp) {
-                const recoverAmount = Math.min(item.effect.mp, player.maxMp - player.mp);
+
+            if (mpEffect > 0) {
+                const recoverAmount = Math.min(mpEffect, player.maxMp - player.mp);
                 player.mp += recoverAmount;
                 addGameLog(`💙 ${item.name} 사용! MP +${recoverAmount}`);
+            }
+
+            if (item.effect.hunger && typeof eat === 'function') {
+                eat(item.effect.hunger);
+            }
+
+            if (item.effect.thirst && typeof drink === 'function') {
+                drink(item.effect.thirst);
+            }
+
+            // 영약 계열 영구 능력치 증가 처리
+            if (item.effect.permanentStat && typeof item.effect.permanentStat === 'object') {
+                const statNames = {
+                    str: '근력',
+                    vit: '체력',
+                    int: '지능',
+                    agi: '민첩',
+                    pAtk: '물리공격력',
+                    mAtk: '마법공격력',
+                    pDef: '물리방어력',
+                    mDef: '마법방어력',
+                    maxHp: '최대 HP',
+                    maxMp: '최대 MP'
+                };
+
+                const increasedStats = [];
+                Object.entries(item.effect.permanentStat).forEach(([statKey, amount]) => {
+                    if (typeof amount !== 'number' || amount === 0) return;
+
+                    if (typeof player[statKey] !== 'number') {
+                        player[statKey] = 0;
+                    }
+
+                    player[statKey] += amount;
+                    const statLabel = statNames[statKey] || statKey;
+                    increasedStats.push(`${statLabel} +${amount}`);
+                });
+
+                if (increasedStats.length > 0) {
+                    if (typeof recalculatePlayerStats === 'function') {
+                        recalculatePlayerStats();
+                    }
+                    addGameLog(`✨ ${item.name} 사용! 영구 능력치 증가: ${increasedStats.join(', ')}`);
+                }
             }
         }
         removeItemFromInventory(slotIndex, 1);
@@ -888,6 +953,154 @@ function applyEquipmentStats() {
     if (typeof recalculatePlayerStats === 'function') {
         recalculatePlayerStats();
     }
+}
+
+/**
+ * HTML 속성 문자열을 안전하게 이스케이프합니다.
+ * @param {string} value - 원본 문자열
+ * @returns {string}
+ */
+function escapeItemHtmlAttribute(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
+ * 아이템 이미지 후보 경로 목록을 생성합니다.
+ * @param {Object} item - 아이템 객체
+ * @param {string|null} resolvedImage - 우선 적용 이미지 경로
+ * @returns {string[]}
+ */
+function buildItemImageCandidates(item, resolvedImage) {
+    const candidates = [];
+    const extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+
+    /**
+     * 후보 경로를 중복 없이 추가합니다.
+     * @param {string} path - 이미지 경로
+     */
+    function addCandidate(path) {
+        if (typeof path !== 'string') return;
+        const trimmed = path.trim();
+        if (!trimmed || candidates.includes(trimmed)) return;
+        candidates.push(trimmed);
+    }
+
+    /**
+     * 기본 경로에 확장자 후보를 붙여 추가합니다.
+     * @param {string} basePath - 확장자를 제외한 경로
+     * @param {string|null} preferredExt - 우선 확장자
+     */
+    function addWithExtensions(basePath, preferredExt = null) {
+        if (!basePath) return;
+
+        const lowerPreferred = preferredExt ? preferredExt.toLowerCase() : null;
+        const orderedExtensions = lowerPreferred && extensions.includes(lowerPreferred)
+            ? [lowerPreferred, ...extensions.filter(ext => ext !== lowerPreferred)]
+            : extensions;
+
+        orderedExtensions.forEach((ext) => {
+            addCandidate(`${basePath}.${ext}`);
+        });
+    }
+
+    // 자수정은 사용자 커스텀 PNG를 우선 탐색
+    if (item && item.id === 'amethyst') {
+        addWithExtensions('assets/items/materials/amethyst', 'png');
+    }
+
+    if (resolvedImage) {
+        const matchedExt = resolvedImage.match(/\.(png|jpg|jpeg|webp|svg)$/i);
+        const imageBase = matchedExt ? resolvedImage.slice(0, -matchedExt[0].length) : resolvedImage;
+        const preferredExt = matchedExt ? matchedExt[1] : null;
+
+        addWithExtensions(imageBase, preferredExt);
+        addCandidate(resolvedImage);
+    }
+
+    if (item && item.id) {
+        addWithExtensions(`assets/items/materials/${item.id}`);
+    }
+
+    return candidates;
+}
+
+/**
+ * 아이템 이미지 HTML을 생성합니다.
+ * @param {Object} item - 아이템 객체
+ * @param {string} resolvedImage - 우선 이미지 경로
+ * @param {string} fallbackIcon - 이미지 실패 시 대체 아이콘
+ * @returns {string}
+ */
+function buildItemImageHtml(item, resolvedImage, fallbackIcon) {
+    const candidates = buildItemImageCandidates(item, resolvedImage);
+    if (candidates.length === 0) return fallbackIcon || '📦';
+
+    const [primaryImage, ...fallbackImages] = candidates;
+    const encodedFallbacks = encodeURIComponent(JSON.stringify(fallbackImages));
+    const altText = escapeItemHtmlAttribute(item?.name || item?.id || '아이템');
+    const safeFallbackIcon = escapeItemHtmlAttribute(fallbackIcon || '📦');
+
+    return `<img src="${escapeItemHtmlAttribute(primaryImage)}" class="item-img" alt="${altText}" data-fallbacks="${escapeItemHtmlAttribute(encodedFallbacks)}" data-fallback-icon="${safeFallbackIcon}" onerror="handleItemImageFallback(this)">`;
+}
+
+/**
+ * 아이템 이미지 로딩 실패 시 다음 후보 이미지를 시도합니다.
+ * @param {HTMLImageElement} imgElement - 실패한 이미지 엘리먼트
+ */
+function handleItemImageFallback(imgElement) {
+    if (!imgElement) return;
+
+    let fallbackImages = [];
+    const encodedFallbacks = imgElement.getAttribute('data-fallbacks');
+
+    if (encodedFallbacks) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(encodedFallbacks));
+            if (Array.isArray(parsed)) {
+                fallbackImages = parsed;
+            }
+        } catch (error) {
+            console.warn('⚠️ 아이템 이미지 후보 파싱 실패:', error);
+        }
+    }
+
+    if (fallbackImages.length > 0) {
+        const nextImage = fallbackImages.shift();
+        imgElement.setAttribute('data-fallbacks', encodeURIComponent(JSON.stringify(fallbackImages)));
+        imgElement.src = nextImage;
+        return;
+    }
+
+    const fallbackIcon = imgElement.getAttribute('data-fallback-icon') || '📦';
+    const fallbackSpan = document.createElement('span');
+    fallbackSpan.className = 'item-img-fallback';
+    fallbackSpan.textContent = fallbackIcon;
+    imgElement.replaceWith(fallbackSpan);
+}
+
+/**
+ * 아이템 표시용 아이콘/이미지 HTML을 반환합니다.
+ * 저장 데이터의 구버전 image 경로보다 ITEMS_DATABASE의 최신 image를 우선 적용합니다.
+ */
+function getItemVisualHtml(item) {
+    if (!item) return '📦';
+
+    const dbItem = item.id && ITEMS_DATABASE[item.id] ? ITEMS_DATABASE[item.id] : null;
+    const dbImage = dbItem ? dbItem.image : null;
+    const resolvedImage = dbImage || item.image || null;
+    const fallbackIcon = item.icon || (dbItem ? dbItem.icon : null) || '📦';
+
+    if (resolvedImage && item.image !== resolvedImage) {
+        item.image = resolvedImage;
+    }
+
+    return resolvedImage
+        ? buildItemImageHtml(item, resolvedImage, fallbackIcon)
+        : fallbackIcon;
 }
 
 /**
@@ -1085,7 +1298,7 @@ function renderEquipment() {
                 <div class="equip-item" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" 
                      onclick="showEquippedItemContextMenu('${slot}', event)" 
                      oncontextmenu="event.preventDefault(); showEquippedItemContextMenu('${slot}', event);">
-                    <span class="equip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+                    <span class="equip-icon">${getItemVisualHtml(item)}</span>
                     <span class="equip-name">${item.name}</span>
                 </div>
             `;
@@ -1140,7 +1353,7 @@ function renderInventoryItems() {
                 <div class="item-content" style="border-color: ${RARITY_COLORS[item.rarity] || '#666'}" 
                      onclick="showItemContextMenu(${originalIndex}, event)"
                      oncontextmenu="event.preventDefault(); showItemContextMenu(${originalIndex}, event);">
-                    <span class="item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+                    <span class="item-icon">${getItemVisualHtml(item)}</span>
                     ${item.stackable && item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                 </div>
             `;
@@ -1261,7 +1474,7 @@ function showItemTooltip(slotIndex, event) {
 
     tooltip.innerHTML = `
         <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="tooltip-icon">${getItemVisualHtml(item)}</span>
             <span class="tooltip-name">${item.name}</span>
         </div>
         <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>
@@ -1325,7 +1538,7 @@ function showItemContextMenu(slotIndex, event) {
     // 아이템 이름 헤더
     menuOptions += `
         <div class="context-menu-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="context-menu-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="context-menu-icon">${getItemVisualHtml(item)}</span>
             <span class="context-menu-name">${item.name}</span>
         </div>
     `;
@@ -1425,7 +1638,7 @@ function showEquippedItemContextMenu(slot, event) {
 
     menu.innerHTML = `
         <div class="context-menu-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="context-menu-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="context-menu-icon">${getItemVisualHtml(item)}</span>
             <span class="context-menu-name">${item.name}</span>
         </div>
         <button class="context-menu-btn info-btn" onclick="contextMenuEquippedInfo('${slot}', event)">
@@ -1546,7 +1759,7 @@ function showDiscardQuantityDialog(slotIndex, item, maxQuantity) {
     overlay.innerHTML = `
         <div class="discard-quantity-content">
             <div class="discard-quantity-header">
-                <span class="discard-item-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+                <span class="discard-item-icon">${getItemVisualHtml(item)}</span>
                 <span class="discard-item-name">${item.name}</span>
                 <span class="discard-item-total">(보유: ${maxQuantity}개)</span>
             </div>
@@ -1684,7 +1897,7 @@ function showItemTooltipAtPosition(slotIndex, x, y) {
 
     tooltip.innerHTML = `
         <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="tooltip-icon">${getItemVisualHtml(item)}</span>
             <span class="tooltip-name">${item.name}</span>
         </div>
         <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>
@@ -1734,7 +1947,7 @@ function showEquippedItemTooltipAtPosition(slot, x, y) {
 
     tooltip.innerHTML = `
         <div class="tooltip-header" style="border-left-color: ${RARITY_COLORS[item.rarity] || '#666'}">
-            <span class="tooltip-icon">${item.image ? `<img src="${item.image}" class="item-img">` : item.icon}</span>
+            <span class="tooltip-icon">${getItemVisualHtml(item)}</span>
             <span class="tooltip-name">${item.name}</span>
         </div>
         <div class="tooltip-type">${ITEM_TYPES[item.type]?.name || item.type}</div>

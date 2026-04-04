@@ -1203,6 +1203,15 @@ body {
     flex: 1;
 }
 
+.battle-arena.spar-mode {
+    background: transparent !important;
+    box-shadow: none;
+}
+
+.battle-arena.spar-mode .monsters-container {
+    background: transparent;
+}
+
 .monster-section {
     display: flex;
     flex-direction: column;
@@ -4499,6 +4508,37 @@ body {
     position: relative;
 }
 
+.battle-arena.spar-mode .monster-card {
+    background-image: none !important;
+    background-color: rgba(0, 0, 0, 0.72);
+}
+
+.battle-arena.spar-mode .monster-card.spar-trainee-card {
+    min-width: 180px;
+    max-width: 220px;
+    padding: 14px 12px 10px;
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.25);
+}
+
+.battle-arena.spar-mode .monster-card.spar-trainee-card .monster-sprite {
+    margin-bottom: 4px;
+}
+
+.battle-arena.spar-mode .monster-card.spar-trainee-card .monster-sprite .monster-image {
+    width: 170px;
+    height: 210px;
+    object-fit: contain;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.battle-arena.spar-mode .monster-card.spar-trainee-card .monster-name {
+    display: none;
+}
+
 .monster-card:hover:not(.dead) {
     transform: scale(1.05);
     border-color: #e74c3c;
@@ -4953,6 +4993,18 @@ body {
     height: 64px;
     object-fit: contain;
     filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+}
+
+.reward-alert-icon .item-img {
+    width: 64px;
+    height: 64px;
+    mix-blend-mode: normal;
+}
+
+.reward-alert-icon .item-img-fallback {
+    width: 64px;
+    height: 64px;
+    font-size: 52px;
 }
 
 .reward-alert-message {
@@ -5845,6 +5897,17 @@ body {
         padding: 8px;
     }
 
+    .battle-arena.spar-mode .monster-card.spar-trainee-card {
+        min-width: 130px;
+        max-width: 165px;
+        padding: 10px 8px 8px;
+    }
+
+    .battle-arena.spar-mode .monster-card.spar-trainee-card .monster-sprite .monster-image {
+        width: 118px;
+        height: 148px;
+    }
+
     .monster-sprite {
         font-size: 52px;
     }
@@ -6347,6 +6410,15 @@ body {
     mix-blend-mode: screen; /* AI 생성 이미지의 검은색 배경을 투명하게 만들어줌 */
     filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
     display: inline-block;
+}
+
+.item-img-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
 }
 
 .equip-icon .item-img, .item-icon .item-img, .tooltip-icon .item-img,
