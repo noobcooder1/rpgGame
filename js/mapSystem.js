@@ -1607,6 +1607,14 @@ function handleExploreItemFound(foundItem) {
         addItemToInventory(foundItem.id, 1);
         addGameLog(`📦 ${foundItem.name || itemData.name}을(를) 발견했습니다!`);
     } else {
+        // 광산 광석/원석 계열은 공통 등록 로직을 우선 사용
+        if (isMiningOreItem(foundItem.id)) {
+            registerOreToDatabase(foundItem.id, foundItem.name);
+            addItemToInventory(foundItem.id, 1);
+            addGameLog(`📦 ${foundItem.name}을(를) 발견했습니다!`);
+            return;
+        }
+
         // ITEMS_DATABASE에 없는 아이템 - 동적 생성 후 추가
         const newItem = createExploreItem(foundItem);
         if (newItem) {
@@ -1873,26 +1881,36 @@ const MINING_ORES = {
             { id: 'silver_ore', name: '은광석', chance: 0.25, icon: '⚪' },
             { id: 'mithril_ore', name: '미스릴 광석', chance: 0.15, icon: '💎' },
             { id: 'black_iron_ore', name: '흑철 광석', chance: 0.18, icon: '⚫' },
-            { id: 'mana_stone', name: '마나석', chance: 0.12, icon: '🔮' },
-            { id: 'obsidian', name: '흑요석', chance: 0.10, icon: '🖤' }
+            { id: 'mana_stone_ore', name: '마나석 원석', chance: 0.12, icon: '🔮' },
+            { id: 'obsidian_ore', name: '흑요석 원석', chance: 0.10, icon: '🖤' }
         ]
     },
-    // 3구역: 보석류
+    // 3구역: 보석 원석
     mine_area_3: {
         baseFailRate: 0.45,  // 기본 실패 확률 45%
         ores: [
-            { id: 'amethyst', name: '자수정', chance: 0.18, icon: '💜' },
-            { id: 'ruby', name: '루비', chance: 0.12, icon: '❤️' },
-            { id: 'sapphire', name: '사파이어', chance: 0.12, icon: '💙' },
-            { id: 'emerald', name: '에메랄드', chance: 0.10, icon: '💚' },
-            { id: 'diamond', name: '다이아몬드', chance: 0.05, icon: '💎' },
-            { id: 'red_crystal', name: '붉은 수정', chance: 0.15, icon: '🔴' },
-            { id: 'blue_crystal', name: '푸른 수정', chance: 0.14, icon: '🔵' },
-            { id: 'green_crystal', name: '녹색 수정', chance: 0.09, icon: '🟢' },
-            { id: 'purple_crystal', name: '보라 수정', chance: 0.05, icon: '🟣' }
+            { id: 'amethyst_ore', name: '자수정 원석', chance: 0.18, icon: '💜' },
+            { id: 'ruby_ore', name: '루비 원석', chance: 0.12, icon: '❤️' },
+            { id: 'sapphire_ore', name: '사파이어 원석', chance: 0.12, icon: '💙' },
+            { id: 'emerald_ore', name: '에메랄드 원석', chance: 0.10, icon: '💚' },
+            { id: 'diamond_ore', name: '다이아몬드 원석', chance: 0.05, icon: '💎' },
+            { id: 'red_crystal_ore', name: '붉은 수정 원석', chance: 0.15, icon: '🔴' },
+            { id: 'blue_crystal_ore', name: '푸른 수정 원석', chance: 0.14, icon: '🔵' },
+            { id: 'green_crystal_ore', name: '녹색 수정 원석', chance: 0.09, icon: '🟢' },
+            { id: 'purple_crystal_ore', name: '보라 수정 원석', chance: 0.05, icon: '🟣' }
         ]
     }
 };
+
+/**
+ * 광산 채굴 테이블에 존재하는 광석/원석 ID인지 확인합니다.
+ * @param {string} itemId - 아이템 ID
+ * @returns {boolean}
+ */
+function isMiningOreItem(itemId) {
+    return Object.values(MINING_ORES)
+        .some(zone => zone.ores.some(ore => ore.id === itemId));
+}
 
 // ============================================
 // ⛏️ 광석 희귀도 및 판매가 헬퍼 함수
@@ -1905,7 +1923,11 @@ function getOreRarity(oreId) {
     const rarities = {
         stone: 'common', coal: 'common', copper_ore: 'common', iron_ore: 'common',
         gold_ore: 'uncommon', silver_ore: 'uncommon', mithril_ore: 'rare',
-        black_iron_ore: 'uncommon', mana_stone: 'rare', obsidian: 'uncommon',
+        black_iron_ore: 'uncommon', mana_stone_ore: 'rare', obsidian_ore: 'uncommon',
+        amethyst_ore: 'uncommon', ruby_ore: 'rare', sapphire_ore: 'rare', emerald_ore: 'rare',
+        diamond_ore: 'epic', red_crystal_ore: 'uncommon', blue_crystal_ore: 'uncommon',
+        green_crystal_ore: 'uncommon', purple_crystal_ore: 'rare',
+        mana_stone: 'rare', obsidian: 'uncommon',
         amethyst: 'uncommon', ruby: 'rare', sapphire: 'rare', emerald: 'rare',
         diamond: 'epic', red_crystal: 'uncommon', blue_crystal: 'uncommon',
         green_crystal: 'uncommon', purple_crystal: 'rare'
@@ -1920,7 +1942,11 @@ function getOreSellPrice(oreId) {
     const prices = {
         stone: 1, coal: 3, copper_ore: 5, iron_ore: 8,
         gold_ore: 25, silver_ore: 20, mithril_ore: 50,
-        black_iron_ore: 30, mana_stone: 45, obsidian: 35,
+        black_iron_ore: 30, mana_stone_ore: 28, obsidian_ore: 22,
+        amethyst_ore: 24, ruby_ore: 36, sapphire_ore: 36, emerald_ore: 42,
+        diamond_ore: 90, red_crystal_ore: 21, blue_crystal_ore: 21,
+        green_crystal_ore: 21, purple_crystal_ore: 27,
+        mana_stone: 45, obsidian: 35,
         amethyst: 40, ruby: 60, sapphire: 60, emerald: 70,
         diamond: 150, red_crystal: 35, blue_crystal: 35,
         green_crystal: 35, purple_crystal: 45
@@ -1935,7 +1961,11 @@ function getOreIcon(oreId) {
     const icons = {
         stone: '🪨', coal: '⬛', copper_ore: '🟫', iron_ore: '⬜',
         gold_ore: '🟡', silver_ore: '⚪', mithril_ore: '💎',
-        black_iron_ore: '⚫', mana_stone: '🔮', obsidian: '🖤',
+        black_iron_ore: '⚫', mana_stone_ore: '🔮', obsidian_ore: '🖤',
+        amethyst_ore: '💜', ruby_ore: '❤️', sapphire_ore: '💙', emerald_ore: '💚',
+        diamond_ore: '💎', red_crystal_ore: '🔴', blue_crystal_ore: '🔵',
+        green_crystal_ore: '🟢', purple_crystal_ore: '🟣',
+        mana_stone: '🔮', obsidian: '🖤',
         amethyst: '💜', ruby: '❤️', sapphire: '💙', emerald: '💚',
         diamond: '💎', red_crystal: '🔴', blue_crystal: '🔵',
         green_crystal: '🟢', purple_crystal: '🟣'
@@ -1956,6 +1986,17 @@ function getOreImage(oreId) {
         silver_ore: 'assets/items/materials/silver_ore.svg',
         mithril_ore: 'assets/items/materials/mithril_ore.svg',
         black_iron_ore: 'assets/items/materials/black_iron_ore.svg',
+        mana_stone_ore: 'assets/items/materials/mana_stone.svg',
+        obsidian_ore: 'assets/items/materials/obsidian.svg',
+        amethyst_ore: 'assets/items/materials/amethyst.png',
+        ruby_ore: 'assets/items/materials/ruby.svg',
+        sapphire_ore: 'assets/items/materials/sapphire.svg',
+        emerald_ore: 'assets/items/materials/emerald.svg',
+        diamond_ore: 'assets/items/materials/diamond.svg',
+        red_crystal_ore: 'assets/items/materials/red_crystal.svg',
+        blue_crystal_ore: 'assets/items/materials/blue_crystal.svg',
+        green_crystal_ore: 'assets/items/materials/green_crystal.svg',
+        purple_crystal_ore: 'assets/items/materials/purple_crystal.svg',
         mana_stone: 'assets/items/materials/mana_stone.svg',
         obsidian: 'assets/items/materials/obsidian.svg',
         amethyst: 'assets/items/materials/amethyst.png',

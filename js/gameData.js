@@ -467,7 +467,7 @@ const MAPS = {
             mine_area_2: {
                 id: 'mine_area_2',
                 name: '버려진 광산 2구역',
-                description: '더 깊은 곳에 위치한 광산. 금, 은을 비롯해 미스릴, 흑철, 마나석, 흑요석 등 희귀 광석이 매장되어 있다.',
+                description: '더 깊은 곳에 위치한 광산. 금, 은을 비롯해 미스릴, 흑철과 마나석 원석, 흑요석 원석 등 희귀 광석이 매장되어 있다.',
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
@@ -478,8 +478,8 @@ const MAPS = {
                     { id: 'silver_ore', name: '은광석', chance: 0.18 },
                     { id: 'mithril_ore', name: '미스릴 광석', chance: 0.10 },
                     { id: 'black_iron_ore', name: '흑철 광석', chance: 0.12 },
-                    { id: 'mana_stone', name: '마나석', chance: 0.08 },
-                    { id: 'obsidian', name: '흑요석', chance: 0.10 }
+                    { id: 'mana_stone_ore', name: '마나석 원석', chance: 0.08 },
+                    { id: 'obsidian_ore', name: '흑요석 원석', chance: 0.10 }
                 ],
                 connections: ['abandoned_mine']
             },
@@ -488,22 +488,22 @@ const MAPS = {
             mine_area_3: {
                 id: 'mine_area_3',
                 name: '버려진 광산 3구역',
-                description: '벽면이 보석으로 반짝이는 신비로운 광산. 자수정, 루비, 사파이어 등 다양한 보석을 캘 수 있다.',
+                description: '벽면이 원석으로 반짝이는 신비로운 광산. 자수정 원석, 루비 원석, 사파이어 원석 등 다양한 보석 원석을 캘 수 있다.',
                 actions: ['move', 'battle', 'explore'],
                 canExplore: true,
                 canBattle: true,
                 monsters: ['cave_bat', 'giant_spider', 'skeleton', 'ghoul', 'wraith', 'slime'],
-                // 3차 광산 광석 (보석류)
+                // 3차 광산 광석 (보석 원석류)
                 specialExploreItems: [
-                    { id: 'amethyst', name: '자수정', chance: 0.15 },
-                    { id: 'ruby', name: '루비', chance: 0.10 },
-                    { id: 'sapphire', name: '사파이어', chance: 0.10 },
-                    { id: 'emerald', name: '에메랄드', chance: 0.08 },
-                    { id: 'diamond', name: '다이아몬드', chance: 0.03 },
-                    { id: 'red_crystal', name: '붉은 수정', chance: 0.12 },
-                    { id: 'blue_crystal', name: '푸른 수정', chance: 0.12 },
-                    { id: 'green_crystal', name: '녹색 수정', chance: 0.12 },
-                    { id: 'purple_crystal', name: '보라 수정', chance: 0.10 }
+                    { id: 'amethyst_ore', name: '자수정 원석', chance: 0.15 },
+                    { id: 'ruby_ore', name: '루비 원석', chance: 0.10 },
+                    { id: 'sapphire_ore', name: '사파이어 원석', chance: 0.10 },
+                    { id: 'emerald_ore', name: '에메랄드 원석', chance: 0.08 },
+                    { id: 'diamond_ore', name: '다이아몬드 원석', chance: 0.03 },
+                    { id: 'red_crystal_ore', name: '붉은 수정 원석', chance: 0.12 },
+                    { id: 'blue_crystal_ore', name: '푸른 수정 원석', chance: 0.12 },
+                    { id: 'green_crystal_ore', name: '녹색 수정 원석', chance: 0.12 },
+                    { id: 'purple_crystal_ore', name: '보라 수정 원석', chance: 0.10 }
                 ],
                 connections: ['abandoned_mine']
             },

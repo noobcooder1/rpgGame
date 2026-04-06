@@ -90,6 +90,249 @@ const CRAFTING_ITEM_DEFINITIONS = {
         image: 'assets/items/materials/copper_ingot.svg',
         sellPrice: 12,
         stackable: true
+    },
+    // 광산 원석/완제품 (세공용)
+    mana_stone_ore: {
+        id: 'mana_stone_ore',
+        name: '마나석 원석',
+        type: 'material',
+        rarity: 'rare',
+        description: '마력이 스며 있는 거친 원석입니다. 세공하면 마나석이 됩니다.',
+        icon: '🔮',
+        image: 'assets/items/materials/mana_stone.svg',
+        sellPrice: 28,
+        stackable: true
+    },
+    obsidian_ore: {
+        id: 'obsidian_ore',
+        name: '흑요석 원석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '거칠게 깨진 흑요석 원석입니다. 가공하면 흑요석이 됩니다.',
+        icon: '🖤',
+        image: 'assets/items/materials/obsidian.svg',
+        sellPrice: 22,
+        stackable: true
+    },
+    amethyst_ore: {
+        id: 'amethyst_ore',
+        name: '자수정 원석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '보랏빛이 감도는 자수정 원석입니다. 세공하면 자수정이 됩니다.',
+        icon: '💜',
+        image: 'assets/items/materials/amethyst.png',
+        sellPrice: 24,
+        stackable: true
+    },
+    ruby_ore: {
+        id: 'ruby_ore',
+        name: '루비 원석',
+        type: 'material',
+        rarity: 'rare',
+        description: '붉은 빛이 도는 루비 원석입니다. 세공하면 루비가 됩니다.',
+        icon: '❤️',
+        image: 'assets/items/materials/ruby.svg',
+        sellPrice: 36,
+        stackable: true
+    },
+    sapphire_ore: {
+        id: 'sapphire_ore',
+        name: '사파이어 원석',
+        type: 'material',
+        rarity: 'rare',
+        description: '푸른 빛이 도는 사파이어 원석입니다. 세공하면 사파이어가 됩니다.',
+        icon: '💙',
+        image: 'assets/items/materials/sapphire.svg',
+        sellPrice: 36,
+        stackable: true
+    },
+    emerald_ore: {
+        id: 'emerald_ore',
+        name: '에메랄드 원석',
+        type: 'material',
+        rarity: 'rare',
+        description: '초록빛이 도는 에메랄드 원석입니다. 세공하면 에메랄드가 됩니다.',
+        icon: '💚',
+        image: 'assets/items/materials/emerald.svg',
+        sellPrice: 42,
+        stackable: true
+    },
+    diamond_ore: {
+        id: 'diamond_ore',
+        name: '다이아몬드 원석',
+        type: 'material',
+        rarity: 'epic',
+        description: '강한 경도를 지닌 다이아몬드 원석입니다. 세공하면 다이아몬드가 됩니다.',
+        icon: '💎',
+        image: 'assets/items/materials/diamond.svg',
+        sellPrice: 90,
+        stackable: true
+    },
+    red_crystal_ore: {
+        id: 'red_crystal_ore',
+        name: '붉은 수정 원석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '붉게 빛나는 수정 원석입니다. 세공하면 붉은 수정이 됩니다.',
+        icon: '🔴',
+        image: 'assets/items/materials/red_crystal.svg',
+        sellPrice: 21,
+        stackable: true
+    },
+    blue_crystal_ore: {
+        id: 'blue_crystal_ore',
+        name: '푸른 수정 원석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '푸르게 빛나는 수정 원석입니다. 세공하면 푸른 수정이 됩니다.',
+        icon: '🔵',
+        image: 'assets/items/materials/blue_crystal.svg',
+        sellPrice: 21,
+        stackable: true
+    },
+    green_crystal_ore: {
+        id: 'green_crystal_ore',
+        name: '녹색 수정 원석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '초록빛이 도는 수정 원석입니다. 세공하면 녹색 수정이 됩니다.',
+        icon: '🟢',
+        image: 'assets/items/materials/green_crystal.svg',
+        sellPrice: 21,
+        stackable: true
+    },
+    purple_crystal_ore: {
+        id: 'purple_crystal_ore',
+        name: '보라 수정 원석',
+        type: 'material',
+        rarity: 'rare',
+        description: '보랏빛을 띠는 수정 원석입니다. 세공하면 보라 수정이 됩니다.',
+        icon: '🟣',
+        image: 'assets/items/materials/purple_crystal.svg',
+        sellPrice: 27,
+        stackable: true
+    },
+    mana_stone: {
+        id: 'mana_stone',
+        name: '마나석',
+        type: 'material',
+        rarity: 'rare',
+        description: '정제된 마나석입니다.',
+        icon: '🔮',
+        image: 'assets/items/materials/mana_stone.svg',
+        sellPrice: 45,
+        stackable: true
+    },
+    obsidian: {
+        id: 'obsidian',
+        name: '흑요석',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '정제된 흑요석입니다.',
+        icon: '🖤',
+        image: 'assets/items/materials/obsidian.svg',
+        sellPrice: 35,
+        stackable: true
+    },
+    amethyst: {
+        id: 'amethyst',
+        name: '자수정',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '세공된 자수정입니다.',
+        icon: '💜',
+        image: 'assets/items/materials/amethyst.png',
+        sellPrice: 40,
+        stackable: true
+    },
+    ruby: {
+        id: 'ruby',
+        name: '루비',
+        type: 'material',
+        rarity: 'rare',
+        description: '세공된 루비입니다.',
+        icon: '❤️',
+        image: 'assets/items/materials/ruby.svg',
+        sellPrice: 60,
+        stackable: true
+    },
+    sapphire: {
+        id: 'sapphire',
+        name: '사파이어',
+        type: 'material',
+        rarity: 'rare',
+        description: '세공된 사파이어입니다.',
+        icon: '💙',
+        image: 'assets/items/materials/sapphire.svg',
+        sellPrice: 60,
+        stackable: true
+    },
+    emerald: {
+        id: 'emerald',
+        name: '에메랄드',
+        type: 'material',
+        rarity: 'rare',
+        description: '세공된 에메랄드입니다.',
+        icon: '💚',
+        image: 'assets/items/materials/emerald.svg',
+        sellPrice: 70,
+        stackable: true
+    },
+    diamond: {
+        id: 'diamond',
+        name: '다이아몬드',
+        type: 'material',
+        rarity: 'epic',
+        description: '세공된 다이아몬드입니다.',
+        icon: '💎',
+        image: 'assets/items/materials/diamond.svg',
+        sellPrice: 150,
+        stackable: true
+    },
+    red_crystal: {
+        id: 'red_crystal',
+        name: '붉은 수정',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '세공된 붉은 수정입니다.',
+        icon: '🔴',
+        image: 'assets/items/materials/red_crystal.svg',
+        sellPrice: 35,
+        stackable: true
+    },
+    blue_crystal: {
+        id: 'blue_crystal',
+        name: '푸른 수정',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '세공된 푸른 수정입니다.',
+        icon: '🔵',
+        image: 'assets/items/materials/blue_crystal.svg',
+        sellPrice: 35,
+        stackable: true
+    },
+    green_crystal: {
+        id: 'green_crystal',
+        name: '녹색 수정',
+        type: 'material',
+        rarity: 'uncommon',
+        description: '세공된 녹색 수정입니다.',
+        icon: '🟢',
+        image: 'assets/items/materials/green_crystal.svg',
+        sellPrice: 35,
+        stackable: true
+    },
+    purple_crystal: {
+        id: 'purple_crystal',
+        name: '보라 수정',
+        type: 'material',
+        rarity: 'rare',
+        description: '세공된 보라 수정입니다.',
+        icon: '🟣',
+        image: 'assets/items/materials/purple_crystal.svg',
+        sellPrice: 45,
+        stackable: true
     }
 };
 
@@ -129,6 +372,116 @@ const CRAFTING_RECIPES = [
         ],
         difficulty: 22,
         description: '천과 약초를 섞어 응급용 붕대를 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_mana_stone',
+        name: '마나석 원석 정련',
+        result: { itemId: 'mana_stone', quantity: 1 },
+        ingredients: [
+            { itemId: 'mana_stone_ore', quantity: 1 }
+        ],
+        difficulty: 36,
+        description: '거친 마나석 원석을 다듬어 정제된 마나석으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_obsidian',
+        name: '흑요석 원석 정련',
+        result: { itemId: 'obsidian', quantity: 1 },
+        ingredients: [
+            { itemId: 'obsidian_ore', quantity: 1 }
+        ],
+        difficulty: 34,
+        description: '흑요석 원석의 불순물을 제거해 정제된 흑요석으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_amethyst',
+        name: '자수정 원석 세공',
+        result: { itemId: 'amethyst', quantity: 1 },
+        ingredients: [
+            { itemId: 'amethyst_ore', quantity: 1 }
+        ],
+        difficulty: 32,
+        description: '자수정 원석을 세공해 자수정으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_ruby',
+        name: '루비 원석 세공',
+        result: { itemId: 'ruby', quantity: 1 },
+        ingredients: [
+            { itemId: 'ruby_ore', quantity: 1 }
+        ],
+        difficulty: 38,
+        description: '루비 원석을 세공해 루비로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_sapphire',
+        name: '사파이어 원석 세공',
+        result: { itemId: 'sapphire', quantity: 1 },
+        ingredients: [
+            { itemId: 'sapphire_ore', quantity: 1 }
+        ],
+        difficulty: 38,
+        description: '사파이어 원석을 세공해 사파이어로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_emerald',
+        name: '에메랄드 원석 세공',
+        result: { itemId: 'emerald', quantity: 1 },
+        ingredients: [
+            { itemId: 'emerald_ore', quantity: 1 }
+        ],
+        difficulty: 40,
+        description: '에메랄드 원석을 세공해 에메랄드로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_diamond',
+        name: '다이아몬드 원석 세공',
+        result: { itemId: 'diamond', quantity: 1 },
+        ingredients: [
+            { itemId: 'diamond_ore', quantity: 1 }
+        ],
+        difficulty: 48,
+        description: '고난도 세공으로 다이아몬드 원석을 다이아몬드로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_red_crystal',
+        name: '붉은 수정 원석 세공',
+        result: { itemId: 'red_crystal', quantity: 1 },
+        ingredients: [
+            { itemId: 'red_crystal_ore', quantity: 1 }
+        ],
+        difficulty: 34,
+        description: '붉은 수정 원석을 세공해 붉은 수정으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_blue_crystal',
+        name: '푸른 수정 원석 세공',
+        result: { itemId: 'blue_crystal', quantity: 1 },
+        ingredients: [
+            { itemId: 'blue_crystal_ore', quantity: 1 }
+        ],
+        difficulty: 34,
+        description: '푸른 수정 원석을 세공해 푸른 수정으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_green_crystal',
+        name: '녹색 수정 원석 세공',
+        result: { itemId: 'green_crystal', quantity: 1 },
+        ingredients: [
+            { itemId: 'green_crystal_ore', quantity: 1 }
+        ],
+        difficulty: 34,
+        description: '녹색 수정 원석을 세공해 녹색 수정으로 만듭니다.'
+    },
+    {
+        id: 'recipe_refine_purple_crystal',
+        name: '보라 수정 원석 세공',
+        result: { itemId: 'purple_crystal', quantity: 1 },
+        ingredients: [
+            { itemId: 'purple_crystal_ore', quantity: 1 }
+        ],
+        difficulty: 36,
+        description: '보라 수정 원석을 세공해 보라 수정으로 만듭니다.'
     }
 ];
 
