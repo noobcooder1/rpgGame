@@ -593,12 +593,55 @@ function getItemNameById(itemId) {
 }
 
 /**
+ * HTML 속성에 사용할 문자열을 이스케이프합니다.
+ * @param {string} value - 원본 문자열
+ * @returns {string} 이스케이프된 문자열
+ */
+function escapeHtmlAttribute(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
  * 아이템 아이콘을 반환합니다.
  * @param {string} itemId - 아이템 ID
  * @returns {string} 아이콘
  */
 function getItemIconById(itemId) {
     return ITEMS_DATABASE[itemId]?.icon || '📦';
+}
+
+/**
+ * 아이템 이미지를 반환합니다.
+ * @param {string} itemId - 아이템 ID
+ * @returns {string} 이미지 경로
+ */
+function getItemImageById(itemId) {
+    return ITEMS_DATABASE[itemId]?.image || '';
+}
+
+/**
+ * 아이템 비주얼 HTML(이미지 우선, 실패 시 이모지)을 반환합니다.
+ * @param {string} itemId - 아이템 ID
+ * @param {string} sizeClass - 비주얼 크기 클래스
+ * @returns {string} 아이템 비주얼 HTML
+ */
+function getItemVisualHtml(itemId, sizeClass = '') {
+    const itemName = getItemNameById(itemId);
+    const itemIcon = getItemIconById(itemId);
+    const itemImage = getItemImageById(itemId);
+    const className = ['crafting-item-visual', sizeClass, !itemImage ? 'no-image' : '']
+        .filter(Boolean)
+        .join(' ');
+
+    if (!itemImage) {
+        return `<span class="${className}"><span class="crafting-item-fallback-icon">${itemIcon}</span></span>`;
+    }
+
+    return `<span class="${className}"><img src="${itemImage}" alt="${escapeHtmlAttribute(itemName)}" class="crafting-item-image" loading="lazy" onerror="this.onerror=null; this.parentElement.classList.add('fallback-only');" /><span class="crafting-item-fallback-icon">${itemIcon}</span></span>`;
 }
 
 /**
@@ -1228,7 +1271,7 @@ function renderRecipePanel() {
 
             return `
                 <div class="crafting-ingredient ${enough ? 'enough' : 'lack'}">
-                    <span>${getItemIconById(ingredient.itemId)} ${getItemNameById(ingredient.itemId)}</span>
+                    <span class="crafting-ingredient-item">${getItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
                     <span>${ownQuantity}/${ingredient.quantity}</span>
                 </div>
             `;
@@ -1237,7 +1280,7 @@ function renderRecipePanel() {
         return `
             <article class="crafting-card ${recipeAvailable ? 'can-craft' : ''}">
                 <header class="crafting-card-header">
-                    <h4>${resultItem?.icon || '📦'} ${resultItem?.name || recipe.result.itemId}</h4>
+                    <h4>${getItemVisualHtml(recipe.result.itemId, 'crafting-item-visual-title')} ${resultItem?.name || recipe.result.itemId}</h4>
                     <span class="crafting-result-qty">x${recipe.result.quantity || 1}</span>
                 </header>
                 <p class="crafting-desc">${recipe.description}</p>
@@ -1270,13 +1313,15 @@ function renderManualPanel() {
         const isActive = activeManualSlotIndex === index;
         const hasItem = Boolean(slot.itemId);
         const itemName = hasItem ? getItemNameById(slot.itemId) : '빈 슬롯';
-        const itemIcon = hasItem ? getItemIconById(slot.itemId) : '➕';
+        const itemIconHtml = hasItem
+            ? getItemVisualHtml(slot.itemId, 'crafting-item-visual-slot')
+            : '<span class="manual-slot-plus">➕</span>';
 
         return `
             <article class="manual-combine-slot ${isActive ? 'active' : ''} ${hasItem ? 'filled' : 'empty'}">
                 <button class="manual-slot-hitbox" onclick="openManualCraftSlotPicker(${index})">
                     <span class="manual-slot-index">${index + 1}</span>
-                    <div class="manual-slot-icon">${itemIcon}</div>
+                    <div class="manual-slot-icon">${itemIconHtml}</div>
                     <div class="manual-slot-name">${itemName}</div>
                     <div class="manual-slot-qty">${hasItem ? `x${slot.quantity || 1}` : '선택'}</div>
                 </button>
@@ -1314,7 +1359,7 @@ function renderManualPanel() {
         return `
             <div class="manual-picker-grid-slot ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}">
                 <button class="manual-picker-grid-hitbox" onclick="selectManualCraftPickerItem('${item.id}')" ${disabled ? 'disabled' : ''}>
-                    <span class="manual-picker-grid-icon">${item.icon}</span>
+                    <span class="manual-picker-grid-icon">${getItemVisualHtml(item.id, 'crafting-item-visual-grid')}</span>
                     <span class="manual-picker-grid-name">${item.name}</span>
                     <span class="manual-picker-grid-count">${Math.max(0, selectableQuantity)}</span>
                 </button>
@@ -1357,7 +1402,7 @@ function renderManualPanel() {
                         <div class="manual-picker-selection-title">선택 아이템</div>
                         ${pickerSelectedItem ? `
                             <div class="manual-picker-selected-card">
-                                <div class="manual-picker-selected-icon">${pickerSelectedItem.icon || getItemIconById(pickerItemId)}</div>
+                                <div class="manual-picker-selected-icon">${getItemVisualHtml(pickerItemId, 'crafting-item-visual-selected')}</div>
                                 <div class="manual-picker-selected-name">${pickerSelectedItem.name || getItemNameById(pickerItemId)}</div>
                                 <div class="manual-picker-selected-meta">${pickerSelectedItemType} | 보유 ${pickerSelectedItem.quantity} | 사용 가능 ${pickerSelectedAvailable}</div>
                                 <p class="manual-picker-selected-desc">${pickerSelectedItemDesc}</p>
@@ -1392,7 +1437,7 @@ function renderManualPanel() {
     const selectedHtml = selectedIngredients.length
         ? selectedIngredients.map(ingredient => `
             <div class="crafting-ingredient ${getInventoryItemQuantity(ingredient.itemId) >= ingredient.quantity ? 'enough' : 'lack'}">
-                <span>${getItemIconById(ingredient.itemId)} ${getItemNameById(ingredient.itemId)}</span>
+                <span class="crafting-ingredient-item">${getItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
                 <span>${getInventoryItemQuantity(ingredient.itemId)}/${ingredient.quantity}</span>
             </div>
         `).join('')
@@ -1400,7 +1445,7 @@ function renderManualPanel() {
 
     let previewText = '알 수 없는 조합입니다. 시도하면 실패합니다.';
     if (matchedRecipe) {
-        previewText = `예상 결과: ${getItemIconById(matchedRecipe.result.itemId)} ${getItemNameById(matchedRecipe.result.itemId)} x${matchedRecipe.result.quantity || 1}`;
+        previewText = `예상 결과: ${getItemVisualHtml(matchedRecipe.result.itemId, 'crafting-item-visual-inline')} ${getItemNameById(matchedRecipe.result.itemId)} x${matchedRecipe.result.quantity || 1}`;
     }
 
     manualPanel.innerHTML = `
@@ -1439,12 +1484,12 @@ function renderDismantlePanel() {
 
     dismantleList.innerHTML = candidates.map(({ index, item }) => {
         const rewards = getDismantleResult(item);
-        const rewardText = rewards.map(reward => `${getItemIconById(reward.itemId)} ${getItemNameById(reward.itemId)} x${reward.quantity}`).join(', ');
+        const rewardText = rewards.map(reward => `${getItemVisualHtml(reward.itemId, 'crafting-item-visual-inline')} ${getItemNameById(reward.itemId)} x${reward.quantity}`).join(', ');
 
         return `
             <article class="crafting-card dismantle-card">
                 <header class="crafting-card-header">
-                    <h4>${item.icon || '📦'} ${item.name}</h4>
+                    <h4>${getItemVisualHtml(item.id, 'crafting-item-visual-title')} ${item.name}</h4>
                     <span class="crafting-result-qty">분해</span>
                 </header>
                 <p class="crafting-desc">${item.description || '사용하지 않는 장비를 분해해 재료를 회수합니다.'}</p>
