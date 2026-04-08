@@ -629,7 +629,7 @@ function getItemImageById(itemId) {
  * @param {string} sizeClass - 비주얼 크기 클래스
  * @returns {string} 아이템 비주얼 HTML
  */
-function getItemVisualHtml(itemId, sizeClass = '') {
+function getCraftingItemVisualHtml(itemId, sizeClass = '') {
     const itemName = getItemNameById(itemId);
     const itemIcon = getItemIconById(itemId);
     const itemImage = getItemImageById(itemId);
@@ -1271,7 +1271,7 @@ function renderRecipePanel() {
 
             return `
                 <div class="crafting-ingredient ${enough ? 'enough' : 'lack'}">
-                    <span class="crafting-ingredient-item">${getItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
+                    <span class="crafting-ingredient-item">${getCraftingItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
                     <span>${ownQuantity}/${ingredient.quantity}</span>
                 </div>
             `;
@@ -1280,7 +1280,7 @@ function renderRecipePanel() {
         return `
             <article class="crafting-card ${recipeAvailable ? 'can-craft' : ''}">
                 <header class="crafting-card-header">
-                    <h4>${getItemVisualHtml(recipe.result.itemId, 'crafting-item-visual-title')} ${resultItem?.name || recipe.result.itemId}</h4>
+                    <h4>${getCraftingItemVisualHtml(recipe.result.itemId, 'crafting-item-visual-title')} ${resultItem?.name || recipe.result.itemId}</h4>
                     <span class="crafting-result-qty">x${recipe.result.quantity || 1}</span>
                 </header>
                 <p class="crafting-desc">${recipe.description}</p>
@@ -1314,7 +1314,7 @@ function renderManualPanel() {
         const hasItem = Boolean(slot.itemId);
         const itemName = hasItem ? getItemNameById(slot.itemId) : '빈 슬롯';
         const itemIconHtml = hasItem
-            ? getItemVisualHtml(slot.itemId, 'crafting-item-visual-slot')
+            ? getCraftingItemVisualHtml(slot.itemId, 'crafting-item-visual-slot')
             : '<span class="manual-slot-plus">➕</span>';
 
         return `
@@ -1359,7 +1359,7 @@ function renderManualPanel() {
         return `
             <div class="manual-picker-grid-slot ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}">
                 <button class="manual-picker-grid-hitbox" onclick="selectManualCraftPickerItem('${item.id}')" ${disabled ? 'disabled' : ''}>
-                    <span class="manual-picker-grid-icon">${getItemVisualHtml(item.id, 'crafting-item-visual-grid')}</span>
+                    <span class="manual-picker-grid-icon">${getCraftingItemVisualHtml(item.id, 'crafting-item-visual-grid')}</span>
                     <span class="manual-picker-grid-name">${item.name}</span>
                     <span class="manual-picker-grid-count">${Math.max(0, selectableQuantity)}</span>
                 </button>
@@ -1402,7 +1402,7 @@ function renderManualPanel() {
                         <div class="manual-picker-selection-title">선택 아이템</div>
                         ${pickerSelectedItem ? `
                             <div class="manual-picker-selected-card">
-                                <div class="manual-picker-selected-icon">${getItemVisualHtml(pickerItemId, 'crafting-item-visual-selected')}</div>
+                                <div class="manual-picker-selected-icon">${getCraftingItemVisualHtml(pickerItemId, 'crafting-item-visual-selected')}</div>
                                 <div class="manual-picker-selected-name">${pickerSelectedItem.name || getItemNameById(pickerItemId)}</div>
                                 <div class="manual-picker-selected-meta">${pickerSelectedItemType} | 보유 ${pickerSelectedItem.quantity} | 사용 가능 ${pickerSelectedAvailable}</div>
                                 <p class="manual-picker-selected-desc">${pickerSelectedItemDesc}</p>
@@ -1437,7 +1437,7 @@ function renderManualPanel() {
     const selectedHtml = selectedIngredients.length
         ? selectedIngredients.map(ingredient => `
             <div class="crafting-ingredient ${getInventoryItemQuantity(ingredient.itemId) >= ingredient.quantity ? 'enough' : 'lack'}">
-                <span class="crafting-ingredient-item">${getItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
+                <span class="crafting-ingredient-item">${getCraftingItemVisualHtml(ingredient.itemId, 'crafting-item-visual-inline')}<span>${getItemNameById(ingredient.itemId)}</span></span>
                 <span>${getInventoryItemQuantity(ingredient.itemId)}/${ingredient.quantity}</span>
             </div>
         `).join('')
@@ -1445,7 +1445,7 @@ function renderManualPanel() {
 
     let previewText = '알 수 없는 조합입니다. 시도하면 실패합니다.';
     if (matchedRecipe) {
-        previewText = `예상 결과: ${getItemVisualHtml(matchedRecipe.result.itemId, 'crafting-item-visual-inline')} ${getItemNameById(matchedRecipe.result.itemId)} x${matchedRecipe.result.quantity || 1}`;
+        previewText = `예상 결과: ${getCraftingItemVisualHtml(matchedRecipe.result.itemId, 'crafting-item-visual-inline')} ${getItemNameById(matchedRecipe.result.itemId)} x${matchedRecipe.result.quantity || 1}`;
     }
 
     manualPanel.innerHTML = `
@@ -1484,12 +1484,12 @@ function renderDismantlePanel() {
 
     dismantleList.innerHTML = candidates.map(({ index, item }) => {
         const rewards = getDismantleResult(item);
-        const rewardText = rewards.map(reward => `${getItemVisualHtml(reward.itemId, 'crafting-item-visual-inline')} ${getItemNameById(reward.itemId)} x${reward.quantity}`).join(', ');
+        const rewardText = rewards.map(reward => `${getCraftingItemVisualHtml(reward.itemId, 'crafting-item-visual-inline')} ${getItemNameById(reward.itemId)} x${reward.quantity}`).join(', ');
 
         return `
             <article class="crafting-card dismantle-card">
                 <header class="crafting-card-header">
-                    <h4>${getItemVisualHtml(item.id, 'crafting-item-visual-title')} ${item.name}</h4>
+                    <h4>${getCraftingItemVisualHtml(item.id, 'crafting-item-visual-title')} ${item.name}</h4>
                     <span class="crafting-result-qty">분해</span>
                 </header>
                 <p class="crafting-desc">${item.description || '사용하지 않는 장비를 분해해 재료를 회수합니다.'}</p>

@@ -1526,6 +1526,300 @@ body {
     color: var(--text-primary);
 }
 
+/* 탐험 모달 */
+.explore-modal {
+    width: min(980px, 94vw);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 2px solid rgba(233, 69, 96, 0.35);
+    background:
+        radial-gradient(circle at 15% 15%, rgba(77, 168, 218, 0.2), transparent 40%),
+        radial-gradient(circle at 85% 10%, rgba(255, 215, 0, 0.16), transparent 42%),
+        linear-gradient(165deg, rgba(18, 16, 31, 0.95), rgba(14, 12, 26, 0.96));
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.65);
+}
+
+.explore-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(90deg, rgba(233, 69, 96, 0.22), rgba(77, 168, 218, 0.2));
+}
+
+.explore-modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #fff3d0;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+}
+
+.explore-modal-close {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: 17px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.explore-modal-close:hover {
+    border-color: rgba(255, 215, 0, 0.55);
+    color: #ffd966;
+}
+
+.explore-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+
+.explore-modal-location {
+    border: 1px solid rgba(255, 215, 0, 0.28);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.36);
+    padding: 12px 14px;
+}
+
+.explore-modal-location h3 {
+    margin: 0;
+    color: #ffd966;
+    font-size: 20px;
+}
+
+.explore-modal-location p {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.explore-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.explore-preview-panel {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    background: rgba(5, 8, 15, 0.58);
+    padding: 10px;
+    min-height: 168px;
+}
+
+.explore-preview-panel h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #ffefb0;
+}
+
+.explore-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 152px;
+    overflow-y: auto;
+}
+
+.explore-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+}
+
+.explore-chip-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.explore-chip-icon img,
+.explore-result-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.explore-item-image {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.explore-chip-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.explore-chip-chance {
+    color: rgba(255, 215, 0, 0.88);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.explore-empty {
+    margin: 0;
+    padding: 16px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.explore-progress-wrap {
+    border: 1px solid rgba(77, 168, 218, 0.45);
+    border-radius: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.explore-progress-wrap.hidden {
+    display: none;
+}
+
+.explore-progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+}
+
+.explore-progress-bar {
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.explore-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.06s linear;
+    background: linear-gradient(90deg, #3ad29f, #f7d26d, #ff8250);
+    box-shadow: 0 0 14px rgba(58, 210, 159, 0.45);
+}
+
+.explore-result-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.36);
+}
+
+.explore-result-card.item {
+    border-color: rgba(108, 224, 141, 0.55);
+}
+
+.explore-result-card.battle {
+    border-color: rgba(255, 112, 112, 0.55);
+}
+
+.explore-result-card.special {
+    border-color: rgba(255, 215, 0, 0.62);
+}
+
+.explore-result-card.none {
+    border-color: rgba(170, 170, 170, 0.42);
+}
+
+.explore-result-icon {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+}
+
+.explore-result-text h4 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+}
+
+.explore-result-text p {
+    margin: 6px 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.45;
+    font-size: 14px;
+}
+
+.explore-time-note {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.62);
+    text-align: right;
+}
+
+.explore-modal-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.explore-modal-btn {
+    min-height: 48px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.explore-modal-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.explore-modal-btn.primary {
+    background: linear-gradient(135deg, rgba(77, 168, 218, 0.8), rgba(53, 122, 214, 0.8));
+}
+
+.explore-modal-btn.accent {
+    background: linear-gradient(135deg, rgba(139, 186, 64, 0.85), rgba(82, 148, 56, 0.85));
+}
+
+.explore-modal-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* ============================================
    추가 레이아웃 스타일
    ============================================ */
@@ -6196,6 +6490,84 @@ body {
 
     .crafting-content {
         max-height: calc(100% - 70px);
+    }
+
+    /* 탐험 모달 */
+    #exploreModal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .explore-modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: 16px 16px 0 0;
+        border-width: 1px;
+    }
+
+    .explore-modal-header {
+        padding: 12px 14px;
+    }
+
+    .explore-modal-header h2 {
+        font-size: 18px;
+    }
+
+    .explore-modal-content {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .explore-modal-location h3 {
+        font-size: 17px;
+    }
+
+    .explore-modal-location p {
+        font-size: 13px;
+    }
+
+    .explore-preview-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .explore-preview-panel {
+        min-height: 124px;
+        padding: 8px;
+    }
+
+    .explore-preview-list {
+        max-height: 98px;
+    }
+
+    .explore-chip {
+        font-size: 12px;
+        padding: 5px 7px;
+    }
+
+    .explore-result-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 24px;
+    }
+
+    .explore-result-text h4 {
+        font-size: 16px;
+    }
+
+    .explore-result-text p {
+        font-size: 13px;
+    }
+
+    .explore-modal-actions {
+        padding: 10px 12px 14px;
+        gap: 8px;
+    }
+
+    .explore-modal-btn {
+        min-height: 42px;
+        font-size: 0.84rem;
     }
 
     .crafting-recipe-list {

@@ -275,6 +275,64 @@
         <div id="mapSelectionContainer" class="map-selection-popup hidden">
             <!-- 동적으로 생성됨 -->
         </div>
+
+        <!-- 탐험 모달 -->
+        <div id="exploreModal" class="modal-overlay hidden">
+            <div class="explore-modal">
+                <div class="explore-modal-header">
+                    <h2>🔍 지역 탐험</h2>
+                    <button class="explore-modal-close" onclick="hideExploreModal()">✕</button>
+                </div>
+
+                <div class="explore-modal-content">
+                    <div class="explore-modal-location">
+                        <h3 id="exploreModalLocationName">탐험 지역</h3>
+                        <p id="exploreModalLocationDesc">탐험 가능한 정보를 불러오는 중입니다.</p>
+                    </div>
+
+                    <div class="explore-preview-grid">
+                        <section class="explore-preview-panel">
+                            <h4>📦 획득 가능 물품</h4>
+                            <div id="explorePreviewItems" class="explore-preview-list"></div>
+                        </section>
+                        <section class="explore-preview-panel">
+                            <h4>⚔️ 조우 가능한 적</h4>
+                            <div id="explorePreviewMonsters" class="explore-preview-list"></div>
+                        </section>
+                        <section class="explore-preview-panel">
+                            <h4>✨ 특별 이벤트</h4>
+                            <div id="explorePreviewEvents" class="explore-preview-list"></div>
+                        </section>
+                    </div>
+
+                    <div id="exploreProgressWrap" class="explore-progress-wrap hidden">
+                        <div class="explore-progress-head">
+                            <span id="exploreProgressLabel">주변을 수색하는 중...</span>
+                            <span id="exploreProgressTime">0%</span>
+                        </div>
+                        <div class="explore-progress-bar">
+                            <div id="exploreProgressFill" class="explore-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div id="exploreResultCard" class="explore-result-card">
+                        <div id="exploreResultIcon" class="explore-result-icon">🧭</div>
+                        <div class="explore-result-text">
+                            <h4 id="exploreResultTitle">탐험 준비 완료</h4>
+                            <p id="exploreResultDesc">수색을 시작하면 이 지역에서 아이템, 적 조우, 특별 이벤트를 만날 수 있습니다.</p>
+                        </div>
+                    </div>
+
+                    <p class="explore-time-note">소요 시간: 게임 10분 · 현실 2.5초</p>
+                </div>
+
+                <div class="explore-modal-actions">
+                    <button id="exploreHuntBtn" class="explore-modal-btn" onclick="startExploreHunt()">⚔️ 사냥</button>
+                    <button id="exploreSearchBtn" class="explore-modal-btn primary" onclick="startExploreSearch()">🔍 수색</button>
+                    <button id="exploreClaimBtn" class="explore-modal-btn accent" onclick="claimExploreResult()" disabled>🎁 획득</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ===== 설정 모달 ===== -->
@@ -502,6 +560,7 @@
     <!-- 2. 시스템 -->
     <script src="js/timeSystem.js"></script>
     <script src="js/mapSystem.js"></script>
+    <script src="js/exploreModalSystem.js"></script>
     <script src="js/battleSystem.js"></script>
     <script src="js/inventorySystem.js"></script>
     <script src="js/craftingSystem.js"></script>
