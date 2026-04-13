@@ -327,9 +327,9 @@
                 </div>
 
                 <div class="explore-modal-actions">
-                    <button id="exploreHuntBtn" class="explore-modal-btn" onclick="startExploreHunt()">⚔️ 사냥</button>
                     <button id="exploreSearchBtn" class="explore-modal-btn primary" onclick="startExploreSearch()">🔍 수색</button>
-                    <button id="exploreClaimBtn" class="explore-modal-btn accent" onclick="claimExploreResult()" disabled>🎁 획득</button>
+                    <button id="exploreClaimBtn" class="explore-modal-btn accent" onclick="claimExploreResult()" disabled style="display: none;">⚔️ 조우</button>
+                    <button id="exploreEscapeBtn" class="explore-modal-btn" onclick="escapeExploreEncounter()" disabled style="display: none;">🏃 도망</button>
                 </div>
             </div>
         </div>
