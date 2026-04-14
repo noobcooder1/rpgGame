@@ -1301,20 +1301,9 @@ function doBattleAttack() {
         return;
     }
 
-    if (targetMonster.hp <= 0) {
-        targetMonster.hp = 0;
-        addGameLog(`💀 ${getMonsterNameWithColor(targetMonster)}을(를) 처치했습니다!`);
-        
-        // 모든 몬스터 처치 확인
-        const aliveMonsters = battleState.monsters.filter(m => m.hp > 0);
-        if (aliveMonsters.length === 0) {
-            updateBattleUI();
-            setTimeout(() => endBattle('victory'), 500);
-            return;
-        }
-        
-        // 다음 생존 몬스터로 자동 타겟 변경
-        selectNextAliveMonster();
+    if (checkAndHandleDeadMonsters()) {
+        updateBattleUI();
+        return;
     }
 
     updateBattleUI();
@@ -1667,6 +1656,99 @@ function applyPlayerLifesteal(totalDamage) {
 }
 
 /**
+ * 다음으로 사용할 몬스터 battleIndex 값을 구합니다.
+ * @returns {number}
+ */
+function getNextMonsterBattleIndex() {
+    const monsters = battleState.monsters || [];
+    let maxIndex = -1;
+
+    monsters.forEach(monster => {
+        if (Number.isFinite(monster.battleIndex)) {
+            maxIndex = Math.max(maxIndex, monster.battleIndex);
+        }
+    });
+
+    return maxIndex + 1;
+}
+
+/**
+ * 분열 특성으로 작은 슬라임을 소환합니다.
+ * @param {Object} deadMonster - 처치된 원본 몬스터
+ * @returns {number} - 실제 소환된 개체 수
+ */
+function spawnSplitMonsters(deadMonster) {
+    if (!deadMonster || deadMonster._splitProcessed) return 0;
+
+    const splitTrait = getMonsterTrait(deadMonster, 'split');
+    if (!splitTrait.has) return 0;
+
+    const splitData = (typeof TRAITS !== 'undefined' && TRAITS.split && TRAITS.split.effects)
+        ? TRAITS.split.effects
+        : { spawnCount: 2, statPercent: 15 };
+
+    const levelMultiplier = (typeof getSkillLevelMultiplier === 'function')
+        ? getSkillLevelMultiplier(splitTrait.level)
+        : 1.0;
+
+    const requestedSpawnCount = Math.max(1, Math.floor(splitData.spawnCount || 2));
+    const scaledPercent = Math.max(1, Math.floor((splitData.statPercent || 15) * levelMultiplier));
+
+    const MAX_MONSTERS = 10;
+    const currentCount = (battleState.monsters || []).length;
+    const availableSlots = Math.max(0, MAX_MONSTERS - currentCount);
+    const spawnCount = Math.min(requestedSpawnCount, availableSlots);
+
+    deadMonster._splitProcessed = true;
+
+    if (spawnCount <= 0) {
+        addGameLog(`🟢 ${getMonsterNameWithColor(deadMonster)}의 분열이 시도되었지만 전장 공간이 부족합니다.`);
+        return 0;
+    }
+
+    const baseAtk = Math.max(deadMonster.pAtk || 0, deadMonster.mAtk || 0, deadMonster.atk || 1);
+    const basePDef = deadMonster.pDef || deadMonster.def || 0;
+    const baseMDef = deadMonster.mDef || deadMonster.def || 0;
+    const spawnSummary = [];
+
+    for (let i = 0; i < spawnCount; i++) {
+        const spawned = createBattleMonster('small_slime');
+        if (!spawned) continue;
+
+        const scaledHp = Math.max(1, Math.floor((deadMonster.maxHp || deadMonster.hp || spawned.maxHp || 1) * (scaledPercent / 100)));
+        const scaledAtk = Math.max(1, Math.floor(baseAtk * (scaledPercent / 100)));
+        const scaledPDef = Math.max(0, Math.floor(basePDef * (scaledPercent / 100)));
+        const scaledMDef = Math.max(0, Math.floor(baseMDef * (scaledPercent / 100)));
+
+        spawned.maxHp = scaledHp;
+        spawned.hp = scaledHp;
+        spawned.atk = scaledAtk;
+        spawned.pAtk = scaledAtk;
+        spawned.mAtk = Math.max(0, Math.floor((deadMonster.mAtk || 0) * (scaledPercent / 100)));
+        spawned.def = scaledPDef;
+        spawned.pDef = scaledPDef;
+        spawned.mDef = scaledMDef;
+        spawned.isSpawned = true;
+        spawned.spawnedBySplit = true;
+        spawned._deathLogged = false;
+        spawned._splitProcessed = true;
+
+        const nextIndex = getNextMonsterBattleIndex();
+        spawned.battleIndex = nextIndex;
+        spawned.statusEffectId = `monster_${nextIndex}`;
+
+        battleState.monsters.push(spawned);
+        spawnSummary.push(`${spawned.name}(HP ${scaledHp})`);
+    }
+
+    if (spawnSummary.length > 0) {
+        addGameLog(`🟢 ${getMonsterNameWithColor(deadMonster)}의 분열 발동! ${spawnSummary.join(', ')} 출현!`);
+    }
+
+    return spawnSummary.length;
+}
+
+/**
  * 처치된 몬스터를 확인하고 전투 종료 여부를 판단합니다.
  * @returns {boolean} - 전투 종료 시 true
  */
@@ -1677,6 +1759,7 @@ function checkAndHandleDeadMonsters() {
             m.hp = 0;
             m._deathLogged = true;
             addGameLog(`💀 ${getMonsterNameWithColor(m)}을(를) 처치했습니다!`);
+            spawnSplitMonsters(m);
         }
     });
 
@@ -2311,6 +2394,8 @@ function processMonsterStatusEffects(monster) {
         if (monster.hp <= 0) {
             monster.hp = 0;
             addGameLog(`💀 ${getMonsterNameWithColor(monster)}을(를) 처치했습니다!`);
+            monster._deathLogged = true;
+            spawnSplitMonsters(monster);
             
             // 해당 몬스터의 상태이상 효과 모두 제거
             delete battleState.monsterStatusEffects[monsterId];
@@ -2556,13 +2641,8 @@ function doMonsterTurn() {
         
         // 상태이상으로 몬스터가 사망한 경우 → 공격 건너뜀
         if (monster.hp <= 0) {
+            if (checkAndHandleDeadMonsters()) return;
             updateBattleUI();
-            // 모든 몬스터 사망 여부 확인
-            const remainingAlive = battleState.monsters.filter(m => m.hp > 0);
-            if (remainingAlive.length === 0) {
-                setTimeout(() => endBattle('victory'), 500);
-                return;
-            }
             // 다음 몬스터 공격으로 진행
             attackIndex++;
             if (attackIndex < aliveMonsters.length) {

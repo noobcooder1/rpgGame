@@ -732,19 +732,20 @@
     /**
      * 특별 이벤트 보상을 적용합니다.
      * @param {Object} result - 특별 이벤트 결과
+     * @returns {{summary:string}}
      */
     function applyExploreSpecialEventReward(result) {
         const reward = result.event && result.event.reward;
         if (!reward) {
             addGameLog('✨ 특별 이벤트가 스쳐 지나갔지만 얻은 것은 없었습니다.');
-            return;
+            return { summary: '획득 없음' };
         }
 
         if (reward.type === 'gold') {
             const amount = Math.floor(Math.random() * (reward.amount[1] - reward.amount[0] + 1)) + reward.amount[0];
             gold += amount;
             addGameLog(`💰 특별 이벤트 보상: ${amount} 골드를 획득했습니다!`);
-            return;
+            return { summary: `골드 +${amount}` };
         }
 
         if (reward.type === 'exp') {
@@ -752,7 +753,7 @@
             player.exp = (player.exp || 0) + amount;
             addGameLog(`⭐ 특별 이벤트 보상: 경험치 ${amount}를 획득했습니다!`);
             if (typeof checkLevelUp === 'function') checkLevelUp();
-            return;
+            return { summary: `경험치 +${amount}` };
         }
 
         if (reward.type === 'recover') {
@@ -763,18 +764,20 @@
             player.mp = Math.min(player.maxMp, player.mp + mpRecover);
 
             addGameLog(`💚 특별 이벤트 보상: HP +${hpRecover}, MP +${mpRecover} 회복!`);
-            return;
+            return { summary: `HP +${hpRecover}, MP +${mpRecover}` };
         }
 
         if ((reward.type === 'specialItem' || reward.type === 'baseItem') && result.rewardItem) {
+            const visual = getExploreItemVisual(result.rewardItem);
             if (typeof handleExploreItemFound === 'function') {
                 handleExploreItemFound(result.rewardItem);
             }
-            addGameLog('🎒 특별 이벤트 아이템이 자동으로 인벤토리에 추가되었습니다.');
-            return;
+            addGameLog(`🎒 특별 이벤트 아이템 획득: ${visual.itemName}`);
+            return { summary: `아이템: ${visual.itemName}` };
         }
 
         addGameLog('✨ 특별 이벤트가 발생했지만 적용 가능한 보상이 없습니다.');
+        return { summary: '획득 없음' };
     }
 
     /**
@@ -791,13 +794,17 @@
      * 아이템 보상을 적용합니다.
      * @param {Object|null} item - 아이템 정보
      * @param {string} successMessage - 성공 메시지
-     * @returns {boolean}
+     * @returns {{success:boolean, itemName:string}}
      */
     function grantExploreItemReward(item, successMessage) {
-        if (!item || typeof handleExploreItemFound !== 'function') return false;
+        if (!item || typeof handleExploreItemFound !== 'function') {
+            return { success: false, itemName: '' };
+        }
+
+        const visual = getExploreItemVisual(item);
         handleExploreItemFound(item);
-        addGameLog(successMessage);
-        return true;
+        addGameLog(`${successMessage} (${visual.itemName})`);
+        return { success: true, itemName: visual.itemName };
     }
 
     /**
@@ -828,30 +835,34 @@
 
                     return {
                         title: '쉼터에서 휴식 완료',
-                        description: '몸을 추스르며 전열을 정비했습니다.',
+                        description: `획득 결과: HP +${hpRecover}, MP +${mpRecover}`,
                         icon: '🛌'
                     };
                 }
 
                 const shelterItem = pickExploreItemByChance(itemPools.specialItems)
                     || pickExploreItemByChance(itemPools.baseItems);
-                const gotItem = grantExploreItemReward(
+                const itemReward = grantExploreItemReward(
                     shelterItem,
                     '🎒 쉼터를 수색해 물품을 챙겼습니다.'
                 );
 
-                if (!gotItem) {
+                if (!itemReward.success) {
                     const bonusExp = rollExploreRange([5, 12]);
                     player.exp = (player.exp || 0) + bonusExp;
                     if (typeof checkLevelUp === 'function') checkLevelUp();
                     addGameLog(`⭐ 쉼터의 흔적을 분석해 경험치 ${bonusExp}를 얻었습니다.`);
+
+                    return {
+                        title: '쉼터 수색 완료',
+                        description: `획득 결과: 경험치 +${bonusExp}`,
+                        icon: '🔍'
+                    };
                 }
 
                 return {
                     title: '쉼터 수색 완료',
-                    description: gotItem
-                        ? '쉼터 구석에서 유용한 물품을 발견했습니다.'
-                        : '물품 대신 주변 지형에 대한 통찰을 얻었습니다.',
+                    description: `획득 결과: 아이템 ${itemReward.itemName}`,
                     icon: '🔍'
                 };
             }
@@ -878,7 +889,7 @@
 
                 return {
                     title: '주변 수색 완료',
-                    description: '숨겨진 흔적을 더 찾아 추가 보상을 확보했습니다.',
+                    description: `획득 결과: 골드 +${surveyGold}, 경험치 +${surveyExp}`,
                     icon: '🕵️'
                 };
             }
@@ -899,23 +910,27 @@
 
                 const copiedItem = pickExploreItemByChance(itemPools.baseItems)
                     || pickExploreItemByChance(itemPools.specialItems);
-                const gotItem = grantExploreItemReward(
+                const itemReward = grantExploreItemReward(
                     copiedItem,
                     '📝 단서를 바탕으로 보급 물품을 찾아냈습니다.'
                 );
 
-                if (!gotItem) {
+                if (!itemReward.success) {
                     const bonusExp = rollExploreRange([6, 14]);
                     player.exp = (player.exp || 0) + bonusExp;
                     if (typeof checkLevelUp === 'function') checkLevelUp();
                     addGameLog(`📝 단서를 정리해 경험치 ${bonusExp}를 획득했습니다.`);
+
+                    return {
+                        title: '단서 필사 완료',
+                        description: `획득 결과: 경험치 +${bonusExp}`,
+                        icon: '📝'
+                    };
                 }
 
                 return {
                     title: '단서 필사 완료',
-                    description: gotItem
-                        ? '지도를 보정해 숨겨진 보급품 위치를 찾아냈습니다.'
-                        : '아이템은 없었지만 유용한 기록을 남겼습니다.',
+                    description: `획득 결과: 아이템 ${itemReward.itemName}`,
                     icon: '📝'
                 };
             }
@@ -925,22 +940,26 @@
                     const cacheItem = result.rewardItem
                         || pickExploreItemByChance(itemPools.specialItems)
                         || pickExploreItemByChance(itemPools.baseItems);
-                    const gotItem = grantExploreItemReward(
+                    const itemReward = grantExploreItemReward(
                         cacheItem,
                         '🎁 특수 물품 보관함에서 물품을 획득했습니다.'
                     );
 
-                    if (!gotItem) {
+                    if (!itemReward.success) {
                         const fallbackGold = rollExploreRange([10, 20]);
                         gold += fallbackGold;
                         addGameLog(`💰 보관함은 비어 있었지만 ${fallbackGold} 골드를 수거했습니다.`);
+
+                        return {
+                            title: '보관함 개봉 완료',
+                            description: `획득 결과: 골드 +${fallbackGold}`,
+                            icon: '🎁'
+                        };
                     }
 
                     return {
                         title: '보관함 개봉 완료',
-                        description: gotItem
-                            ? '보관된 특수 물품을 안전하게 회수했습니다.'
-                            : '물품은 없었지만 대체 보상을 확보했습니다.',
+                        description: `획득 결과: 아이템 ${itemReward.itemName}`,
                         icon: '🎁'
                     };
                 }
@@ -954,7 +973,7 @@
 
                 return {
                     title: '보관함 안전 해체',
-                    description: '함정을 해체하며 경험과 자원을 동시에 확보했습니다.',
+                    description: `획득 결과: 경험치 +${disarmExp}, 골드 +${disarmGold}`,
                     icon: '🧰'
                 };
             }
@@ -964,22 +983,26 @@
                     const supplyItem = result.rewardItem
                         || pickExploreItemByChance(itemPools.baseItems)
                         || pickExploreItemByChance(itemPools.specialItems);
-                    const gotItem = grantExploreItemReward(
+                    const itemReward = grantExploreItemReward(
                         supplyItem,
                         '📦 보급품을 수거해 인벤토리에 보관했습니다.'
                     );
 
-                    if (!gotItem) {
+                    if (!itemReward.success) {
                         const fallbackGold = rollExploreRange([6, 14]);
                         gold += fallbackGold;
                         addGameLog(`💰 사용 가능한 보급품이 없어 골드 ${fallbackGold}만 수거했습니다.`);
+
+                        return {
+                            title: '보급품 수거 완료',
+                            description: `획득 결과: 골드 +${fallbackGold}`,
+                            icon: '📦'
+                        };
                     }
 
                     return {
                         title: '보급품 수거 완료',
-                        description: gotItem
-                            ? '다음 수색에 도움이 되는 보급품을 챙겼습니다.'
-                            : '물품 대신 자금만 회수했습니다.',
+                        description: `획득 결과: 아이템 ${itemReward.itemName}`,
                         icon: '📦'
                     };
                 }
@@ -992,7 +1015,7 @@
 
                 return {
                     title: '정비 완료',
-                    description: '보급품 대신 전투 준비 상태를 개선했습니다.',
+                    description: `획득 결과: HP +${recoverHp}, MP +${recoverMp}`,
                     icon: '🧭'
                 };
             }
@@ -1005,11 +1028,19 @@
 
                     const minedItem = pickExploreItemByChance(itemPools.specialItems)
                         || pickExploreItemByChance(itemPools.baseItems);
-                    grantExploreItemReward(minedItem, '🎒 채굴 부산물을 추가로 획득했습니다.');
+                    const itemReward = grantExploreItemReward(minedItem, '🎒 채굴 부산물을 추가로 획득했습니다.');
+
+                    if (itemReward.success) {
+                        return {
+                            title: '광맥 채굴 성공',
+                            description: `획득 결과: 골드 +${minedGold}, 아이템 ${itemReward.itemName}`,
+                            icon: '⛏️'
+                        };
+                    }
 
                     return {
                         title: '광맥 채굴 성공',
-                        description: '풍부한 광맥에서 자원 수확에 성공했습니다.',
+                        description: `획득 결과: 골드 +${minedGold}`,
                         icon: '⛏️'
                     };
                 }
@@ -1021,17 +1052,17 @@
 
                 return {
                     title: '광맥 분석 완료',
-                    description: '즉시 채굴 대신 장기적인 탐광 지식을 얻었습니다.',
+                    description: `획득 결과: 경험치 +${analysisExp}`,
                     icon: '📊'
                 };
             }
 
             default: {
                 if (primary) {
-                    applyExploreSpecialEventReward(result);
+                    const defaultOutcome = applyExploreSpecialEventReward(result);
                     return {
                         title: '이벤트 실행 완료',
-                        description: '특별 이벤트 기본 보상을 적용했습니다.',
+                        description: `획득 결과: ${defaultOutcome.summary}`,
                         icon: event.icon || '✨'
                     };
                 }
@@ -1043,7 +1074,7 @@
 
                 return {
                     title: '신중한 조사 완료',
-                    description: '작은 단서를 모아 다음 탐험의 발판을 마련했습니다.',
+                    description: `획득 결과: 경험치 +${fallbackExp}`,
                     icon: '🔎'
                 };
             }
