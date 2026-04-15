@@ -110,7 +110,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '거칠게 깨진 흑요석 원석입니다. 가공하면 흑요석이 됩니다.',
         icon: '🖤',
-        image: 'assets/items/materials/obsidian.svg',
+        image: 'assets/items/materials/obsidian_ore.png',
         sellPrice: 22,
         stackable: true
     },
@@ -176,7 +176,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '붉게 빛나는 수정 원석입니다. 세공하면 붉은 수정이 됩니다.',
         icon: '🔴',
-        image: 'assets/items/materials/red_crystal.svg',
+        image: 'assets/items/materials/red_crystal_ore.png',
         sellPrice: 21,
         stackable: true
     },
@@ -187,7 +187,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '푸르게 빛나는 수정 원석입니다. 세공하면 푸른 수정이 됩니다.',
         icon: '🔵',
-        image: 'assets/items/materials/blue_crystal.svg',
+        image: 'assets/items/materials/blue_crystal_ore.png',
         sellPrice: 21,
         stackable: true
     },
@@ -198,19 +198,8 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '초록빛이 도는 수정 원석입니다. 세공하면 녹색 수정이 됩니다.',
         icon: '🟢',
-        image: 'assets/items/materials/green_crystal.svg',
+        image: 'assets/items/materials/green_crystal_ore.png',
         sellPrice: 21,
-        stackable: true
-    },
-    purple_crystal_ore: {
-        id: 'purple_crystal_ore',
-        name: '보라 수정 원석',
-        type: 'material',
-        rarity: 'rare',
-        description: '보랏빛을 띠는 수정 원석입니다. 세공하면 보라 수정이 됩니다.',
-        icon: '🟣',
-        image: 'assets/items/materials/purple_crystal.svg',
-        sellPrice: 27,
         stackable: true
     },
     mana_stone: {
@@ -231,7 +220,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '정제된 흑요석입니다.',
         icon: '🖤',
-        image: 'assets/items/materials/obsidian.svg',
+        image: 'assets/items/materials/obsidian_ore.png',
         sellPrice: 35,
         stackable: true
     },
@@ -297,7 +286,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '세공된 붉은 수정입니다.',
         icon: '🔴',
-        image: 'assets/items/materials/red_crystal.svg',
+        image: 'assets/items/materials/red_crystal.png',
         sellPrice: 35,
         stackable: true
     },
@@ -308,7 +297,7 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '세공된 푸른 수정입니다.',
         icon: '🔵',
-        image: 'assets/items/materials/blue_crystal.svg',
+        image: 'assets/items/materials/blue_crystal.png',
         sellPrice: 35,
         stackable: true
     },
@@ -319,19 +308,8 @@ const CRAFTING_ITEM_DEFINITIONS = {
         rarity: 'uncommon',
         description: '세공된 녹색 수정입니다.',
         icon: '🟢',
-        image: 'assets/items/materials/green_crystal.svg',
+        image: 'assets/items/materials/green_crystal.png',
         sellPrice: 35,
-        stackable: true
-    },
-    purple_crystal: {
-        id: 'purple_crystal',
-        name: '보라 수정',
-        type: 'material',
-        rarity: 'rare',
-        description: '세공된 보라 수정입니다.',
-        icon: '🟣',
-        image: 'assets/items/materials/purple_crystal.svg',
-        sellPrice: 45,
         stackable: true
     }
 };
@@ -472,16 +450,6 @@ const CRAFTING_RECIPES = [
         ],
         difficulty: 34,
         description: '녹색 수정 원석을 세공해 녹색 수정으로 만듭니다.'
-    },
-    {
-        id: 'recipe_refine_purple_crystal',
-        name: '보라 수정 원석 세공',
-        result: { itemId: 'purple_crystal', quantity: 1 },
-        ingredients: [
-            { itemId: 'purple_crystal_ore', quantity: 1 }
-        ],
-        difficulty: 36,
-        description: '보라 수정 원석을 세공해 보라 수정으로 만듭니다.'
     }
 ];
 
