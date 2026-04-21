@@ -1980,8 +1980,8 @@ function getOreImage(oreId) {
     const images = {
         stone: 'assets/items/materials/stone.svg',
         coal: 'assets/items/materials/coal.svg',
-        copper_ore: 'assets/items/materials/copper_ore.svg',
-        iron_ore: 'assets/items/materials/iron_ore.svg',
+        copper_ore: 'assets/items/materials/copper_ore.png',
+        iron_ore: 'assets/items/materials/iron_ore.png',
         gold_ore: 'assets/items/materials/gold_ore.png',
         silver_ore: 'assets/items/materials/silver_ore.png',
         mithril_ore: 'assets/items/materials/mithril_ore.svg',
