@@ -1,8 +1,9 @@
 const fs = require('fs');
 const vm = require('vm');
+const path = require('path');
 
 try {
-    const code = fs.readFileSync('/Users/a1/workSpace/html:css,javascript/rpg/js/gameData.js', 'utf8');
+    const code = fs.readFileSync(path.join(__dirname, 'js', 'gameData.js'), 'utf8');
     const script = new vm.Script(code + '\n; [MAPS, MONSTERS, STATUS_EFFECTS, TRAITS];');
     const context = vm.createContext({});
     const [MAPS, MONSTERS, STATUS_EFFECTS, TRAITS] = script.runInContext(context);
@@ -227,7 +228,7 @@ try {
         });
     }
 
-    fs.writeFileSync('/Users/a1/workSpace/html:css,javascript/rpg/monster_summary.md', md, 'utf8');
+    fs.writeFileSync(path.join(__dirname, 'monster_summary.md'), md, 'utf8');
     console.log('Successfully updated monster_summary.md');
 } catch (e) {
     console.error('Error generating summary:', e);
