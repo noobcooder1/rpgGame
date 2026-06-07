@@ -8,7 +8,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="main.css?v=ui-redesign-20260605">
+    <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
@@ -148,17 +148,15 @@
     </div>
 
     <!-- ===== 게임 플레이 화면 ===== -->
-    <div id="gameScreen" class="screen game-screen redesigned-game-screen hidden">
+    <div id="gameScreen" class="screen game-screen hidden">
         <!-- 맵 배경 -->
         <div id="gameBackground" class="game-background"></div>
         <div class="game-overlay"></div>
 
-        <div class="game-container redesigned-shell">
-            <div class="game-header redesigned-topbar">
-                <div class="header-left player-status-card">
-                    <div class="player-portrait" aria-hidden="true">
-                        <div class="portrait-face">검</div>
-                    </div>
+        <div class="game-container">
+            <!-- 상단 UI -->
+            <div class="game-header">
+                <div class="header-left">
                     <div class="player-info">
                         <span class="player-name" id="playerNameDisplay">용사</span>
                         <span class="player-level" id="playerLevelDisplay">Lv.1</span>
@@ -179,6 +177,7 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 포만감/수분 바 -->
                     <div class="hunger-thirst-bars">
                         <div class="bar-container hunger-bar-container">
                             <span class="bar-label">🍖</span>
@@ -195,28 +194,26 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 경험치 & 플레이 시간 (상단 왼쪽으로 이동) -->
                     <div class="player-exp-time">
-                        <span>EXP <span id="expDisplay">0</span>/<span id="expRequiredDisplay">100</span></span>
-                        <span>⏱ <span id="playTimeDisplay">00:00:00</span></span>
+                        <span>📊 EXP: <span id="expDisplay">0</span>/<span id="expRequiredDisplay">100</span></span>
+                        <span>⏱️ <span id="playTimeDisplay">00:00:00</span></span>
                     </div>
                 </div>
-
-                <div class="header-center world-status-card">
+                <div class="header-center">
                     <div class="location-info">
                         <span class="current-map" id="currentMapName">훈련장</span>
                         <span class="game-time" id="gameTimeDisplay">☀️ Day 1 - 08:00</span>
                         <span class="weather-info" id="weatherDisplay" title="현재 날씨">☀️ 맑음</span>
                     </div>
-                    <div class="objective-chip" id="objectiveHintText">목표: 초급훈련장에서 전투 1회 승리</div>
                 </div>
-
-                <div class="header-right utility-status-card">
+                <div class="header-right">
                     <div class="game-menu-buttons">
-                        <button class="game-menu-btn" onclick="showInventory()" title="인벤토리"><span>🎒</span><small>인벤토리</small></button>
-                        <button class="game-menu-btn" onclick="showCrafting()" title="제작"><span>🛠️</span><small>제작</small></button>
-                        <button class="game-menu-btn" onclick="showSaveLoadMenu('save')" title="저장"><span>💾</span><small>저장</small></button>
-                        <button class="game-menu-btn" onclick="showGameRule()" title="도움말"><span>?</span><small>도움말</small></button>
-                        <button class="game-menu-btn" onclick="showSettings()" title="설정"><span>⚙️</span><small>설정</small></button>
+                        <button class="game-menu-btn" onclick="showCrafting()" title="제작">🛠️</button>
+                        <button class="game-menu-btn" onclick="showInventory()" title="인벤토리">🎒</button>
+                        <button class="game-menu-btn" onclick="showSaveLoadMenu('save')" title="저장">💾</button>
+                        <button class="game-menu-btn" onclick="showGameRule()" title="도움말">📖</button>
+                        <button class="game-menu-btn" onclick="showSettings()" title="설정">⚙️</button>
                     </div>
                     <div class="player-gold">
                         💰 <span id="goldDisplay">0</span>G
@@ -224,120 +221,53 @@
                 </div>
             </div>
 
-            <div class="game-main redesigned-main">
-                <section class="game-content-area place-stage">
-                    <div id="exploreUI" class="explore-ui redesigned-place-panel">
-                        <div class="place-panel-header">
-                            <span class="place-kicker">현재 위치</span>
-                            <span class="place-danger" id="locationDangerText">안전</span>
-                        </div>
-                        <div class="place-hero-row">
-                            <div class="place-emblem" aria-hidden="true">⚔️</div>
-                            <div class="place-copy">
-                                <h2 id="currentLocationName">초급훈련장</h2>
-                                <div class="explore-info">
-                                    <p id="currentMapDesc">초보 모험가들이 훈련하는 곳입니다.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="place-meta-grid">
-                            <div class="place-meta-item">
-                                <span>권장</span>
-                                <strong id="recommendedLevelText">Lv.1+</strong>
-                            </div>
-                            <div class="place-meta-item">
-                                <span>출현</span>
-                                <strong id="enemyPreviewText">허수아비</strong>
-                            </div>
-                            <div class="place-meta-item">
-                                <span>행동</span>
-                                <strong id="actionPreviewText">전투 · 이동</strong>
-                            </div>
-                        </div>
-                        <div class="enemy-card-strip" id="enemyCardStrip">
-                            <div class="enemy-preview-card">
-                                <span class="enemy-card-icon">🪵</span>
-                                <strong>허수아비</strong>
-                                <small>Lv.1</small>
-                            </div>
+            <!-- 게임 메인 영역 -->
+            <div class="game-main">
+                <!-- 전투/탐험 컨텐츠 영역 -->
+                <div class="game-content-area">
+                    <!-- 탐험 UI (기본) - 전투 중이 아닐 때 표시 -->
+                    <div id="exploreUI" class="explore-ui">
+                        <div class="explore-info">
+                            <p id="currentMapDesc">초보 모험가들이 훈련하는 곳입니다.</p>
                         </div>
                     </div>
 
-                    <div id="battleUI" class="battle-ui hidden redesigned-battle-panel">
+                    <!-- 전투 UI (전투 시 표시) -->
+                    <div id="battleUI" class="battle-ui hidden">
                         <div class="battle-arena">
-                            <div class="battle-panel-header">
-                                <span class="place-kicker">전투 중</span>
-                                <span class="place-danger danger">대상을 선택하세요</span>
-                            </div>
+                            <!-- 다중 몬스터 컨테이너 -->
                             <div class="monsters-container" id="monstersContainer">
                                 <!-- 몬스터 카드들이 동적으로 생성됩니다 -->
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <aside class="action-command-panel">
-                    <div class="panel-title-row">
-                        <span class="panel-kicker">행동</span>
-                        <strong>무엇을 할까?</strong>
-                    </div>
-                    <div id="exploreActions" class="explore-actions">
-                        <button class="action-btn action-battle" onclick="executeAction('battle')">
-                            <span class="action-icon">⚔️</span>
-                            <span class="action-copy"><strong>전투</strong><small>적과 전투를 시작합니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="action-btn action-explore" onclick="executeAction('explore')">
-                            <span class="action-icon">🧭</span>
-                            <span class="action-copy"><strong>탐험</strong><small>주변을 탐색하여 아이템을 찾습니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="action-btn action-move" onclick="executeAction('move')">
-                            <span class="action-icon">🥾</span>
-                            <span class="action-copy"><strong>이동</strong><small>다른 지역으로 이동합니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                    </div>
-
-                    <div id="battleActions" class="battle-actions hidden">
-                        <button class="battle-action-btn attack" onclick="doBattleAttack()">
-                            <span class="action-icon">⚔️</span>
-                            <span class="action-copy"><strong>공격</strong><small>선택한 적을 공격합니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="battle-action-btn skill" onclick="doBattleSkill()">
-                            <span class="action-icon">⚡</span>
-                            <span class="action-copy"><strong>스킬</strong><small>직업 스킬을 사용합니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="battle-action-btn defend" onclick="doBattleDefend()">
-                            <span class="action-icon">🛡️</span>
-                            <span class="action-copy"><strong>방어</strong><small>받는 피해를 줄입니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="battle-action-btn heal" onclick="doBattleHeal()">
-                            <span class="action-icon">💚</span>
-                            <span class="action-copy"><strong>회복</strong><small>체력을 회복합니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                        <button class="battle-action-btn escape" onclick="doBattleEscape()">
-                            <span class="action-icon">🏃</span>
-                            <span class="action-copy"><strong>도주</strong><small>전투에서 벗어납니다.</small></span>
-                            <span class="action-arrow">›</span>
-                        </button>
-                    </div>
-                </aside>
-
-                <section class="game-log-container redesigned-log-panel">
-                    <div class="result-summary-card" id="resultSummaryCard">
-                        <span class="result-summary-badge" id="resultSummaryBadge">안내</span>
-                        <strong id="resultSummaryTitle">모험 준비 완료</strong>
-                        <p id="resultSummaryDetail">훈련장에서 기초를 다지고 첫 전투를 시작해보세요.</p>
-                    </div>
+                <!-- 게임 로그 (중간) -->
+                <div class="game-log-container">
                     <div class="game-log" id="gameLogBox">
                         <p>모험을 시작합니다!</p>
                     </div>
-                </section>
+                </div>
+
+                <!-- 행동 버튼 (하단 - 게임 로그 아래) -->
+                <div class="action-buttons-area">
+                    <!-- 탐험 행동 버튼 -->
+                    <div id="exploreActions" class="explore-actions">
+                        <button class="action-btn" onclick="executeAction('battle')">⚔️ 전투</button>
+                        <button class="action-btn" onclick="executeAction('move')">🚶 이동</button>
+                        <button class="action-btn" onclick="executeAction('rest')">💤 휴식</button>
+                    </div>
+
+                    <!-- 전투 행동 버튼 (전투 시 표시) -->
+                    <div id="battleActions" class="battle-actions hidden">
+                        <button class="battle-action-btn attack" onclick="doBattleAttack()">⚔️ 공격</button>
+                        <button class="battle-action-btn skill" onclick="doBattleSkill()">⚡ 스킬</button>
+                        <button class="battle-action-btn defend" onclick="doBattleDefend()">🛡️ 방어</button>
+                        <button class="battle-action-btn heal" onclick="doBattleHeal()">💚 회복</button>
+                        <button class="battle-action-btn escape" onclick="doBattleEscape()">🏃 도주</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -629,7 +559,7 @@
     <script src="js/gameData.js"></script>
     <!-- 2. 시스템 -->
     <script src="js/timeSystem.js"></script>
-    <script src="js/mapSystem.js?v=ui-redesign-20260605"></script>
+    <script src="js/mapSystem.js"></script>
     <script src="js/exploreModalSystem.js"></script>
     <script src="js/battleSystem.js"></script>
     <script src="js/inventorySystem.js"></script>

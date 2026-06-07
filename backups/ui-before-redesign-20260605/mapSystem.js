@@ -1082,97 +1082,11 @@ function updateLocationUI() {
         `;
     }
 
-    updateRedesignedLocationPanel(map, location);
-
     // 배경 이미지 적용
     updateLocationBackground(map, location);
 
     // 행동 버튼 업데이트
     updateLocationActions();
-}
-
-/**
- * 리디자인된 장소 패널의 보조 정보를 업데이트합니다.
- * 기존 UI ID는 유지하고, 새 패널이 있을 때만 추가 정보를 채웁니다.
- */
-function updateRedesignedLocationPanel(map, location) {
-    const locationNameEl = document.getElementById('currentLocationName');
-    if (locationNameEl) {
-        locationNameEl.textContent = location.name;
-    }
-
-    const dangerEl = document.getElementById('locationDangerText');
-    if (dangerEl) {
-        const canBattle = Boolean(location.canBattle) ||
-            (Array.isArray(location.actions) && location.actions.includes('battle')) ||
-            (Array.isArray(location.monsters) && location.monsters.length > 0);
-        const isBossArea = Boolean(location.hasBoss || location.bossMonster || location.bossMonsters);
-        dangerEl.textContent = isBossArea ? '보스 위험' : (canBattle ? '전투 가능' : '안전 지대');
-        dangerEl.classList.toggle('danger', canBattle || isBossArea);
-    }
-
-    const recommendedEl = document.getElementById('recommendedLevelText');
-    if (recommendedEl) {
-        const recommended = map.recommendedLevel;
-        if (recommended && typeof recommended === 'object') {
-            const min = recommended.min || map.level || 1;
-            const max = recommended.max ? `-${recommended.max}` : '+';
-            recommendedEl.textContent = `Lv.${min}${max}`;
-        } else {
-            recommendedEl.textContent = `Lv.${map.level || 1}+`;
-        }
-    }
-
-    const enemyEl = document.getElementById('enemyPreviewText');
-    const monsterIds = Array.isArray(location.monsters) && location.monsters.length > 0
-        ? location.monsters
-        : (Array.isArray(map.monsters) ? map.monsters : []);
-    if (enemyEl) {
-        enemyEl.textContent = monsterIds.length > 0
-            ? monsterIds.slice(0, 2).map(id => (MONSTERS[id] && MONSTERS[id].name) ? MONSTERS[id].name : id).join(' · ')
-            : '없음';
-    }
-
-    const enemyStrip = document.getElementById('enemyCardStrip');
-    if (enemyStrip) {
-        if (monsterIds.length === 0) {
-            enemyStrip.innerHTML = '<div class="enemy-preview-card empty"><span class="enemy-card-icon">🛡️</span><strong>안전 지대</strong><small>전투 없음</small></div>';
-        } else {
-            enemyStrip.innerHTML = monsterIds.slice(0, 3).map(id => {
-                const monster = MONSTERS[id] || {};
-                const name = monster.name || id;
-                const level = monster.level || map.level || 1;
-                const image = monster.image ? `<img src="${monster.image}" alt="${name}">` : `<span class="enemy-card-icon">${monster.emoji || '👹'}</span>`;
-                return `
-                    <div class="enemy-preview-card">
-                        ${image}
-                        <strong>${name}</strong>
-                        <small>Lv.${level}</small>
-                    </div>
-                `;
-            }).join('');
-        }
-    }
-
-    const actionEl = document.getElementById('actionPreviewText');
-    if (actionEl) {
-        actionEl.textContent = Array.isArray(location.actions)
-            ? location.actions.map(id => ACTION_TYPES[id]?.name || id).slice(0, 3).join(' · ')
-            : '-';
-    }
-
-    const objectiveEl = document.getElementById('objectiveHintText');
-    if (objectiveEl && player) {
-        if (currentMapId === 'training' && player.level <= 2) {
-            objectiveEl.textContent = '목표: 초급훈련장에서 전투 1회 승리';
-        } else if (location.canBattle) {
-            objectiveEl.textContent = `목표: ${location.name}의 적을 정리하기`;
-        } else if (Array.isArray(location.npcs) && location.npcs.length > 0) {
-            objectiveEl.textContent = `목표: ${location.name}의 인물과 대화하기`;
-        } else {
-            objectiveEl.textContent = '목표: 다음 목적지를 선택하기';
-        }
-    }
 }
 
 /**
@@ -1228,8 +1142,7 @@ function updateLocationActions() {
                 }
 
                 const btn = document.createElement('button');
-                btn.className = `action-btn action-${actionId}`;
-                btn.dataset.actionId = actionId;
+                btn.className = 'action-btn';
 
                 // 'talk' 또는 'npc' 액션이고 해당 위치에 NPC가 있으면 NPC 이름으로 표시
                 if ((actionId === 'talk' || actionId === 'npc') && location.npcs && location.npcs.length > 0) {
@@ -1237,12 +1150,12 @@ function updateLocationActions() {
                     const npcId = location.npcs[0];
                     const npc = NPCS[npcId];
                     if (npc) {
-                        btn.innerHTML = buildActionButtonMarkup(actionId, npc.name, npc.emoji || '💬');
+                        btn.innerHTML = `${npc.emoji || '💬'} ${npc.name}`;
                     } else {
-                        btn.innerHTML = buildActionButtonMarkup(actionId, action.name, action.icon);
+                        btn.innerHTML = `${action.icon} ${action.name}`;
                     }
                 } else {
-                    btn.innerHTML = buildActionButtonMarkup(actionId, action.name, action.icon);
+                    btn.innerHTML = `${action.icon} ${action.name}`;
                 }
 
                 // HP가 0일 때 전투, 탐험 버튼 비활성화
@@ -1274,42 +1187,6 @@ function updateLocationActions() {
 
         actionsContainer.appendChild(mineBtn);
     }
-}
-
-/**
- * 리디자인 액션 카드 마크업을 만듭니다.
- */
-function buildActionButtonMarkup(actionId, actionName, actionIcon) {
-    const descriptions = {
-        battle: '적과 전투를 시작합니다.',
-        explore: '주변을 탐색하여 아이템을 찾습니다.',
-        move: '다른 지역으로 이동합니다.',
-        rest: '휴식을 취해 체력을 회복합니다.',
-        shop: '필요한 물품을 구매합니다.',
-        talk: '주변 인물과 대화합니다.',
-        npc: '주변 인물과 대화합니다.',
-        farming: '자원을 채집합니다.'
-    };
-
-    const cardIcons = {
-        battle: '⚔️',
-        explore: '🧭',
-        move: '🥾',
-        rest: '🔥',
-        shop: '🪙',
-        talk: '💬',
-        npc: actionIcon || '💬',
-        farming: '⛏️'
-    };
-
-    return `
-        <span class="action-icon">${cardIcons[actionId] || actionIcon || '•'}</span>
-        <span class="action-copy">
-            <strong>${actionName}</strong>
-            <small>${descriptions[actionId] || '현재 위치에서 행동합니다.'}</small>
-        </span>
-        <span class="action-arrow">›</span>
-    `;
 }
 
 /**
@@ -1960,60 +1837,8 @@ function addGameLog(message) {
         }
     }
 
-    updateResultSummaryFromLog(message);
-
     // 콘솔에는 태그 제거 후 출력
     console.log(`📝 ${message.replace(/<[^>]*>/g, '')}`);
-}
-
-/**
- * 중요 로그를 하단 결과 카드에 반영합니다.
- */
-function updateResultSummaryFromLog(message) {
-    const card = document.getElementById('resultSummaryCard');
-    const badge = document.getElementById('resultSummaryBadge');
-    const title = document.getElementById('resultSummaryTitle');
-    const detail = document.getElementById('resultSummaryDetail');
-    if (!card || !badge || !title || !detail) return;
-
-    const plain = String(message).replace(/<[^>]*>/g, '').trim();
-    if (!plain) return;
-
-    let state = 'info';
-    let badgeText = '기록';
-    let titleText = '새로운 기록';
-
-    if (plain.includes('승리')) {
-        state = 'success';
-        badgeText = '승리';
-        titleText = '전투 승리';
-    } else if (plain.includes('레벨 업')) {
-        state = 'reward';
-        badgeText = '성장';
-        titleText = '레벨 상승';
-    } else if (plain.includes('획득')) {
-        state = 'reward';
-        badgeText = '보상';
-        titleText = '보상 획득';
-    } else if (plain.includes('전투 시작')) {
-        state = 'danger';
-        badgeText = '전투';
-        titleText = '조우 발생';
-    } else if (plain.includes('이동')) {
-        state = 'info';
-        badgeText = '이동';
-        titleText = '장소 이동';
-    } else if (plain.includes('회복')) {
-        state = 'success';
-        badgeText = '회복';
-        titleText = '상태 회복';
-    }
-
-    card.classList.remove('info', 'success', 'reward', 'danger');
-    card.classList.add(state);
-    badge.textContent = badgeText;
-    title.textContent = titleText;
-    detail.textContent = plain;
 }
 
 /**
