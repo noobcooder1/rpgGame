@@ -4590,176 +4590,6 @@ function bindMonsterImageFallback(monsterCard, fallbackEmoji) {
 }
 
 /**
- * 전투 화면의 적 배치 모드를 결정합니다.
- * 1~3마리는 큰 카드, 4~6마리는 압축 그리드, 7~10마리는 타겟 상세 + 명단형으로 보여줍니다.
- */
-function getBattleLayoutMode(monsterCount) {
-    if (monsterCount <= 3) return 'large-cards';
-    if (monsterCount <= 6) return 'compact-grid';
-    return 'target-detail-list';
-}
-
-function getMonsterStatusKey(monster) {
-    if (!monster) return '';
-    return monster.statusEffectId || (monster.battleIndex !== undefined ? `monster_${monster.battleIndex}` : monster.name);
-}
-
-function getMonsterHpPercent(monster) {
-    if (!monster || !monster.maxHp) return 0;
-    return Math.max(0, Math.min(100, (monster.hp / monster.maxHp) * 100));
-}
-
-function getMonsterIntentPreview(monster) {
-    if (!monster) return '대상 없음';
-    if (monster.hp <= 0) return '행동 불가';
-    if (monster.isBoss || monster.type === 'boss') return '강공격 준비';
-    if ((monster.currentMp || 0) > 0 && Array.isArray(monster.skills) && monster.skills.length > 0) return '스킬 사용';
-    if (monster.aiPattern?.defend && battleState.turnCount % 4 === 0) return '방어 태세';
-    if ((monster.mAtk || 0) > (monster.pAtk || monster.atk || 0)) return '마법 공격';
-    return '공격';
-}
-
-function getMonsterStatusPreview(monster) {
-    if (!monster || monster.hp <= 0) return '전투불능';
-
-    const statusKey = getMonsterStatusKey(monster);
-    const effects = battleState.monsterStatusEffects?.[statusKey];
-
-    if (!effects || Object.keys(effects).length === 0) return '없음';
-
-    return Object.entries(effects)
-        .filter(([, data]) => !data || data.duration === undefined || data.duration > 0)
-        .map(([effectId, data]) => {
-            const effectInfo = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[effectId] : null;
-            const icon = effectInfo?.icon || '';
-            const name = effectInfo?.name || effectId;
-            const duration = data?.duration ? ` ${data.duration}턴` : '';
-            return `${icon}${name}${duration}`;
-        })
-        .join(' · ') || '없음';
-}
-
-function getMonsterLevelLabel(monster) {
-    if (!monster) return 'Lv.?';
-    if (monster.level) return `Lv.${monster.level}`;
-    if (monster.tier) return `Tier ${monster.tier}`;
-    if (monster.isBoss || monster.type === 'boss') return 'Boss';
-    return 'Lv.?';
-}
-
-function getMonsterGradeLabel(monster) {
-    const gradeName = monster?.gradeData?.name || '';
-    if (!gradeName || gradeName === '일반') return '';
-    return `${monster.gradeData?.icon || ''}${gradeName}`;
-}
-
-function getMonsterSpriteMarkup(monster) {
-    const fallbackEmoji = monster?.emoji || '👹';
-    const imageCandidates = buildMonsterImageCandidates(monster || {});
-    const encodedCandidates = encodeURIComponent(JSON.stringify(imageCandidates));
-
-    if (imageCandidates.length === 0) {
-        return { fallbackEmoji, spriteMarkup: escapeHtmlAttribute(fallbackEmoji) };
-    }
-
-    return {
-        fallbackEmoji,
-        spriteMarkup: `<img src="${escapeHtmlAttribute(imageCandidates[0])}" alt="${escapeHtmlAttribute(monster?.name || '몬스터')}" class="monster-image" data-candidates="${escapeHtmlAttribute(encodedCandidates)}">`
-    };
-}
-
-function updateBattleTurnBanner(monsters, layoutMode) {
-    const banner = document.getElementById('battleTurnBanner');
-    if (!banner) return;
-
-    const aliveCount = monsters.filter(monster => monster && monster.hp > 0).length;
-    const modeLabel = layoutMode === 'target-detail-list' ? '다수 교전' : '타겟 교전';
-    const turnLabel = battleState.turn === 'monster' ? '적 행동' : '플레이어 행동';
-    banner.textContent = `${turnLabel} · ${aliveCount}/${monsters.length} · ${modeLabel}`;
-}
-
-function updateBattleTargetDetail(monster) {
-    const artEl = document.getElementById('battleTargetArt');
-    const nameEl = document.getElementById('battleTargetName');
-    const hpFillEl = document.getElementById('battleTargetHpFill');
-    const hpTextEl = document.getElementById('battleTargetHpText');
-    const intentEl = document.getElementById('battleTargetIntent');
-    const statusEl = document.getElementById('battleTargetStatus');
-
-    if (!artEl || !nameEl || !hpFillEl || !hpTextEl || !intentEl || !statusEl) return;
-
-    if (!monster) {
-        artEl.textContent = '⚔️';
-        nameEl.textContent = '대상을 선택하세요';
-        hpFillEl.style.width = '0%';
-        hpTextEl.textContent = '- / -';
-        intentEl.textContent = '다음 행동: 확인 중';
-        statusEl.textContent = '상태: 없음';
-        return;
-    }
-
-    const hpPercent = getMonsterHpPercent(monster);
-    const { fallbackEmoji, spriteMarkup } = getMonsterSpriteMarkup(monster);
-    const gradeLabel = getMonsterGradeLabel(monster);
-
-    artEl.innerHTML = `<div class="monster-sprite">${spriteMarkup}</div>`;
-    bindMonsterImageFallback(artEl, fallbackEmoji);
-
-    nameEl.textContent = `${gradeLabel ? `${gradeLabel} ` : ''}${monster.name || '몬스터'}`;
-    hpFillEl.style.width = `${hpPercent}%`;
-    hpFillEl.style.background = monster.hp <= 0 ? '#555' : 'linear-gradient(90deg, #e55345, #b91f2c)';
-    hpTextEl.textContent = `${Math.max(0, monster.hp || 0)} / ${monster.maxHp || 0}`;
-    intentEl.textContent = `다음 행동: ${getMonsterIntentPreview(monster)}`;
-    statusEl.textContent = `상태: ${getMonsterStatusPreview(monster)}`;
-}
-
-function createBattleMonsterCard(monster, index, layoutMode) {
-    const isSelected = index === battleState.currentMonsterIndex;
-    const isDead = monster.hp <= 0;
-    const isTraineeSpar = Boolean(battleState.isSpar && monster.sparClass === 'trainee');
-    const hpPercent = getMonsterHpPercent(monster);
-    const gradeColor = monster.gradeData?.color || '#f8ead0';
-    const gradeLabel = getMonsterGradeLabel(monster);
-    const { fallbackEmoji, spriteMarkup } = getMonsterSpriteMarkup(monster);
-
-    const monsterCard = document.createElement('button');
-    const cardClasses = ['monster-card', 'tactical-monster-card', `layout-${layoutMode}`];
-    if (isSelected) cardClasses.push('selected');
-    if (isDead) cardClasses.push('dead');
-    if (isTraineeSpar) cardClasses.push('spar-trainee-card');
-    monsterCard.className = cardClasses.join(' ');
-    monsterCard.type = 'button';
-    monsterCard.dataset.index = index;
-    monsterCard.disabled = isDead;
-
-    if (!isDead) {
-        monsterCard.onclick = () => selectMonsterTarget(index);
-    }
-
-    monsterCard.innerHTML = `
-        <span class="monster-slot-number">${index + 1}</span>
-        <div class="monster-sprite">${spriteMarkup}</div>
-        <div class="monster-info">
-            <div class="monster-title-row">
-                <span class="monster-name" style="color: ${escapeHtmlAttribute(gradeColor)};">${escapeHtmlAttribute(monster.name || '몬스터')}${isDead ? ' ☠' : ''}</span>
-                <span class="monster-level">${escapeHtmlAttribute(getMonsterLevelLabel(monster))}</span>
-            </div>
-            ${gradeLabel ? `<span class="monster-grade">${escapeHtmlAttribute(gradeLabel)}</span>` : ''}
-            <div class="bar monster-hp-bar">
-                <div class="bar-fill" style="width: ${hpPercent}%; background: ${isDead ? '#555' : 'linear-gradient(90deg, #e55345, #b91f2c)'};"></div>
-                <span class="bar-text">${Math.max(0, monster.hp || 0)}/${monster.maxHp || 0}</span>
-            </div>
-            <div class="monster-intent">${escapeHtmlAttribute(getMonsterIntentPreview(monster))}</div>
-            <div class="monster-status-row">${escapeHtmlAttribute(getMonsterStatusPreview(monster))}</div>
-        </div>
-        ${isSelected && !isDead ? '<span class="target-indicator">🎯</span>' : ''}
-    `;
-
-    bindMonsterImageFallback(monsterCard, fallbackEmoji);
-    return monsterCard;
-}
-
-/**
  * 전투 UI를 업데이트합니다. (다중 몬스터 지원)
  */
 function updateBattleUI() {
@@ -4767,24 +4597,67 @@ function updateBattleUI() {
     const container = document.getElementById('monstersContainer');
     
     if (!container) return;
-
-    const layoutMode = getBattleLayoutMode(monsters.length);
-    const battleUI = document.getElementById('battleUI');
-    if (battleUI) {
-        battleUI.dataset.battleLayout = layoutMode;
-    }
-    container.className = `monsters-container battle-layout-${layoutMode} monster-count-${Math.min(monsters.length, 10)}`;
-    container.innerHTML = '';
-
-    updateBattleTurnBanner(monsters, layoutMode);
-
-    const selectedMonster = monsters[battleState.currentMonsterIndex] || monsters.find(monster => monster && monster.hp > 0) || monsters[0];
-    updateBattleTargetDetail(selectedMonster);
     
+    // 몬스터 컨테이너 초기화
+    container.innerHTML = '';
+    
+    // 각 몬스터에 대해 카드 생성
     monsters.forEach((monster, index) => {
-        container.appendChild(createBattleMonsterCard(monster, index, layoutMode));
+        const isSelected = index === battleState.currentMonsterIndex;
+        const isDead = monster.hp <= 0;
+        const isTraineeSpar = Boolean(battleState.isSpar && monster.sparClass === 'trainee');
+        
+        const monsterCard = document.createElement('div');
+        const cardClasses = ['monster-card'];
+        if (isSelected) cardClasses.push('selected');
+        if (isDead) cardClasses.push('dead');
+        if (isTraineeSpar) cardClasses.push('spar-trainee-card');
+        monsterCard.className = cardClasses.join(' ');
+        monsterCard.dataset.index = index;
+        
+        // 클릭하여 타겟 선택 (죽은 몬스터 제외)
+        if (!isDead) {
+            monsterCard.onclick = () => selectMonsterTarget(index);
+            monsterCard.style.cursor = 'pointer';
+        }
+        
+        const hpPercent = Math.max(0, (monster.hp / monster.maxHp) * 100);
+        
+        // 등급 정보
+        const gradeIcon = monster.gradeData?.icon || '';
+        const gradeColor = monster.gradeData?.color || '#FFFFFF';
+        const gradeName = monster.gradeData?.name || '일반';
+        const gradeDisplay = gradeName !== '일반' ? `${gradeIcon}[${gradeName}] ` : '';
+
+        const fallbackEmoji = monster.emoji || '👹';
+        const imageCandidates = buildMonsterImageCandidates(monster);
+        const encodedCandidates = encodeURIComponent(JSON.stringify(imageCandidates));
+        const spriteMarkup = imageCandidates.length > 0
+            ? `<img src="${escapeHtmlAttribute(imageCandidates[0])}" alt="${escapeHtmlAttribute(monster.name || '몬스터')}" class="monster-image" data-candidates="${escapeHtmlAttribute(encodedCandidates)}">`
+            : fallbackEmoji;
+        const showMonsterName = !isTraineeSpar;
+        const monsterNameMarkup = showMonsterName
+            ? `<span class="monster-name" style="color: ${gradeColor}; text-shadow: 0 0 5px ${gradeColor}40;">${gradeDisplay}${monster.name}${isDead ? ' ☠️' : ''}</span>`
+            : '';
+
+        monsterCard.innerHTML = `
+            <div class="monster-sprite">${spriteMarkup}</div>
+            <div class="monster-info">
+                ${monsterNameMarkup}
+                <div class="bar monster-hp-bar">
+                    <div class="bar-fill" style="width: ${hpPercent}%; background: ${isDead ? '#555' : 'linear-gradient(90deg, #e74c3c, #c0392b)'};"></div>
+                    <span class="bar-text">${Math.max(0, monster.hp)}/${monster.maxHp}</span>
+                </div>
+            </div>
+            ${isSelected && !isDead ? '<div class="target-indicator">🎯</div>' : ''}
+        `;
+
+        bindMonsterImageFallback(monsterCard, fallbackEmoji);
+        
+        container.appendChild(monsterCard);
     });
     
+    // 플레이어 정보
     updatePlayerUI();
 }
 
